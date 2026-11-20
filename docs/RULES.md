@@ -32,10 +32,10 @@ Read this before touching the repository. It is the normative companion to `CLAU
 `.supports` → `.config` → `.structures` → `src/Kernel/Boot.php` must keep loading in that order. After ANY edit to these files or `public/index.php` / `public/nanoradf.php`, run the boot smoke check before committing:
 
 ```powershell
-& 'C:\Users\Rahen\AppData\Roaming\Local\lightning-services\php-8.3.36+0\bin\win64\php.exe' -r "require 'D:/Www/nanoradf/app/public/nanoradf.php'; echo 'BOOT-OK', PHP_EOL;"
+& 'C:\Users\Rahen\AppData\Roaming\Local\lightning-services\php-8.3.36+0\bin\win64\php.exe' D:\Www\nanoradf\app\tests\smoke_check.php
 ```
 
-(For checks that exercise `public/index.php`, run PHP with working directory `public/` — `index.php` resolves `nanoradf.php` relative to CWD.)
+The check lives in `tests/` (decision D7: all test files under `/tests`) and is self-contained — it `chdir`s to `public/` itself; pass = `exit 0`. Including `public/nanoradf.php` directly now exits 404 by design (entry variables missing), so always test through `public/index.php` as the script does.
 
 Fixing ≠ trimming: a failing line is root-caused and fixed, never deleted or stubbed to hide the trigger. Always keep a failing-before / passing-after record (command + output) in `docs/REPORT.md`.
 
@@ -62,12 +62,12 @@ Follow `CLAUDE.md` → Secure Coding Rules without exception. Extra operational 
 - Branches: `main` (release-ready), `dev` (working), `feat/<slug>`, `fix/<slug>`, `hotfix/<slug>`, `patch/<slug>` cut from `dev`.
 - Conventional commits: `feat:`, `fix:`, `docs:`, `refactor:`, `test:`, `chore:`, `security:`.
 - Never include `Co-authored-by:` trailers (any tool, any source).
-- Commit completed work immediately; push to `origin` when a remote exists (this repo currently has none — keep commits local and push once `origin` is configured).
+- Commit completed work immediately; push the current branch to `origin` when done.
 - One task = one change set. No drive-by refactors, no formatting of unrelated files.
 
 ## 7. Verification floor
 
-- No test framework yet: every non-trivial logic change leaves ONE runnable check (assert-style PHP snippet or small script), run and recorded before commit.
+- No test framework yet: every non-trivial logic change leaves ONE runnable check, run and recorded before commit. **All test files live in `/tests`** (decision D7) — never in `public/` or `src/`.
 - Trivial one-liners need no test.
 - Documentation-only changes need no runtime validation.
 - Web check: `http://nanoradfw.local` must render without a 500 after bootstrap-touching changes.

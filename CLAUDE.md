@@ -178,6 +178,7 @@ Module views live in `apps/Modules/<Name>/Views/` as PHP view classes (e.g. `Wel
 │   ├── Config/Routes.php # route table                                 [scaffold]
 │   ├── Services/         # shared app services                         [empty]
 │   └── Modules/Welcome/  # reference module (Manifest/Config/Ctrl/…)    [scaffold]
+├── tests/               # smoke checks & test scripts (D7)           [code]
 ├── docs/                # RULES, PLAN, PRD, REPORT, CHANGELOG
 ├── sql/local.sql        # leftover local DB dump (gitignored)
 └── CLAUDE.md / README.md / LICENSE
@@ -190,6 +191,7 @@ Legend: `[code]` runs today · `[scaffold]` exists as 0-byte placeholder · `[co
 - `public/` — the only web-accessible directory; single front controller. No business logic, no secrets, no direct class definitions beyond the entry/gateway.
 - `src/` — framework core only. App-specific behavior never goes here; extend via module code or contracts/traits in `src/Contracts/`.
 - `apps/` — application code only. Never fork/copy core classes into modules; extend them.
+- `tests/` — all test and smoke-check files (decision D7). Never place test files in `public/` or `src/`.
 - `docs/` — project documents only (`RULES`, `PLAN`, `PRD`, `REPORT`, `CHANGELOG`).
 - `sql/` — local database artifacts only; contents gitignored.
 - `.supports` / `.config` / `.structures` — root bootstrap dotfiles (PHP). Fragile: any edit requires the boot smoke check to pass before commit.

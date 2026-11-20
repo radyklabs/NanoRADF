@@ -30,11 +30,12 @@ Design mandate: minimal, small, light, fast. Zero runtime dependencies.
 | FR-3 | Central route table (`apps/Config/Routes.php`) dispatched by a router to controllers. | ⚠️ planned (Phase 1) |
 | FR-4 | Base controllers for the three surfaces: `PublicController`, `PrivateController`, `ApiController`. | ⚠️ planned (Phase 1) |
 | FR-5 | Blade-shaped server-side view composition from the role taxonomy + module view classes. | ⚠️ planned (Phase 2) |
-| FR-6 | Module lifecycle: `Manifest.json` + Config/Controllers/Model/Services/Views wired into routing. | ⚠️ planned (Phase 3) |
+| FR-6 | Modular layout — only when `app.modules=true`: `Manifest.json` + Config/Controllers/Model/Services/Views under `apps/Modules/<Name>/`, wired into routing. | ⚠️ planned (Phase 3) |
 | FR-7 | Server-to-server HTTP client frontend → headless backend with status + schema validation. | ⚠️ planned (Phase 4) |
 | FR-8 | Session-based auth token storage (`$_SESSION` only) with hardened cookie flags. | ⚠️ planned (Phase 5) |
 | FR-9 | Environment config via `.env` with dot-notation typed access (`__env()`), cached per process. | ✅ done |
 | FR-10 | Error handling: generic 500 in prod, gated detail in local/dev, always `error_log`. | ✅ done (entry gateway) |
+| FR-11 | **Layout mode toggle** via env `app.modules`: `false` **or key absent (default)** → flat layout — no `apps/Modules/`, no `Manifest.json`; `Config/`, `Services/`, `Controllers/`, `Model/`, `Views/` live directly under `apps/`. `true` → current modular layout. Namespace: single PSR-4 root `App\` → `apps/` mirroring folders in **both** modes (`App\Controllers\...` flat; `App\Modules\<Name>\...` modular). | ⚠️ planned (Phase 0b) |
 
 ## 4. Non-functional requirements
 
@@ -47,7 +48,7 @@ Design mandate: minimal, small, light, fast. Zero runtime dependencies.
 
 ## 5. v1 scope
 
-**In:** working router + base controllers, view composer, Welcome module end-to-end, headless API mode + server-to-server client, session auth storage, 404/500 pages, docs set, smoke checks.
+**In:** `app.modules` layout toggle (flat default when key missing), working router + base controllers, view composer, Welcome module end-to-end, headless API mode + server-to-server client, session auth storage, 404/500 pages, docs set, smoke checks.
 
 **Out of scope for v1:** browser-side fetch to backend, ORM/migrations, caching drivers, mail transport, queue, admin UI builder, third-party package integrations.
 
@@ -59,3 +60,4 @@ Design mandate: minimal, small, light, fast. Zero runtime dependencies.
 4. Boot smoke check passes after any bootstrap edit (see `docs/RULES.md` §3).
 5. `grep -r` finds no `eval(`/`exec(`/`shell_exec(`/`system(`/`unserialize(` on input paths.
 6. Tokens exist only in `$_SESSION` — no `localStorage` token access anywhere.
+7. `app.modules=false` (or absent): boots on the flat `apps/` layout — `App\Controllers\...` / `App\Config\...` / `App\Services\...` autoload, no `apps/Modules/` needed. `app.modules=true`: current modular mapping (`App\Modules\Welcome\...`) still resolves unchanged.

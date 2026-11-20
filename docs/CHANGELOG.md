@@ -15,6 +15,7 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning: [S
 - `.env` environment template (RADYK-style dot-notation keys).
 - Project documentation: completed `CLAUDE.md` (Dev URL, Modular Architecture, Blade-shaped View System, Directory Layout, File Boundary, Secure Coding Rules) and new `docs/RULES.md`, `docs/PLAN.md`, `docs/PRD.md`, `docs/REPORT.md`, `docs/CHANGELOG.md`; expanded `README.md`.
 - `docs/PLAN.md` track log: plan-vs-code status verification records (`>track` runs).
+- PRD/PLAN coverage for the `app.modules` env toggle: flat vs modular `apps/` layout, default `false` when key missing, everything except `Manifest.json` moves flat, single `App\` PSR-4 root (PRD FR-11, PLAN Phase 0b, decision D6).
 - `.gitignore` for local-only files (`.env`, `.envrc`, `.vscode/`, `sql/local.sql`, `docs/CONFIG.md`, `/vendor/`).
 
 ### Fixed

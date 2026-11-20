@@ -15,6 +15,7 @@ Definition of done (v1): all PRD acceptance criteria pass; smoke checks recorded
 | D3 | 2026-11-20 | Fix kernel autoloader defects now (not docs-only). | Boot path fatals on first class load; blocking. |
 | D4 | 2026-11-20 | Project docs in English; `CLAUDE.md` keeps its mixed ID/EN voice. | User choice. |
 | D5 | 2026-11-20 | Plan first, execution in later phases/tasks. | User choice: no implementation beyond D3 fix in this change set. |
+| D6 | 2026-11-20 | `app.modules` env toggle: `false` **or key absent (default)** → flat `apps/` layout — `Config/`, `Services/`, `Controllers/`, `Model/`, `Views/` directly under `apps/`, no `apps/Modules/`, no `Manifest.json`. `true` → current modular layout. Namespace = single PSR-4 root `App\` → `apps/` mirroring folders (one mapping serves both modes). | User: missing key → false; flat scope = everything except manifest; namespace chosen by PSR-4 best practice (also closes the `apps/Config`/`apps/Services` autoload gap). |
 
 ## Status legend
 
@@ -29,8 +30,18 @@ Definition of done (v1): all PRD acceptance criteria pass; smoke checks recorded
 - **2026-11-20 fixes (D3):** undeclared `self::$nssys`/`self::$nsmod` → global constants `nssys`/`nsappmod`; undefined `modulesf` → `modulesfapp`. Fail-before/pass-after recorded in `docs/REPORT.md`.
 - Verification: boot smoke check + autoload resolution of `System\Helper\Utilities` and `App\Modules\Welcome\Controllers\WelcomeController` → PASS (exit 0).
 
+### Phase 0b — `app.modules` layout toggle ⚠️
+- **Depends on:** Phase 0. **Owner:** main thread. **Decision:** D6.
+- Gate structure registration in `.structures` on `__env ('app.modules')` (missing key → `false`):
+  - `true` → keep modular constants (`modulesfapp`, per-module folders + `Manifest.json` contract), still `is_dir` guarded.
+  - `false` → do not register `apps/Modules/`; register `Config/`, `Services/`, `Controllers/`, `Model/`, `Views/` directly under `apps/` (skip missing dirs as today).
+- Autoloader: replace the `App\Modules` special case with a single PSR-4 root `App\` → `apps/` — `App\Modules\Welcome\X` still resolves to `apps/Modules/Welcome/X.php` when enabled; `App\Controllers\X`, `App\Config\X`, `App\Services\X` resolve flat. `System\` → `src/` unchanged.
+- Current `.env` carries `app.modules=false` (working default); the key itself stays gitignored — semantics documented here and in PRD FR-11.
+- Verification: bootstrap check **both** ways — `app.modules=false` (flat constants defined, no `modulesfapp`, `App\Controllers\...` autoload resolves) and `app.modules=true` (modular constants + `App\Modules\Welcome\...` resolves, backward compatible).
+
 ### Phase 1 — Routing & controllers ⚠️
-- **Depends on:** Phase 0. **Owner:** main thread.
+- **Depends on:** Phase 0, Phase 0b (controller/model/view locations are defined there).
+- **Owner:** main thread.
 - Implement `src/Kernel/Router.php` (method + path matching, params, 404 fallthrough) and `src/Kernel/Controller.php` (request lifecycle, response helpers, render hook).
 - Wire `apps/Config/Routes.php` as the route table consumed by the router.
 - Base controllers `PublicController` / `PrivateController` / `ApiController` (surface-specific auth/response rules).
@@ -73,11 +84,12 @@ Definition of done (v1): all PRD acceptance criteria pass; smoke checks recorded
 | Wave | Phases | Starts when |
 |------|--------|-------------|
 | 1 | 0 | — (complete) |
-| 2 | 1 | Phase 0 done |
-| 3 | 2, 4 | Phase 1 done (2 and 4 are independent) |
-| 4 | 3, 5 | Phase 2 / Phase 4 done |
-| 5 | 6 | Phases 3 + 4 done |
-| 6 | 7 | everything above done, user invokes `>audit`/`>release` |
+| 2 | 0b | Phase 0 done |
+| 3 | 1 | Phase 0b done |
+| 4 | 2, 4 | Phase 1 done (2 and 4 are independent) |
+| 5 | 3, 5 | Phase 2 / Phase 4 done |
+| 6 | 6 | Phases 3 + 4 done |
+| 7 | 7 | everything above done, user invokes `>audit`/`>release` |
 
 ## Track log
 
@@ -87,6 +99,6 @@ Definition of done (v1): all PRD acceptance criteria pass; smoke checks recorded
 
 ## Open risks
 
-- Autoloader maps only `System\` and `App\Modules\` — shared `apps/Services/` classes have no namespace mapping yet (resolve in Phase 1; record decision when routing wires them).
+- `apps/Services` / `apps/Config` classes have no namespace mapping today — closed **by design** in Phase 0b (single `App\` → `apps/` root); confirm with the both-mode verification there.
 - `read_directories()` is currently uncalled (entry no longer declares `$directories`) — decide keep-or-remove in Phase 1, record in REPORT/CHANGELOG.
 - No test framework: smoke checks are manual until a test runner is agreed (candidate: plain-PHP assert scripts, zero deps).

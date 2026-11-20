@@ -36,36 +36,24 @@ $run = function (string $value) use ($envFile, $probe, $php): array
 };
 
 $pass = true;
-$expect = [
-    'true'  => ['nsappmod' => 'App\Modules', 'appmodf' => 'modules', 'modulesf' => 'SET', 'resolve' => 'YES', 'path_suffix' => 'modules/Welcome/Controllers/WelcomeController.php'],
-    'false' => ['nsappmod' => 'App', 'appmodf' => 'apps', 'modulesf' => 'SET', 'resolve' => 'YES', 'path_suffix' => 'apps/Config/Routes.php'],
-];
 
-foreach ($expect as $value => $want)
+// Both roots always active; app.modules toggles ONLY the per-module templates.
+foreach (['true', 'false'] as $value)
 {
     $got = $run ($value);
     echo "--- app.modules={$value} ---\n";
     foreach ($got as $k => $v) { echo "{$k}={$v}\n"; }
 
-    foreach (['nsappmod', 'modulesf', 'resolve'] as $k)
+    foreach (['nsapp' => 'App', 'nsmod' => 'Modules', 'app_resolve' => 'YES', 'mod_resolve' => 'YES'] as $k => $w)
     {
         $g = $got[$k] ?? 'MISSING';
-        $w = $want[$k];
-        if ($w === 'SET') { $ok = ($g !== 'UNDEF' && $g !== 'MISSING' && $g !== ''); }
-        else { $ok = ($g === str_replace ('\\', '/', $w)); }
-        if (!$ok) { $pass = false; echo "FAIL {$k}: got '{$g}', want '{$w}'\n"; }
+        if ($g !== $w) { $pass = false; echo "FAIL {$k}: got '{$g}', want '{$w}'\n"; }
     }
 
-    $appmodf = $got['appmodf'] ?? 'MISSING';
-    if (!str_ends_with ($appmodf, '/app/' . $want['appmodf']))
+    $want_tpl = $value === 'true' ? 'REGISTERED' : 'IGNORED';
+    if (($got['mod_templates'] ?? '') !== $want_tpl)
     {
-        $pass = false; echo "FAIL appmodf: got '{$appmodf}', want suffix 'app/{$want['appmodf']}'\n";
-    }
-
-    $path = $got['path'] ?? 'MISSING';
-    if (!str_ends_with ($path, $want['path_suffix']))
-    {
-        $pass = false; echo "FAIL path: got '{$path}', want suffix '{$want['path_suffix']}'\n";
+        $pass = false; echo "FAIL mod_templates: got '{$got['mod_templates']}', want '{$want_tpl}'\n";
     }
 }
 

@@ -20,7 +20,7 @@ Scaffold phase. The bootstrap chain (entry → gateway → helpers → structure
 
 ```text
 public/index.php          entry: folder names ($application_folder, $system_folder)
-  └─ public/nanoradf.php  gateway: basepath/publicpath/sep, error gate
+  └─ public/nanoradf   gateway: basepath/publicpath/sep, error gate
        └─ .config         loads .supports (helpers) + .structures (paths/namespaces)
             └─ src/Kernel/Boot.php   initiate() + PSR-4 autoloader
                  └─ Router → Controller → View     (planned, Phase 1–2)
@@ -40,7 +40,7 @@ Autoload map: `System\...` → `src/...`, `App\Modules\<Name>\...` → `apps/Mod
 ## Getting started
 
 1. Point the LocalWP site docroot at `public/` → open http://nanoradfw.local.
-2. Copy `.env` values as needed (gitignored; `app.env=local`, `app.debug=true` by default).
+2. Copy `.env` values as needed (gitignored; `app.env=local` by default; debug disclosure via `$debug` in `public/index.php`).
 3. Read [docs/RULES.md](docs/RULES.md) before changing code — especially the boot smoke check for the bootstrap dotfiles.
 
 ## License

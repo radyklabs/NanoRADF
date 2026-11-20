@@ -20,7 +20,7 @@ Senior PHP & Headless-Frontend Engineer. Tim frontend PHP elit dan kelas dunia y
 - **App:** `http://nanoradfw.local` — docroot = `public/` (front controller `public/index.php` via `public/.htaccess`).
 - **PHP:** 8.3.36 (LocalWP): `C:\Users\Rahen\AppData\Roaming\Local\lightning-services\php-8.3.36+0\bin\win64\php.exe`.
 - **MySQL:** `127.0.0.1:10019` (LocalWP). `sql/local.sql` is a leftover local dump — gitignored, not a project asset.
-- CLI smoke checks: bootstrap from any CWD with `require 'public/nanoradf.php'` (see `docs/RULES.md`).
+- CLI smoke checks: bootstrap from any CWD with `require 'public/index.php'` (see `docs/RULES.md`).
 
 ## Project Rules
 
@@ -122,7 +122,7 @@ Two layers, strictly separated:
   - `apps/Config/Routes.php` — central route table (URL → handler), single source of truth.
   - `apps/Services/` — app-wide shared services.
   - `apps/{Controllers,Model,Views}/` — default application MVC (flat; decision D9).
-- `modules/` — **optional HMVC**, project root, sibling of `apps/`. Only active when `app.modules=true`; set via `$modules_folder` in `public/index.php`. `modules/<Name>/` folder contract:
+- `modules/` — **optional HMVC**, project root, sibling of `apps/`. Root autoload (`Modules\...`) is always active; the per-module folder/namespace templates register only when `app.modules=true`. Set via `$modules_folder` in `public/index.php`. `modules/<Name>/` folder contract:
   - `Manifest.json` — module manifest (identity, enabled flag, registration metadata).
   - `Config/` — module configuration classes.
   - `Controllers/` — HTTP controllers.
@@ -130,13 +130,13 @@ Two layers, strictly separated:
   - `Services/` — module business logic.
   - `Views/` — module view classes.
 
-Namespace contract enforced by `System\Kernel\Boot::autoloader` (prefixes from global constants `nssys` / `nsappmod`, path constants from `.structures` / `.config`):
+Namespace contract enforced by `System\Kernel\Boot::autoloader` (prefixes from global constants `nssys` / `nsapp` / `nsmod`, path constants from `.structures` / `.config`; D6: both app roots always active):
 
 - `System\...` → `src/...`
-- `App\...` → `apps/...` (flat, default)
-- `App\Modules\<Name>\...` → `modules/<Name>/...` (modular, `app.modules=true`)
+- `App\...` → `apps/...` (main MVC, always)
+- `Modules\...` → `modules/...` (optional HMVC, always; folder templates registered only when `app.modules=true`)
 
-Bootstrap order: `public/index.php` → `public/nanoradf.php` (defines `basepath`/`publicpath`/`sep`) → `.config` (loads `.supports` helpers, then `.structures` path+namespace constants, then `src/Kernel/Boot.php`) → `Boot::initiate()` registers the autoloader. Dotfiles are fragile — change them only with a boot-level smoke check (see `docs/RULES.md`).
+Bootstrap order: `public/index.php` → `public/nanoradf` (defines `basepath`/`publicpath`/`sep`) → `.config` (loads `.supports` helpers, then `.structures` path+namespace constants, then `src/Kernel/Boot.php`) → `Boot::initiate()` registers the autoloader. Dotfiles are fragile — change them only with a boot-level smoke check (see `docs/RULES.md`).
 
 ## Blade-shaped View System
 
@@ -166,7 +166,7 @@ Module views live in `modules/<Name>/Views/` as PHP view classes (e.g. `WelcomeV
 ├── .gitignore
 ├── public/              # web root — only public entry
 │   ├── index.php        # entry #1: sets folder names, calls gateway  [code]
-│   ├── nanoradf.php      # gateway: basepath, .config, Boot, errors    [code]
+│   ├── nanoradf       # gateway: basepath, .config, Boot, errors    [code]
 │   ├── .htaccess         # front-controller rewrite                    [config]
 │   └── themes/default/   # public theme assets                         [scaffold]
 ├── src/                 # framework core (namespace System\…)
@@ -202,7 +202,7 @@ Legend: `[code]` runs today · `[scaffold]` exists as 0-byte placeholder · `[co
 - `docs/` — project documents only (`RULES`, `PLAN`, `PRD`, `REPORT`, `CHANGELOG`).
 - `sql/` — local database artifacts only; contents gitignored.
 - `.supports` / `.config` / `.structures` — root bootstrap dotfiles (PHP). Fragile: any edit requires the boot smoke check to pass before commit.
-- One class per file, path must match the PSR-4 mapping enforced by `Boot::autoloader` (`System\…` → `src/`; `App\…` → `apps/`; `App\Modules\<Name>\…` → `modules/<Name>/`).
+- One class per file, path must match the PSR-4 mapping enforced by `Boot::autoloader` (`System\…` → `src/`; `App\…` → `apps/`; `Modules\<Name>\…` → `modules/<Name>/`).
 - No new top-level directory, no renamed scaffold folder without recording the decision in `docs/PLAN.md` + `docs/CHANGELOG.md`.
 
 ## Secure Coding Rules (injection-hack-free contract)
@@ -214,7 +214,7 @@ Legend: `[code]` runs today · `[scaffold]` exists as 0-byte placeholder · `[co
 5. Secrets live only in `.env` (gitignored). JWT secret stays backend-side. Frontend tokens live only in `$_SESSION` (cookie: `HttpOnly`, `SameSite=Strict`, `secure` in prod) — never in `localStorage`/JS-readable storage.
 6. Validate and type-check all route params and request input; reject unknown keys; never trust backend response fields without validation + escaping (rule 2).
 7. State-changing endpoints require authentication plus CSRF defense (session-bound nonce) before execution.
-8. Error disclosure is gated by `.env`: generic 500 body in prod, details only via `error_log`; message/file/line shown only when `app.env` ∈ {local, dev} and `app.debug=true` (see `public/nanoradf.php`).
+8. Error disclosure is gated by `$debug` in `public/index.php` (master switch): generic 500 body in prod; `message in file:line` shown only when `$debug === true` (see `public/nanoradf`). Details always to `error_log`. `app.env` stays for environment-specific behavior; `app.debug` is intentionally NOT read.
 
 ## Branching Model
 

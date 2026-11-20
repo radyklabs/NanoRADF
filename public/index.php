@@ -9,7 +9,11 @@ $modules_folder = 'modules';
 // System folder name, don't change except you know what're you doing
 $system_folder = 'src';
 
+// Debug disclosure: detail (file:line) in bootstrap error output when true.
+// Master switch for local/dev. Set false for production. See .env app.env.
+$debug = false;
+
 // Calling nanoradf gateway
-require realpath ('nanoradf.php');
+require realpath ('nanoradf');
 
 // Says who only silence is golden

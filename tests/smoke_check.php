@@ -16,24 +16,18 @@ require __DIR__ . '/../public/index.php';
 
 echo "BOOT-LOADED\n";
 
-$consts = ['controllersf', 'servicesf', 'viewsf', 'nsctrl', 'nsserv', 'components', 'layouts', 'nsappmod', 'appmodf', 'modulesf'];
+$consts = ['controllersf', 'servicesf', 'viewsf', 'nsctrl', 'nsserv', 'components', 'layouts', 'nsapp', 'nsmod', 'appf', 'modulesf'];
 foreach ($consts as $c)
 {
     $v = defined ($c) ? (string) constant ($c) : 'UNDEF';
     printf ("%s=%s\n", $c, str_replace ("\n", ' ', substr ($v, 0, 100)));
 }
 
-// Autoload probe for the current application root (flat apps/ | modular modules/).
-// Scaffold classes are 0-byte; resolvability is proven by the mapped file path.
-$root_ns = (string) constant ('nsappmod');
-$rel     = $root_ns === 'App\Modules' ? 'Welcome/Controllers/WelcomeController.php' : 'Config/Routes.php';
-$appmodf = str_replace ('\\', '/', (string) constant ('appmodf'));
-
-$system_file = 'src/Helper/Utilities.php';
-$app_file    = $appmodf . '/' . $rel;
-
-printf ("autoload sys=%s app=%s\n",
-    is_readable (interlace (basepath, $system_file)) ? 'YES' : 'NO',
-    is_readable ($app_file) ? 'YES' : 'NO');
-printf ("app_root=%s\n", $appmodf . '/' . $rel);
-exit ((is_readable (interlace (basepath, $system_file)) && is_readable ($app_file)) ? 0 : 1);
+// Autoload probe: both roots (D6) — App\… → apps/, Modules\… → modules/.
+printf ("autoload sys=%s app=%s mod=%s\n",
+    is_readable (interlace (basepath, 'src/Helper/Utilities.php')) ? 'YES' : 'NO',
+    is_readable (interlace (appf, 'Config/Routes.php')) ? 'YES' : 'NO',
+    is_readable (interlace (modulesf, 'Welcome/Controllers/WelcomeController.php')) ? 'YES' : 'NO');
+exit ((is_readable (interlace (basepath, 'src/Helper/Utilities.php'))
+    && is_readable (interlace (appf, 'Config/Routes.php'))
+    && is_readable (interlace (modulesf, 'Welcome/Controllers/WelcomeController.php'))) ? 0 : 1);

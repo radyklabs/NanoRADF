@@ -23,17 +23,15 @@ final class Boot
     }
 
     /**
-     * PSR-4 autoloader registration.
+     * PSR-4 autoloader registration — two roots, always active (D6/D9):
      *
-     *   System\X\Y            → <root>/src/X/Y.php
-     *   App\X\Y (flat)        → <root>/apps/X/Y.php
-     *   App\Modules\Name\Y    → <root>/modules/Name/Y.php
+     *   System\X\Y        → <root>/src/X/Y.php
+     *   App\X\Y           → <root>/apps/X/Y.php
+     *   Modules\Name\Y    → <root>/modules/Name/Y.php
      *
-     * Prefixes come from the global namespace constants defined while
-     * registering the structure map: `nssys` (e.g. "System") and
-     * `nsappmod` (e.g. "App\Modules" modular, "App" flat — decision D6).
-     * The path root is `appmodf` (<root>/modules or <root>/apps), so both
-     * layouts resolve from the same branch.
+     * Prefixes come from the global namespace constants defined in `.config`:
+     * `nssys` ("System"), `nsapp` ("App"), `nsmod` ("Modules"). `app.modules`
+     * gates only the per-module folder/namespace templates in `.structures`.
      */
     public static function autoloader (string $class): void
     {
@@ -50,13 +48,26 @@ final class Boot
             return;
         }
 
-        if (str_starts_with ($class, nsappmod))
+        if (str_starts_with ($class, nsapp))
         {
-            $app_file = interlace (appmodf, substr ($class, strlen (nsappmod)) . '.php');
+            $app_file = interlace (appf, substr ($class, strlen (nsapp)) . '.php');
             if (is_readable ($app_file))
             {
                 require_once $app_file;
             }
+
+            return;
+        }
+
+        if (str_starts_with ($class, nsmod))
+        {
+            $app_file = interlace (modulesf, substr ($class, strlen (nsmod)) . '.php');
+            if (is_readable ($app_file))
+            {
+                require_once $app_file;
+            }
+
+            return;
         }
     }
 }

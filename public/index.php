@@ -11,7 +11,7 @@ $system_folder = 'src';
 
 // Debug disclosure: detail (file:line) in bootstrap error output when true.
 // Master switch for local/dev. Set false for production. See .env app.env.
-$debug = false;
+$debug = true;
 
 // Calling nanoradf gateway
 require realpath ('nanoradf');

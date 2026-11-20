@@ -1,7 +1,8 @@
 <?php declare (strict_types=1);
 
-if (!isset ($application_folder) 
-    && !isset ($system_folder))
+if (!isset ($application_folder)
+    || !isset ($system_folder)
+    || !isset ($modules_folder))
 {
     http_response_code (404);
     header ('Content-Type: text/html; charset=utf-8');
@@ -20,10 +21,21 @@ define ('isdebug', (isset ($debug) && $debug===true));
 
 try
 {
-    @require call_user_func ('implode', '.', [basepath, 'config']);
+    $common_key = 'supports';
 
-    // var_dump (in_array (__env ('app.env'), ['local', 'dev']) 
-    //     && is (__env ('app.debug'), true));
+    if (!is_readable (call_user_func ('implode', '.', [basepath, $common_key])))
+    {
+        throw new Exception ("Where the hell did you put the common key?!", 404);
+    }
+
+    require_once call_user_func ('implode', '.', [basepath, $common_key]);
+
+    if (!is_callable ('interlace'))
+    {
+        throw new Exception ("Failed to call supports library", 500);
+    }
+
+    $configuration_key = 'config';
 
     if (isdebug)
     {
@@ -37,23 +49,46 @@ try
         @ini_set ('display_errors', 0);
     }
 
-    if (isset ($boot) && class_exists ($boot))
+    if (!is_readable (interlace (basepath, __f ($configuration_key, false))))
     {
-        $boot::initiate ();
+        throw new Exception ('Configuration key is missing', 404);
     }
 
-    else {throw new Exception ('Boot not starting up');}
+    require_once interlace (basepath, __f ($configuration_key, false));
+
+    if (isset ($kernel) && class_exists ($kernel))
+    {
+        call_user_func ([$kernel, 'initiate']);
+    }
+
+    else {throw new Exception ('Kernel not booting up', 500);}
 }
 catch (Throwable $th)
 {
-    if (isdebug)
+    $status = [
+		404	=> 'Not Found',
+		500	=> 'Internal Server Error',
+    ][$th->getCode()] ?? 'Internal System Error';
+
+    $code = $th->getCode() ?: 500;
+    $message = $th->getMessage () . ' in ' . $th->getFile () . ':' . $th->getLine ();
+
+    // Explicit destination: <root>/storage/logs/system.log (portable, NFR-5).
+    // mode 3 = append; if the dir can't be made writable, error_log() without
+    // a path falls back to PHP's default log (silent).
+    $log_dir = dirname (interlace (basepath, 'storage/logs/system.log'));
+    if (!is_dir ($log_dir)) {@mkdir ($log_dir, 0775, true);}
+
+    if (is_dir ($log_dir) && is_writable ($log_dir))
     {
-        $message = "{$th->getMessage ()} in {$th->getFile()}:{$th->getLine()}";
+        error_log ("[{$code}] " . $message, 3, interlace ($log_dir, 'system.log'));
+    }
+    else
+    {
+        error_log ("[{$code}] " . $message);
     }
 
-    error_log ($th->getMessage () . ' in ' . $th->getFile() . ':' . $th->getLine());
-
-    http_response_code (500);
+    http_response_code ($code);
     header ('Content-Type: text/html; charset=utf-8');
 
     exit ("<h1>{$heading}</h1><p>{$message}</p>");

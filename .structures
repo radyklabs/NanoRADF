@@ -53,7 +53,8 @@ if (__env ('app.modules') === true && defined ('nsmod') && is_dir (modulesf))
         define ($f, $path);
         if ($d !== false)
         {
-            $format = str_replace ('XNsX', '%s', namespacify (interlace (nsmod, 'XNsX', $dir)));
+            $find = 'XNsX';
+            $format = str_replace ($find, '%s', namespacify (interlace (nsmod, $find, $dir)));
             define ($d, $format);
         }
     }

@@ -32,7 +32,8 @@ $run = function (string $value) use ($envFile, $probe, $php): array
 
     $out = shell_exec (sprintf ('%s %s 2>&1', escapeshellarg ($php), escapeshellarg ($probe)));
     parse_str (str_replace ("\n", '&', trim ((string) $out)), $map);
-    return array_map (fn ($v) => str_replace ('\\', '/', $v), $map);
+    // Normalise path separators only; leave namespace values intact.
+    return array_map (fn ($v) => str_contains ($v, ':\\') ? str_replace ('\\', '/', $v) : $v, $map);
 };
 
 $pass = true;
@@ -44,7 +45,7 @@ foreach (['true', 'false'] as $value)
     echo "--- app.modules={$value} ---\n";
     foreach ($got as $k => $v) { echo "{$k}={$v}\n"; }
 
-    foreach (['nsapp' => 'App', 'nsmod' => 'Modules', 'app_resolve' => 'YES', 'mod_resolve' => 'YES'] as $k => $w)
+    foreach (['nsapp' => 'App\\', 'nsmod' => 'Modules\\', 'app_resolve' => 'YES', 'mod_resolve' => 'YES'] as $k => $w)
     {
         $g = $got[$k] ?? 'MISSING';
         if ($g !== $w) { $pass = false; echo "FAIL {$k}: got '{$g}', want '{$w}'\n"; }

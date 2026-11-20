@@ -32,6 +32,7 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning: [S
 
 - `.config` — registers `appf`/`modulesf`/`systemf` from entry vars + namespaces `nsapp`/`nsmod`/`nssys`; structural guard requires `modulesf` + `kernelf`.
 - `public/nanoradf` — failure handler: `$code = $th->getCode() ?: 500`; error appended to `<root>/storage/logs/system.log` via `error_log(…, 3, $path)` (auto-mkdir, fallback to default log if unwritable); generic body unless `$debug`; 404 guard requires all entry folder vars (`||`).
+- `public/nanoradf` — error path uses plain concatenation (`basepath . '/storage/logs/system.log'`, `"{$log_dir}/system.log"`) instead of `interlace()`; double separator tolerated by Windows paths.
 - `.structures` — Phase 0b layout toggle (D6/D9/D10): root namespaces `nsapp`=`App`, `nsmod`=`Modules`; flat app folders (`configfapp`, `controllersfapp`, `modelfapp`, `servicesfapp`, `viewsfapp`); per-module templates (`configfmod`, `controllersfmod`, `modelfmod`, `servicesfmod`, `viewsfmod`) only when `app.modules=true`.
 - `src/Kernel/Boot.php` — `autoloader()` two roots: `nssys`→`src/`, `nsapp`→`apps/`, `nsmod`→`modules/`.
 - `public/index.php` — declares `$modules_folder = 'modules'`; `$debug` master disclosure flag (default false).

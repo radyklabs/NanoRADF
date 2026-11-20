@@ -76,16 +76,16 @@ catch (Throwable $th)
     // Explicit destination: <root>/storage/logs/system.log (portable, NFR-5).
     // mode 3 = append; if the dir can't be made writable, error_log() without
     // a path falls back to PHP's default log (silent).
-    $log_dir = dirname (interlace (basepath, 'storage/logs/system.log'));
+    $log_dir = dirname (basepath . '/storage/logs/system.log');
     if (!is_dir ($log_dir)) {@mkdir ($log_dir, 0775, true);}
 
     if (is_dir ($log_dir) && is_writable ($log_dir))
     {
-        error_log ("[{$code}] " . $message, 3, interlace ($log_dir, 'system.log'));
+        error_log ("[{$code}] {$message}", 3, "{$log_dir}/system.log");
     }
     else
     {
-        error_log ("[{$code}] " . $message);
+        error_log ("[{$code}] {$message}");
     }
 
     http_response_code ($code);

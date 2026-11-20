@@ -9,7 +9,7 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning: [S
 
 - Project bootstrap chain: `public/index.php` → `public/nanoradf.php` → `.config` → `.supports` → `.structures` → `src/Kernel/Boot.php` with `initiate()` guard and gated error output.
 - Global helper library in `.supports` (`is`, `urlify`, `namespacify`, `pathify`, `interlace`, `read_directories`, `__server`, `cast_value`, `__env`, `env_clear_cache`).
-- Directory/namespace structure map (`.structures`, `is_dir` guarded) and PSR-4 autoloader for `System\...` and `App\Modules\...`.
+- Directory/namespace structure map (`.structures`, `is_dir` guarded) and PSR-4 autoloader for `System\...` and `App\...` / `App\Modules\...`.
 - Application scaffold: `apps/` (Routes, Welcome module, shared Services) and `src/` core placeholders (Kernel Router/Controller, base controllers, Services, Helper, Contracts, Views taxonomy, themes).
 - Web entry hardening: `.htaccess` front controller, `app.env`/`app.debug` gated error disclosure with `error_log` fallback.
 - `.env` environment template (RADYK-style dot-notation keys).
@@ -19,14 +19,15 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning: [S
 - `.env` docblocks for `app.modules` and `app.mode` (available values, defaults, effects); `app.mode` coverage in PRD FR-12 and PLAN decision D8 (next to Phase 4 headless/SSR work).
 - `.gitignore` for local-only files (`.env`, `.envrc`, `.vscode/`, `sql/local.sql`, `docs/CONFIG.md`, `/vendor/`).
 - `tests/` directory for all test/smoke-check files (decision D7); bootstrap smoke check at `tests/smoke_check.php`, self-contained from any working directory.
-- Phase 0b — `app.modules` layout toggle (decision D6, PRD FR-11/FR-13): single application autoload root. Namespace `nsappmod` = `App\Modules` (modular) or `App` (flat); path `appmodf` = `apps/Modules` or `apps`. Registered in `.structures`, resolved by `System\Kernel\Boot::autoloader`; flat `apps/{Config,Controllers,Model,Services,Views}` files and the modular `apps/Modules/<Name>/` tree both `is_dir` guarded — flat registers in both layouts.
+- Phase 0b — `app.modules` layout toggle (decisions D6/D9, PRD FR-11/FR-13): single application autoload root. Namespace `nsappmod` = `App\Modules` (modular) or `App` (flat); path root `appmodf` = `modules` or `apps`. Registered in `.structures`, resolved by `System\Kernel\Boot::autoloader`. `apps/` is always the main MVC; modular HMVC is optional at project-root `modules/<Name>/`.
 - Phase 0b layout verification added: `tests/layout_check.php` toggles `.env` `app.modules=true`/`false` (auto-restores `.env`), boots the real entry in a subprocess per mode, asserts constants + autoload resolution. Companion probe: `tests/bootstrap_probe.php`.
 
 ### Changed
 
-- `.config` — missing-`basepath` guard now returns a 404 shell instead of a generic 500; folder variables are captured into `$dirs` then unset; adds a `sep`/`publicpath`/`basepath` fallback for include-without-entry use; dead commented blocks removed; structural guard now requires `nsappmod` + `kernelf` (was `modulesfapp`), so it no longer assumes the modular layout.
-- `.structures` — Phase 0b layout toggle (D6): `nsappmod` is defined in both modes (`App\Modules` modular / `App` flat) and paired with a single path root `appmodf` (`apps/Modules` / `apps`). Flat app folders (`configfapp`, `controllersfapp`, `modelfapp`, `servicesfapp`, `viewsfapp`) register in **both** layouts; the modular tree (`modulesfapp`, per-module templates `controllersf`/`modelf`/`servicesf`/`viewsf`/`configf`) only when `app.modules=true`.
-- `src/Kernel/Boot.php` — `autoloader()` resolves the application tree through one root (`nsappmod`/`appmodf`) instead of the `App\Modules` special case + `modulesfapp`. Flat `App\...` classes now autoload; modular `App\Modules\...` unchanged.
+- `.config` — missing-`basepath` guard now returns a 404 shell instead of a generic 500; folder variables are captured into `$dirs` then unset; adds a `sep`/`publicpath`/`basepath` fallback for include-without-entry use; dead commented blocks removed; registers `modulesf` from `$modules_folder` (root `modules/`); structural guard requires `modulesf` + `nsappmod` + `kernelf` (no longer assumes the modular layout).
+- `.structures` — Phase 0b layout toggle (D6/D9): `nsappmod` (`App\Modules` modular / `App` flat) paired with a single path root `appmodf` (`modules` / `apps`). Modular tree (per-module templates `controllersf`/`modelf`/`servicesf`/`viewsf`/`configf`) only when `app.modules=true` and `modules/` exists; otherwise `apps/` is the app root and `modules/` is ignored.
+- `src/Kernel/Boot.php` — `autoloader()` resolves the application tree through one root (`nsappmod`/`appmodf`) instead of the `App\Modules` special case. Flat `App\...` → `apps/`; modular `App\Modules\...` → `modules/`.
+- `public/index.php` — declares `$modules_folder = 'modules'` (root module dir, decision D9).
 - `.structures` — app map gains flat-mode folders (`controllersfapp`, `modelfapp`, `viewsfapp` + namespace constants); new per-module folder/namespace template map (`configf`, `controllersf`, `modelf`, `servicesf`, `viewsf` with `%s` module-name placeholders); explicit `else {continue;}` guards; 404 guard.
 - `public/nanoradf.php` — 404 when an entry point sets neither `$application_folder` nor `$system_folder`; decides the `appdebug` constant before boot; `message in file:line` detail only when `appdebug === true` (generic message otherwise; details always to `error_log`).
 - `src/Kernel/Boot.php` — `initiate()` no longer defines `basepath`/`publicpath`/`sep` nor re-requires `.supports`/`.structures`; the entry chain owns bootstrap, the kernel only registers the autoloader.

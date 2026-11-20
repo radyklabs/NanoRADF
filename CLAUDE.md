@@ -31,6 +31,7 @@ Senior PHP & Headless-Frontend Engineer. Tim frontend PHP elit dan kelas dunia y
 5. Secrets hanya di `.env` (tidak di komit). JWT secret tinggal backend; frontend hanya menyimpan access/refresh token di session.
 6. Satu tugas satu perubahan. Tidak ada drive-by refactor.
 7. Format dengan formatter repo (jika ada), tidak secara manual.
+8. Kode **simpel, padat, jelas** — hindari over-complexity, abstraction/speculation yang tidak dipakai. Stdlib/native dulu, ekosistem dulu, dependence baru terakhir. Tapi tetap best practice + aman (validasi input di trust boundary, escape output, `strict_types`, 1 class/file, PSR-4) sesuai PHP 8.1+ dan logika kelas dunia. Keterbacaan > kecerdikan.
 
 Always read `docs/RULES.md` before working on this repository and follow its conventions.
 Local environment configuration lives in `.env` (gitignored, never commit). This project does not use `docs/CONFIG.md` / `docs/CONFIG.sample.md`; do not create them.
@@ -117,21 +118,23 @@ Perform a deep repository audit and document findings. PHPCS, PHPStan, PHPUnit, 
 Two layers, strictly separated:
 
 - `src/` — framework core: kernel (`.config` → `.structures` → `Boot`), base controllers, services, helper, contracts, view taxonomy, themes. Never contains application logic.
-- `apps/` — application layer:
+- `apps/` — application layer, always the **main MVC**:
   - `apps/Config/Routes.php` — central route table (URL → handler), single source of truth.
   - `apps/Services/` — app-wide shared services.
-  - `apps/Modules/<Name>/` — self-contained module, folder contract:
-    - `Manifest.json` — module manifest (identity, enabled flag, registration metadata).
-    - `Config/` — module configuration classes.
-    - `Controllers/` — HTTP controllers.
-    - `Model/` — data access. v1 is read-only against the headless API.
-    - `Services/` — module business logic.
-    - `Views/` — module view classes.
+  - `apps/{Controllers,Model,Views}/` — default application MVC (flat; decision D9).
+- `modules/` — **optional HMVC**, project root, sibling of `apps/`. Only active when `app.modules=true`; set via `$modules_folder` in `public/index.php`. `modules/<Name>/` folder contract:
+  - `Manifest.json` — module manifest (identity, enabled flag, registration metadata).
+  - `Config/` — module configuration classes.
+  - `Controllers/` — HTTP controllers.
+  - `Model/` — data access. v1 is read-only against the headless API.
+  - `Services/` — module business logic.
+  - `Views/` — module view classes.
 
-Namespace contract enforced by `System\Kernel\Boot::autoloader` (prefixes from global constants `nssys` / `nsappmod`, path constants from `.structures`):
+Namespace contract enforced by `System\Kernel\Boot::autoloader` (prefixes from global constants `nssys` / `nsappmod`, path constants from `.structures` / `.config`):
 
 - `System\...` → `src/...`
-- `App\Modules\<Name>\...` → `apps/Modules/<Name>/...`
+- `App\...` → `apps/...` (flat, default)
+- `App\Modules\<Name>\...` → `modules/<Name>/...` (modular, `app.modules=true`)
 
 Bootstrap order: `public/index.php` → `public/nanoradf.php` (defines `basepath`/`publicpath`/`sep`) → `.config` (loads `.supports` helpers, then `.structures` path+namespace constants, then `src/Kernel/Boot.php`) → `Boot::initiate()` registers the autoloader. Dotfiles are fragile — change them only with a boot-level smoke check (see `docs/RULES.md`).
 
@@ -147,7 +150,7 @@ Views are plain HTML composed server-side (include/parameter composition), shape
 - `Scripts/` — progressive-enhancement JS bound to views (e.g. `Dropdown.js`).
 - `Tokens/` — design tokens as CSS (e.g. `System.css`).
 
-Module views live in `apps/Modules/<Name>/Views/` as PHP view classes (e.g. `WelcomeView.php`). Public theme assets live in `public/themes/<theme>/`, admin assets in `src/Themes/admin/`.
+Module views live in `modules/<Name>/Views/` as PHP view classes (e.g. `WelcomeView.php`). Public theme assets live in `public/themes/<theme>/`, admin assets in `src/Themes/admin/`.
 
 **Status:** taxonomy folders exist; the renderer/composer is planned, not implemented (`docs/PLAN.md` Phase 2). Never describe pending behavior as done.
 
@@ -174,10 +177,14 @@ Module views live in `apps/Modules/<Name>/Views/` as PHP view classes (e.g. `Wel
 │   ├── Contracts/        # Interfaces + Traits (Orchestrator)          [scaffold]
 │   ├── Views/            # Blade-shaped taxonomy (7 role folders)      [scaffold]
 │   └── Themes/admin/     # admin theme assets                          [scaffold]
-├── apps/                # application layer (namespace App\…)
+├── apps/                # application layer — main MVC (namespace App\…)
 │   ├── Config/Routes.php # route table                                 [scaffold]
 │   ├── Services/         # shared app services                         [empty]
-│   └── Modules/Welcome/  # reference module (Manifest/Config/Ctrl/…)    [scaffold]
+│   ├── Controllers/       # app controllers (flat)                     [empty]
+│   ├── Model/            # app models (flat)                           [empty]
+│   └── Views/            # app views (flat)                            [empty]
+├── modules/             # optional HMVC (namespace App\Modules\…)      [code]
+│   └── Welcome/          # reference module (Manifest/Config/Ctrl/…)    [scaffold]
 ├── tests/               # smoke checks & test scripts (D7)           [code]
 ├── docs/                # RULES, PLAN, PRD, REPORT, CHANGELOG
 ├── sql/local.sql        # leftover local DB dump (gitignored)
@@ -195,7 +202,7 @@ Legend: `[code]` runs today · `[scaffold]` exists as 0-byte placeholder · `[co
 - `docs/` — project documents only (`RULES`, `PLAN`, `PRD`, `REPORT`, `CHANGELOG`).
 - `sql/` — local database artifacts only; contents gitignored.
 - `.supports` / `.config` / `.structures` — root bootstrap dotfiles (PHP). Fragile: any edit requires the boot smoke check to pass before commit.
-- One class per file, path must match the PSR-4 mapping enforced by `Boot::autoloader` (`System\…` → `src/`, `App\Modules\<Name>\…` → `apps/Modules/<Name>/`).
+- One class per file, path must match the PSR-4 mapping enforced by `Boot::autoloader` (`System\…` → `src/`; `App\…` → `apps/`; `App\Modules\<Name>\…` → `modules/<Name>/`).
 - No new top-level directory, no renamed scaffold folder without recording the decision in `docs/PLAN.md` + `docs/CHANGELOG.md`.
 
 ## Secure Coding Rules (injection-hack-free contract)

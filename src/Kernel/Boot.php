@@ -27,19 +27,17 @@ final class Boot
      *
      *   System\X\Y            → <root>/src/X/Y.php
      *   App\X\Y (flat)        → <root>/apps/X/Y.php
-     *   App\Modules\Name\Y    → <root>/apps/Modules/Name/Y.php
+     *   App\Modules\Name\Y    → <root>/modules/Name/Y.php
      *
      * Prefixes come from the global namespace constants defined while
      * registering the structure map: `nssys` (e.g. "System") and
      * `nsappmod` (e.g. "App\Modules" modular, "App" flat — decision D6).
-     * The path root is `appmodf` (<root>/apps/Modules or <root>/apps),
-     * so both layouts resolve from the same branch.
+     * The path root is `appmodf` (<root>/modules or <root>/apps), so both
+     * layouts resolve from the same branch.
      */
     public static function autoloader (string $class): void
     {
         $class = ltrim ($class, '\\');
-        // $nssys = defined ('nssys') ? (string) constant ('nssys') : '';
-        // $nsmod = defined ('nsappmod') ? (string) constant ('nsappmod') : '';
 
         if (str_starts_with ($class, nssys))
         {

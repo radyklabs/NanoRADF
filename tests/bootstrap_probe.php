@@ -12,9 +12,8 @@ $const = fn (string $c): string => defined ($c) ? (string) constant ($c) : 'UNDE
 
 printf ("mode=%s\n", var_export (__env ('app.modules'), true));
 printf ("nsappmod=%s\n", str_replace ('\\', '/', $const ('nsappmod')));
-printf ("appmodf=%s\n", str_replace ('\\', '/', $const ('appmodf')));
-printf ("modulesfapp=%s\n", str_replace ('\\', '/', $const ('modulesfapp')));
-printf ("controllersfapp=%s\n", str_replace ('\\', '/', $const ('controllersfapp')));
+printf ("appmodf=%s\n", $const ('appmodf'));
+printf ("modulesf=%s\n", str_replace ('\\', '/', $const ('modulesf')));
 
 // Autoload probe: the application root must resolve this mode's class file.
 // (Scaffold files are 0-byte; resolution is proven by the mapped path existing.)

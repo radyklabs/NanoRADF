@@ -7,51 +7,16 @@ if (!defined ('basepath'))
     exit ("<h1>404 Not Found</h1><p>The requested page (or file) could not be found.</p>");
 }
 
-// Decision D6 — layout toggle: missing/invalid app.modules → flat apps/ layout.
 $app_modules = (__env ('app.modules') === true);
 
-// Namespace autoload root: App\Modules (modular) | App (flat). Single root serves both modes.
-define ('nsappmod', namespacify (interlace (nsapp, $app_modules ? 'Modules' : '')));
-
-// Path autoload root paired with nsappmod: <root>/apps/Modules | <root>/apps.
-define ('appmodf', $app_modules ? interlace (appf, 'Modules') : appf);
-
-// Flat app folders, registered whenever they exist (both layout modes).
-$appfs = [
-    'configfapp'        => false,
-    'controllersfapp'   => 'nsappctrl',
-    'modelfapp'         => 'nsappmodel',
-    'servicesfapp'      => 'nsappserv',
-    'viewsfapp'         => false,
-    ];
-
-foreach ($appfs as $f => $d)
+// Path autoload root: <root>/modules when modular (D9), <root>/apps when flat.
+// Namespace root mirrors it: App\Modules (modular) | App (flat).
+if ($app_modules && defined ('modulesf') && is_dir (modulesf))
 {
-    $dir = ucfirst (substr ($f, 0, -4));
-    $path = interlace (appf, $dir);
+    define ('nsappmod', namespacify (interlace (nsapp, 'Modules')));
+    define ('appmodf', modulesf);
 
-    if (is_dir ($path))
-    {
-        define ($f, $path);
-
-        if ($d !== false)
-        {
-            define ($d, namespacify (interlace (nsapp, $dir)));
-        }
-    }
-
-    else {continue;}
-}
-
-if ($app_modules)
-{
-    // Modular: apps/Modules/<Name>/ with the Manifest.json module contract.
-    $modules_path = interlace (appf, 'Modules');
-    if (is_dir ($modules_path))
-    {
-        define ('modulesfapp', $modules_path);
-    }
-
+    // Modular: root modules/<Name>/ with the Manifest.json module contract.
     $modulesfs = [
         'configf'       => false,
         'controllersf'  => 'nsctrl',
@@ -63,7 +28,7 @@ if ($app_modules)
     foreach ($modulesfs as $f => $d)
     {
         $dir = ucfirst (substr ($f, 0, -1));
-        $path = interlace (modulesfapp, '%s', $dir);
+        $path = interlace (appmodf, '%s', $dir);
 
         define ($f, $path);
         if ($d !== false)
@@ -73,6 +38,13 @@ if ($app_modules)
             define ($d, $format);
         }
     }
+}
+
+else
+{
+    // Flat: apps/ is the main MVC; root modules/ is ignored (decision D9).
+    define ('nsappmod', namespacify (nsapp));
+    define ('appmodf', appf);
 }
 
 $systemfs = [

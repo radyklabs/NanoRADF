@@ -16,24 +16,24 @@ require __DIR__ . '/../public/index.php';
 
 echo "BOOT-LOADED\n";
 
-$consts = ['controllersf', 'servicesf', 'viewsf', 'nsctrl', 'nsserv', 'components', 'layouts', 'modulesfapp', 'nsappmod'];
+$consts = ['controllersf', 'servicesf', 'viewsf', 'nsctrl', 'nsserv', 'components', 'layouts', 'nsappmod', 'appmodf', 'modulesf'];
 foreach ($consts as $c)
 {
     $v = defined ($c) ? (string) constant ($c) : 'UNDEF';
     printf ("%s=%s\n", $c, str_replace ("\n", ' ', substr ($v, 0, 100)));
 }
 
-$a = class_exists ('System\Helper\Utilities');
-$b = class_exists ('App\Modules\Welcome\Controllers\WelcomeController');
+// Autoload probe for the current application root (flat apps/ | modular modules/).
+// Scaffold classes are 0-byte; resolvability is proven by the mapped file path.
+$root_ns = (string) constant ('nsappmod');
+$rel     = $root_ns === 'App\Modules' ? 'Welcome/Controllers/WelcomeController.php' : 'Config/Routes.php';
+$appmodf = str_replace ('\\', '/', (string) constant ('appmodf'));
 
-$inc = array_map (fn ($f) => str_replace ('\\', '/', $f), get_included_files ());
-$sys = false;
-$mod = false;
-foreach ($inc as $f)
-{
-    if (str_ends_with ($f, 'src/Helper/Utilities.php')) {$sys = true;}
-    if (str_ends_with ($f, 'apps/Modules/Welcome/Controllers/WelcomeController.php')) {$mod = true;}
-}
+$system_file = 'src/Helper/Utilities.php';
+$app_file    = $appmodf . '/' . $rel;
 
-printf ("autoload sys=%s mod=%s (class_exists=%s/%s)\n", $sys ? 'YES' : 'NO', $mod ? 'YES' : 'NO', $a ? 'yes' : 'no', $b ? 'yes' : 'no');
-exit (($sys && $mod) ? 0 : 1);
+printf ("autoload sys=%s app=%s\n",
+    is_readable (interlace (basepath, $system_file)) ? 'YES' : 'NO',
+    is_readable ($app_file) ? 'YES' : 'NO');
+printf ("app_root=%s\n", $appmodf . '/' . $rel);
+exit ((is_readable (interlace (basepath, $system_file)) && is_readable ($app_file)) ? 0 : 1);

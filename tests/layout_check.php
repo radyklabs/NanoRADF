@@ -37,8 +37,8 @@ $run = function (string $value) use ($envFile, $probe, $php): array
 
 $pass = true;
 $expect = [
-    'true'  => ['nsappmod' => 'App\Modules', 'modulesfapp' => 'SET', 'controllersfapp' => 'SET', 'resolve' => 'YES', 'path_suffix' => 'apps/Modules/Welcome/Controllers/WelcomeController.php'],
-    'false' => ['nsappmod' => 'App', 'modulesfapp' => 'UNDEF', 'controllersfapp' => 'SET', 'resolve' => 'YES', 'path_suffix' => 'apps/Config/Routes.php'],
+    'true'  => ['nsappmod' => 'App\Modules', 'appmodf' => 'modules', 'modulesf' => 'SET', 'resolve' => 'YES', 'path_suffix' => 'modules/Welcome/Controllers/WelcomeController.php'],
+    'false' => ['nsappmod' => 'App', 'appmodf' => 'apps', 'modulesf' => 'SET', 'resolve' => 'YES', 'path_suffix' => 'apps/Config/Routes.php'],
 ];
 
 foreach ($expect as $value => $want)
@@ -47,13 +47,19 @@ foreach ($expect as $value => $want)
     echo "--- app.modules={$value} ---\n";
     foreach ($got as $k => $v) { echo "{$k}={$v}\n"; }
 
-    foreach (['nsappmod', 'modulesfapp', 'controllersfapp', 'resolve'] as $k)
+    foreach (['nsappmod', 'modulesf', 'resolve'] as $k)
     {
         $g = $got[$k] ?? 'MISSING';
         $w = $want[$k];
         if ($w === 'SET') { $ok = ($g !== 'UNDEF' && $g !== 'MISSING' && $g !== ''); }
         else { $ok = ($g === str_replace ('\\', '/', $w)); }
         if (!$ok) { $pass = false; echo "FAIL {$k}: got '{$g}', want '{$w}'\n"; }
+    }
+
+    $appmodf = $got['appmodf'] ?? 'MISSING';
+    if (!str_ends_with ($appmodf, '/app/' . $want['appmodf']))
+    {
+        $pass = false; echo "FAIL appmodf: got '{$appmodf}', want suffix 'app/{$want['appmodf']}'\n";
     }
 
     $path = $got['path'] ?? 'MISSING';

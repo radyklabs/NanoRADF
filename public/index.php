@@ -1,7 +1,10 @@
-<?php  declare (strict_types=1);
+<?php declare (strict_types=1);
+
+// Application folder name
+$application_folder = 'apps';
 
 // Modules folder name
-$application_folder = 'apps';
+$modules_folder = 'modules';
 
 // System folder name, don't change except you know what're you doing
 $system_folder = 'src';

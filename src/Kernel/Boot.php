@@ -20,23 +20,24 @@ final class Boot
         $registered = true;
 
         spl_autoload_register ([self::class, 'autoloader']);
+
+        echo 'boot initiated!'; //ignore this line, this is debugging flow
     }
 
     /**
-     * PSR-4 autoloader registration.
+     * PSR-4 autoloader registration — two roots, always active (D6/D9):
      *
-     *   System\X\Y            → <root>/src/X/Y.php
-     *   App\Modules\Name\X    → <root>/apps/Modules/Name/X.php
+     *   System\X\Y        → <root>/src/X/Y.php
+     *   App\X\Y           → <root>/apps/X/Y.php
+     *   Modules\Name\Y    → <root>/modules/Name/Y.php
      *
-     * Prefixes come from the global namespace constants defined while
-     * registering the structure map: `nssys` (e.g. "System") and
-     * `nsappmod` (e.g. "App\Modules").
+     * Prefixes come from the global namespace constants defined in `.config`:
+     * `nssys` ("System"), `nsapp` ("App"), `nsmod` ("Modules"). `app.modules`
+     * gates only the per-module folder/namespace templates in `.structures`.
      */
     public static function autoloader (string $class): void
     {
         $class = ltrim ($class, '\\');
-        // $nssys = defined ('nssys') ? (string) constant ('nssys') : '';
-        // $nsmod = defined ('nsappmod') ? (string) constant ('nsappmod') : '';
 
         if (str_starts_with ($class, nssys))
         {
@@ -49,12 +50,23 @@ final class Boot
             return;
         }
 
-        if (str_starts_with ($class, nsappmod))
+        if (str_starts_with ($class, nsapp))
         {
-            $module_file = interlace (modulesfapp, substr ($class, strlen (nsappmod)) . '.php');
-            if (is_readable ($module_file))
+            $app_file = interlace (appf, substr ($class, strlen (nsapp)) . '.php');
+            if (is_readable ($app_file))
             {
-                require_once $module_file;
+                require_once $app_file;
+            }
+
+            return;
+        }
+
+        if (str_starts_with ($class, nsmod))
+        {
+            $app_file = interlace (modulesf, substr ($class, strlen (nsmod)) . '.php');
+            if (is_readable ($app_file))
+            {
+                require_once $app_file;
             }
 
             return;

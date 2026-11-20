@@ -16,24 +16,18 @@ require __DIR__ . '/../public/index.php';
 
 echo "BOOT-LOADED\n";
 
-$consts = ['controllersf', 'servicesf', 'viewsf', 'nsctrl', 'nsserv', 'components', 'layouts', 'modulesfapp', 'nsappmod'];
+$consts = ['controllersf', 'servicesf', 'viewsf', 'nsctrl', 'nsserv', 'components', 'layouts', 'nsapp', 'nsmod', 'appf', 'modulesf'];
 foreach ($consts as $c)
 {
     $v = defined ($c) ? (string) constant ($c) : 'UNDEF';
     printf ("%s=%s\n", $c, str_replace ("\n", ' ', substr ($v, 0, 100)));
 }
 
-$a = class_exists ('System\Helper\Utilities');
-$b = class_exists ('App\Modules\Welcome\Controllers\WelcomeController');
-
-$inc = array_map (fn ($f) => str_replace ('\\', '/', $f), get_included_files ());
-$sys = false;
-$mod = false;
-foreach ($inc as $f)
-{
-    if (str_ends_with ($f, 'src/Helper/Utilities.php')) {$sys = true;}
-    if (str_ends_with ($f, 'apps/Modules/Welcome/Controllers/WelcomeController.php')) {$mod = true;}
-}
-
-printf ("autoload sys=%s mod=%s (class_exists=%s/%s)\n", $sys ? 'YES' : 'NO', $mod ? 'YES' : 'NO', $a ? 'yes' : 'no', $b ? 'yes' : 'no');
-exit (($sys && $mod) ? 0 : 1);
+// Autoload probe: both roots (D6) — App\… → apps/, Modules\… → modules/.
+printf ("autoload sys=%s app=%s mod=%s\n",
+    is_readable (interlace (basepath, 'src/Helper/Utilities.php')) ? 'YES' : 'NO',
+    is_readable (interlace (appf, 'Config/Routes.php')) ? 'YES' : 'NO',
+    is_readable (interlace (modulesf, 'Welcome/Controllers/WelcomeController.php')) ? 'YES' : 'NO');
+exit ((is_readable (interlace (basepath, 'src/Helper/Utilities.php'))
+    && is_readable (interlace (appf, 'Config/Routes.php'))
+    && is_readable (interlace (modulesf, 'Welcome/Controllers/WelcomeController.php'))) ? 0 : 1);

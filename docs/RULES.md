@@ -29,13 +29,13 @@ Read this before touching the repository. It is the normative companion to `CLAU
 
 ## 3. Bootstrap dotfiles (fragile)
 
-`.supports` → `.config` → `.structures` → `src/Kernel/Boot.php` must keep loading in that order. After ANY edit to these files or `public/index.php` / `public/nanoradf.php`, run the boot smoke check before committing:
+`.supports` → `.config` → `.structures` → `src/Kernel/Boot.php` must keep loading in that order. After ANY edit to these files or `public/index.php` / `public/nanoradf`, run the boot smoke check before committing:
 
 ```powershell
 & 'C:\Users\Rahen\AppData\Roaming\Local\lightning-services\php-8.3.36+0\bin\win64\php.exe' D:\Www\nanoradf\app\tests\smoke_check.php
 ```
 
-The check lives in `tests/` (decision D7: all test files under `/tests`) and is self-contained — it `chdir`s to `public/` itself; pass = `exit 0`. Including `public/nanoradf.php` directly now exits 404 by design (entry variables missing), so always test through `public/index.php` as the script does.
+The check lives in `tests/` (decision D7: all test files under `/tests`) and is self-contained — it `chdir`s to `public/` itself; pass = `exit 0`. Including `public/nanoradf` directly now exits 404 by design (entry variables missing), so always test through `public/index.php` as the script does.
 
 Fixing ≠ trimming: a failing line is root-caused and fixed, never deleted or stubbed to hide the trigger. Always keep a failing-before / passing-after record (command + output) in `docs/REPORT.md`.
 

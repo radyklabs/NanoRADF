@@ -15,9 +15,11 @@ Definition of done (v1): all PRD acceptance criteria pass; smoke checks recorded
 | D3 | 2026-11-20 | Fix kernel autoloader defects now (not docs-only). | Boot path fatals on first class load; blocking. |
 | D4 | 2026-11-20 | Project docs in English; `CLAUDE.md` keeps its mixed ID/EN voice. | User choice. |
 | D5 | 2026-11-20 | Plan first, execution in later phases/tasks. | User choice: no implementation beyond D3 fix in this change set. |
-| D6 | 2026-11-20 | `app.modules` env toggle: `false` **or key absent (default)** → flat `apps/` layout — `Config/`, `Services/`, `Controllers/`, `Model/`, `Views/` directly under `apps/`, no `apps/Modules/`, no `Manifest.json`. `true` → current modular layout. Namespace = single PSR-4 root `App\` → `apps/` mirroring folders (one mapping serves both modes). | User: missing key → false; flat scope = everything except manifest; namespace chosen by PSR-4 best practice (also closes the `apps/Config`/`apps/Services` autoload gap). |
+| D6 | 2026-11-20 | `app.modules` env toggle: `false` **or key absent (default)** → flat `apps/` layout; `true` → modular layout. Namespace = single PSR-4 root `App\` → `apps/` mirroring folders (one mapping serves both modes). | User: missing key → false; namespace chosen by PSR-4 best practice (also closes the `apps/Config`/`apps/Services` autoload gap). |
 | D7 | 2026-11-20 | **All test files live in `/tests`** (new tracked top-level dir); smoke checks never in `public/` or `src/`. Bootstrap smoke check: `tests/smoke_check.php` (self-contained, any CWD). | User directive; keeps the web root clean. Recorded per the no-new-top-directory rule. |
 | D8 | 2026-11-20 | `app.mode` env toggle: `bone` (headless API backend only), `face` (SSR frontend → headless backend, server-to-server), `full` (both; default). Selectable before app development. Pair of FR-12 and Phase 4; `.env` carries the key with a docblock. | PRD §1 already defines the two selectable modes; this makes the selection an explicit env key instead of an implicit convention. |
+| D9 | 2026-11-20 | Modular HMVC lives at **project root `modules/`** (sibling of `apps/`), set via `$modules_folder` in `public/index.php`. `apps/` is always the main MVC. `modulesf` path constant always registered. | User: modules are optional and must not pollute `apps/`; keeps `apps/` a clean, default MVC. Replaces the Phase 0b intermediate where the module tree lived in `apps/Modules/`. |
+| D10 | 2026-11-20 | Two-root autoload: `App\…`→`apps/` and `Modules\…`→`modules/` **always active**. `app.modules` gates only the per-module folder/namespace templates (`controllersfmod` etc.), not root resolution. Debug disclosure via `$debug` in `public/index.php` (master switch; `app.debug` dropped). Gateway renamed `public/nanoradf.php` → `public/nanoradf`. | Audit of user refactor found mixed constant contracts (`nsappmod`/`appmodf` undefined) + `echo` leak; unified to two roots + removed debug gated `app.env`. |
 
 ## Status legend
 
@@ -26,20 +28,22 @@ Definition of done (v1): all PRD acceptance criteria pass; smoke checks recorded
 ## Phases
 
 ### Phase 0 — Bootstrap & kernel ✅
-- Entry chain `public/index.php` → `nanoradf.php` → `.config` → `.supports` → `.structures` → `Boot::initiate()`.
+- Entry chain `public/index.php` → `nanoradf` → `.config` → `.supports` → `.structures` → `Boot::initiate()`.
 - Global helpers (`is`, `interlace`, `pathify`, `namespacify`, `urlify`, `__env`, `__server`, `cast_value`, `env_clear_cache`, `read_directories`).
 - Path/namespace constants, `is_dir` guarded; PSR-4 autoloader.
-- **2026-11-20 fixes (D3):** undeclared `self::$nssys`/`self::$nsmod` → global constants `nssys`/`nsappmod`; undefined `modulesf` → `modulesfapp`. Fail-before/pass-after recorded in `docs/REPORT.md`.
+- **2026-11-20 fixes (D3):** undeclared `self::$nssys`/`self::$nsmod` → global constants; undefined `modulesf` → `modulesfapp`. Fail-before/pass-after recorded in `docs/REPORT.md`.
+- **D10 (2026-11-20, post-audit):** two-root autoload contract — `App\…`→`apps/`, `Modules\…`→`modules/` always active; `nsapp`/`nsmod` replace `nsappmod`/`appmodf`.
+- **D9:** root-modules relocation (see Phase 0b) — `modulesf` replaces the old combined constant; `modulesfapp` removed.
 - Verification: boot smoke check + autoload resolution of `System\Helper\Utilities` and `App\Modules\Welcome\Controllers\WelcomeController` → PASS (exit 0).
 
-### Phase 0b — `app.modules` layout toggle ⚠️
-- **Depends on:** Phase 0. **Owner:** main thread. **Decision:** D6.
-- Gate structure registration in `.structures` on `__env ('app.modules')` (missing key → `false`):
-  - `true` → keep modular constants (`modulesfapp`, per-module folders + `Manifest.json` contract), still `is_dir` guarded.
-  - `false` → do not register `apps/Modules/`; register `Config/`, `Services/`, `Controllers/`, `Model/`, `Views/` directly under `apps/` (skip missing dirs as today).
-- Autoloader: replace the `App\Modules` special case with a single PSR-4 root `App\` → `apps/` — `App\Modules\Welcome\X` still resolves to `apps/Modules/Welcome/X.php` when enabled; `App\Controllers\X`, `App\Config\X`, `App\Services\X` resolve flat. `System\` → `src/` unchanged.
+### Phase 0b — `app.modules` layout toggle ✅
+- **Depends on:** Phase 0. **Owner:** main thread. **Decisions:** D6 + D9 + D10.
+- Both app roots are always autoloaded: `App\…` → `apps/`, `Modules\…` → `modules/` (D10).
+- `.config` registers `modulesf` from `$modules_folder` (root `modules/`) always; namespaces: `nsapp`=`App`, `nsmod`=`Modules`.
+- `app.modules=true` registers the per-module folder/namespace templates under `modules/%s/{Config,Controllers,Model,Services,Views}` (`controllersfmod`, `nsctrlmod`, …) with the `Manifest.json` contract, `is_dir` guarded.
+- `app.modules=false`/absent → templates unregistered; both roots still resolve.
 - Current `.env` carries `app.modules=false` (working default); the key itself stays gitignored — semantics documented here and in PRD FR-11.
-- Verification: bootstrap check **both** ways — `app.modules=false` (flat constants defined, no `modulesfapp`, `App\Controllers\...` autoload resolves) and `app.modules=true` (modular constants + `App\Modules\Welcome\...` resolves, backward compatible).
+- Verification: `tests/layout_check.php` boots **both** ways asserting `nsapp`/`nsmod` + both roots resolve + template gate; `tests/smoke_check.php` exit 0; `http://nanoradfw.local` → 200. Fail-before/pass-after in `docs/REPORT.md`.
 
 ### Phase 1 — Routing & controllers ⚠️
 - **Depends on:** Phase 0, Phase 0b (controller/model/view locations are defined there).

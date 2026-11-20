@@ -16,3 +16,9 @@
 # /tests
 /vendor/
 /composer.lock
+
+# Runtime-generated framework logs
+/storage/
+
+# PHP's own error log (relative to docroot)
+/public/php_errors.log

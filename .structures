@@ -9,13 +9,11 @@ if (!defined ('basepath'))
 
 $appfs = [
     'configfapp'        => false,
-    'controllersfapp'   => 'nsappctrl',
-    'modelfapp'         => 'nsappmodel',
-    'modulesfapp'       => 'nsappmod', 
-    'servicesfapp'      => 'nsappserv',
+    'controllersfapp'   => 'nsctrlapp',
+    'modelfapp'         => 'nsmodelapp',
+    'servicesfapp'      => 'nsservapp',
     'viewsfapp'         => false,
-    ];
-
+];
 foreach ($appfs as $f => $d)
 {
     $dir = ucfirst (substr ($f, 0, -4));
@@ -24,7 +22,7 @@ foreach ($appfs as $f => $d)
     if (is_dir ($path))
     {
         define ($f, $path);
-        
+
         if ($d !== false)
         {
             define ($d, namespacify (interlace (nsapp, $dir)));
@@ -32,31 +30,34 @@ foreach ($appfs as $f => $d)
     }
 
     else {continue;}
-
-    // echo "{$f} : {$path} : ".($d?constant($d):'')."<br/>";
 }
 
-$modulesfs = [
-    'configf'       => false, 
-    'controllersf'  => 'nsctrl', 
-    'modelf'        => 'nsmodel', 
-    'servicesf'     => 'nsserv', 
-    'viewsf'        => false,
-    ];
-
-foreach ($modulesfs as $f => $d)
+// Decision D6/D9 — app.modules=true registers the modular folder/namespace
+// templates (modules/<Name>/…). Both roots autoload always: App\… → apps/,
+// Modules\… → modules/. app.modules gates only the per-module template map.
+if (__env ('app.modules') === true && defined ('nsmod') && is_dir (modulesf))
 {
-    $dir = ucfirst (substr ($f, 0, -1));
-    $path = interlace (modulesfapp, '%s', $dir);
+    $modulesfs = [
+        'configfmod'       => false,
+        'controllersfmod'  => 'nsctrlmod',
+        'modelfmod'        => 'nsmodelmod',
+        'servicesfmod'     => 'nsservmod',
+        'viewsfmod'        => false,
+        ];
 
-    define ($f, $path);
-    if ($d !== false)
+    foreach ($modulesfs as $f => $d)
     {
-        $find = 'XNsX';
-        $format = str_replace ($find, '%s', namespacify (interlace (nsappmod, 'XNsX', $dir)));
-        define ($d, $format);
+        $dir = ucfirst (substr ($f, 0, -4));
+        $path = interlace (modulesf, '%s', $dir);
+
+        define ($f, $path);
+        if ($d !== false)
+        {
+            $find = 'XNsX';
+            $format = str_replace ($find, '%s', namespacify (interlace (nsmod, $find, $dir)));
+            define ($d, $format);
+        }
     }
-    // echo "{$f} : {$path} : ".($d?constant($d):'')."<br/>";
 }
 
 $systemfs = [

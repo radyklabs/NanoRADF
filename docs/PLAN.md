@@ -32,13 +32,14 @@ Definition of done (v1): all PRD acceptance criteria pass; smoke checks recorded
 - **2026-11-20 fixes (D3):** undeclared `self::$nssys`/`self::$nsmod` → global constants `nssys`/`nsappmod`; undefined `modulesf` → `modulesfapp`. Fail-before/pass-after recorded in `docs/REPORT.md`.
 - Verification: boot smoke check + autoload resolution of `System\Helper\Utilities` and `App\Modules\Welcome\Controllers\WelcomeController` → PASS (exit 0).
 
-### Phase 0b — `app.modules` layout toggle ⚠️
+### Phase 0b — `app.modules` layout toggle ✅
 - **Depends on:** Phase 0. **Owner:** main thread. **Decision:** D6.
 - Gate structure registration in `.structures` on `__env ('app.modules')` (missing key → `false`):
   - `true` → keep modular constants (`modulesfapp`, per-module folders + `Manifest.json` contract), still `is_dir` guarded.
   - `false` → do not register `apps/Modules/`; register `Config/`, `Services/`, `Controllers/`, `Model/`, `Views/` directly under `apps/` (skip missing dirs as today).
 - Autoloader: replace the `App\Modules` special case with a single PSR-4 root `App\` → `apps/` — `App\Modules\Welcome\X` still resolves to `apps/Modules/Welcome/X.php` when enabled; `App\Controllers\X`, `App\Config\X`, `App\Services\X` resolve flat. `System\` → `src/` unchanged.
 - Current `.env` carries `app.modules=false` (working default); the key itself stays gitignored — semantics documented here and in PRD FR-11.
+- Resolution (`2026-11-20`): namespace root `nsappmod` is `App\Modules` (modular) or `App` (flat); path root `appmodf` is `apps/Modules` or `apps`. Flat folders (`controllersfapp`, `servicesfapp`, `modelfapp`) register in **both** layouts; modular per-module templates (`controllersf`, `servicesf`, `viewsf`, `configf`, `modelf`) lock to modular. `.config` guarantees `kernelf` exists.
 - Verification: bootstrap check **both** ways — `app.modules=false` (flat constants defined, no `modulesfapp`, `App\Controllers\...` autoload resolves) and `app.modules=true` (modular constants + `App\Modules\Welcome\...` resolves, backward compatible).
 
 ### Phase 1 — Routing & controllers ⚠️

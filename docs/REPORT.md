@@ -9,6 +9,33 @@ Dated findings, scans, and audit entries. Evidence only — nothing is claimed f
 - **Excluded from logic review:** 29 zero-byte scaffolds (`apps/*`, most of `src/*`, `public/themes/*`) — no code to review yet; `docs/` was empty at scan time.
 - **Tools:** PHP 8.3.36 (LocalWP) CLI; `git status`/`log`; manual line-by-line read. No static analyzers/test runners exist yet.
 
+### Phase 0b verification — 2026-11-20 (`app.modules` layout toggle)
+
+- **Branch:** `phase-0b`, from `dev` (`d3e875b`).
+- **Command:** `php tests/layout_check.php` — backs up `.env`, toggles `app.modules=true`/`false`, boots the real entry (`public/index.php`) in a subprocess per mode, asserts the resolved constants + autoload root; pass = exit 0. Baseline `php tests/smoke_check.php` (exit 0) + `http://nanoradfw.local` → 200 re-run after the change.
+- **Fail-before (pre-change, old bootstrap):**
+
+```text
+--- app.modules=true ---   (flat apps/ present)
+modulesfapp=...\apps\Modules   controllersfapp=...\apps\Controllers   module=NO
+--- app.modules=false ---
+nsappmod=App\Modules (want App) · modulesfapp defined (want UNDEF) · routes=NO
+LAYOUT-CHECK-FAIL   exit=1
+```
+
+- **Root cause:** `.structures` registered the modular tree (`modulesfapp`, per-module templates) unconditionally and the flat folders separately, while the autoloader special-cased `App\Modules` via `nsappmod`=`App\Modules` + `modulesfapp`. `app.modules` was read nowhere → the toggle had no effect, and flat `App\...` classes could never resolve.
+- **Pass-after (Phase 0b):** `nsappmod`/`appmodf` switch `App\Modules`/`apps/Modules` ↔ `App`/`apps`; flat folders register in both layouts; modular tree only when `app.modules=true`; autoloader resolves through one root.
+
+```text
+--- app.modules=true ---
+nsappmod=App\Modules · appmodf=...\apps\Modules · modulesfapp=SET · controllersfapp=SET
+path=...\apps\Modules\Welcome\Controllers\WelcomeController.php · resolve=YES
+--- app.modules=false ---
+nsappmod=App · appmodf=...\apps · modulesfapp=UNDEF · controllersfapp=SET
+path=...\apps\Config\Routes.php · resolve=YES
+LAYOUT-CHECK-PASS   exit=0   (`.env` restored, byte-identical)
+```
+
 ### Findings
 
 | # | Class | Severity | Location | Finding | Status |

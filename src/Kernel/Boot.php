@@ -26,11 +26,14 @@ final class Boot
      * PSR-4 autoloader registration.
      *
      *   System\X\Y            → <root>/src/X/Y.php
-     *   App\Modules\Name\X    → <root>/apps/Modules/Name/X.php
+     *   App\X\Y (flat)        → <root>/apps/X/Y.php
+     *   App\Modules\Name\Y    → <root>/apps/Modules/Name/Y.php
      *
      * Prefixes come from the global namespace constants defined while
      * registering the structure map: `nssys` (e.g. "System") and
-     * `nsappmod` (e.g. "App\Modules").
+     * `nsappmod` (e.g. "App\Modules" modular, "App" flat — decision D6).
+     * The path root is `appmodf` (<root>/apps/Modules or <root>/apps),
+     * so both layouts resolve from the same branch.
      */
     public static function autoloader (string $class): void
     {
@@ -51,13 +54,11 @@ final class Boot
 
         if (str_starts_with ($class, nsappmod))
         {
-            $module_file = interlace (modulesfapp, substr ($class, strlen (nsappmod)) . '.php');
-            if (is_readable ($module_file))
+            $app_file = interlace (appmodf, substr ($class, strlen (nsappmod)) . '.php');
+            if (is_readable ($app_file))
             {
-                require_once $module_file;
+                require_once $app_file;
             }
-
-            return;
         }
     }
 }

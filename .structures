@@ -7,11 +7,20 @@ if (!defined ('basepath'))
     exit ("<h1>404 Not Found</h1><p>The requested page (or file) could not be found.</p>");
 }
 
+// Decision D6 — layout toggle: missing/invalid app.modules → flat apps/ layout.
+$app_modules = (__env ('app.modules') === true);
+
+// Namespace autoload root: App\Modules (modular) | App (flat). Single root serves both modes.
+define ('nsappmod', namespacify (interlace (nsapp, $app_modules ? 'Modules' : '')));
+
+// Path autoload root paired with nsappmod: <root>/apps/Modules | <root>/apps.
+define ('appmodf', $app_modules ? interlace (appf, 'Modules') : appf);
+
+// Flat app folders, registered whenever they exist (both layout modes).
 $appfs = [
     'configfapp'        => false,
     'controllersfapp'   => 'nsappctrl',
     'modelfapp'         => 'nsappmodel',
-    'modulesfapp'       => 'nsappmod', 
     'servicesfapp'      => 'nsappserv',
     'viewsfapp'         => false,
     ];
@@ -24,7 +33,7 @@ foreach ($appfs as $f => $d)
     if (is_dir ($path))
     {
         define ($f, $path);
-        
+
         if ($d !== false)
         {
             define ($d, namespacify (interlace (nsapp, $dir)));
@@ -32,31 +41,38 @@ foreach ($appfs as $f => $d)
     }
 
     else {continue;}
-
-    // echo "{$f} : {$path} : ".($d?constant($d):'')."<br/>";
 }
 
-$modulesfs = [
-    'configf'       => false, 
-    'controllersf'  => 'nsctrl', 
-    'modelf'        => 'nsmodel', 
-    'servicesf'     => 'nsserv', 
-    'viewsf'        => false,
-    ];
-
-foreach ($modulesfs as $f => $d)
+if ($app_modules)
 {
-    $dir = ucfirst (substr ($f, 0, -1));
-    $path = interlace (modulesfapp, '%s', $dir);
-
-    define ($f, $path);
-    if ($d !== false)
+    // Modular: apps/Modules/<Name>/ with the Manifest.json module contract.
+    $modules_path = interlace (appf, 'Modules');
+    if (is_dir ($modules_path))
     {
-        $find = 'XNsX';
-        $format = str_replace ($find, '%s', namespacify (interlace (nsappmod, 'XNsX', $dir)));
-        define ($d, $format);
+        define ('modulesfapp', $modules_path);
     }
-    // echo "{$f} : {$path} : ".($d?constant($d):'')."<br/>";
+
+    $modulesfs = [
+        'configf'       => false,
+        'controllersf'  => 'nsctrl',
+        'modelf'        => 'nsmodel',
+        'servicesf'     => 'nsserv',
+        'viewsf'        => false,
+        ];
+
+    foreach ($modulesfs as $f => $d)
+    {
+        $dir = ucfirst (substr ($f, 0, -1));
+        $path = interlace (modulesfapp, '%s', $dir);
+
+        define ($f, $path);
+        if ($d !== false)
+        {
+            $find = 'XNsX';
+            $format = str_replace ($find, '%s', namespacify (interlace (nsappmod, 'XNsX', $dir)));
+            define ($d, $format);
+        }
+    }
 }
 
 $systemfs = [

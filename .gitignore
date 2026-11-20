@@ -1,0 +1,16 @@
+# Secrets / local environment
+.env
+.envrc
+
+# Local machine paths
+.vscode/
+
+# Leftover local DB dumps (not part of the source)
+sql/local.sql
+
+# Never commit platform-local config (see RULES.md)
+docs/CONFIG.md
+
+# Dev-time only
+/vendor/
+composer.lock

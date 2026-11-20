@@ -1,0 +1,363 @@
+<?php declare (strict_types=1);
+
+if (!defined ('basepath'))
+{
+    $heading = 'Internal System Error';
+    $message = 'An unexpected error occurred. Please contact the Administrator.';
+    http_response_code (500);
+    header ('Content-Type: text/html; charset=utf-8');
+    exit ("<h1>{$heading}</h1><p>{$message}</p>");
+}
+
+/**
+ * Strict equality check.
+ *
+ * Shorthand helper for `$value === $expecting`.
+ *
+ * @since  1.0.0
+ * @param  mixed $value     The value to test.
+ * @param  mixed $expecting The reference value.
+ * @return bool True if strictly equal.
+ */
+function is (mixed $value, mixed $expecting): bool { return $value === $expecting; }
+
+
+/**
+ * Normalise path separators for URL usage.
+ *
+ * Converts all backslashes to forward slashes and removes
+ * any duplicate slashes, ensuring a clean, web-friendly path.
+ * It intelligently preserves the double slash in protocol schemes
+ * like 'http://' or 'ftp://'.
+ *
+ * @since  1.0.0
+ * @param  string $path The raw path or URL string.
+ * @return string A clean, URL-friendly path string.
+ */
+function urlify (string $path): string
+{
+    // Replace backslashes with forward slashes
+    $path = str_replace ('\\', '/', $path);
+    // Reduce multiple slashes, but preserve protocol double-slash
+    $path = preg_replace ('/(?<!:)\/{2,}/', '/', $path);
+    return $path;
+}
+
+/**
+ * Converts a string into a valid, PSR-4 compliant namespace.
+ *
+ * This function takes a string, such as a file path or a simple
+ * identifier, and transforms it into a clean, well-formed PHP namespace.
+ * It handles various separators, sanitizes segment names, and formats
+ * them in PascalCase, ensuring the output is ready for use in
+ * class definitions and dynamic lookups.
+ *
+ * @since  1.0.0
+ * @param  string $string The input string to convert.
+ * @return string The formatted, namespace-friendly string.
+ */
+function namespacify (string $string): string
+{
+	// 1. Normalize separators to backslashes.
+	$string = str_replace (['/', sep], '\\', $string);
+	// 2. Split into segments, removing empty ones.
+	$segments = array_filter (explode('\\', $string));
+	// 3. Sanitize and format each segment to PascalCase.
+	$cleaned_segments = array_map (function ($segment)
+	{
+		// Remove characters invalid in a namespace part.
+		$segment = preg_replace ('/[^a-zA-Z0-9_]/', ' ', $segment);
+		// Convert snake_case or kebab-case to PascalCase.
+		$pascal_case = str_replace (' ', '', ucwords (str_replace (['-', '_'], ' ', $segment)));
+		return $pascal_case;
+	},
+	$segments);
+	// 4. Rejoin into a single namespace string.
+	return implode ('\\', $cleaned_segments);
+}
+
+/**
+ * Normalise path separators to the current OS.
+ *
+ * Converts both '/' and '\' into the OS-native DIRECTORY_SEPARATOR,
+ * collapses consecutive separators, and correctly handles UNC paths
+ * (e.g., '\\server\share'). This creates a canonical, reliable
+ * filesystem path.
+ *
+ * @since  1.0.0
+ * @param  string $path Raw path string to clean.
+ * @return string A clean path using the correct OS separator.
+ */
+function pathify (string $path): string
+{
+	$prefix = '';
+	// Check for and preserve UNC path prefixes.
+	if (str_starts_with ($path, '//') || str_starts_with ($path, '\\\\'))
+	{
+		$prefix = sep . sep;
+		$path = substr ($path, 2);
+	}
+	// Collapse all separator types into a single, OS-specific separator.
+	$normalized_path = preg_replace ('/[\\\\\/]+/', sep, $path);
+	return $prefix . $normalized_path;
+}
+
+/**
+ * Join path segments into a single normalised path.
+ *
+ * Glues multiple folder/file parts together with '/' separator,
+ * safe for both filesystem (Windows accepts '/') and URLs.
+ * Trims extra slashes and skips empty segments.
+ *
+ * Example: interlace('system', 'Core', 'Boot.core') → 'system/Core/Boot.core'
+ *
+ * @since  1.0.0
+ * @param  string ...$segments One or more path parts to concatenate.
+ * @return string The resulting combined path.
+ */
+function interlace (...$segments)
+{
+	$cleaned = [];
+
+	foreach ($segments as $seg)
+	{
+		$seg = trim ((string) $seg, '/\\');
+		if ($seg!=='') {$cleaned[] = $seg;}
+	}
+	
+	$path = implode ('/', $cleaned);
+
+	$first = (string) $segments[0];
+	
+	if (str_starts_with ($first, '/') && !str_starts_with ($path, '/'))
+	{
+		$path = '/' . $path;
+	}
+
+	return pathify ($path);
+}
+
+/**
+ * Extract the `$directories` map from the web entry file (index.php).
+ *
+ * Tokenizes the source, locates the `$directories = [ ... ]` assignment
+ * and returns its top-level `key => value` string pairs. Returns an empty
+ * array when the file is missing or holds no such array literal.
+ *
+ * @since  1.0.0
+ * @param  string $file Absolute path to the entry file (index.php).
+ * @return array<string, string>  name => directory (relative to project root).
+ */
+function read_directories (string $file): array
+{
+	if (!is_file ($file)) { return []; }
+
+	$tokens = token_get_all ((string) file_get_contents ($file));
+	$count  = count ($tokens);
+
+	for ($i = 0; $i < $count; $i++)
+	{
+		$token = $tokens[$i];
+		if (!is_array ($token) || $token[0] !== T_VARIABLE || $token[1] !== '$directories')
+		{
+			continue;
+		}
+
+		// Skip trivia: expect '=' then the opening '['.
+		$i++;
+		while ($i < $count && is_array ($tokens[$i]) && in_array ($tokens[$i][0], [T_WHITESPACE, T_COMMENT, T_DOC_COMMENT], true)) { $i++; }
+		if ($i >= $count || $tokens[$i] !== '=') { continue; }
+
+		$i++;
+		while ($i < $count && is_array ($tokens[$i]) && in_array ($tokens[$i][0], [T_WHITESPACE, T_COMMENT, T_DOC_COMMENT], true)) { $i++; }
+		if ($i >= $count || $tokens[$i] !== '[') { continue; }
+
+		// Collect the literal body up to the matching ']' (nested-safe).
+		$depth = 0;
+		$body  = '';
+		for (; $i < $count; $i++)
+		{
+			$chunk = is_array ($tokens[$i]) ? $tokens[$i][1] : $tokens[$i];
+
+			if ($chunk === '[') { $depth++; }
+			elseif ($chunk === ']') { $depth--; if ($depth === 0) { break; } }
+
+			if ($depth > 0) { $body .= $chunk; }
+		}
+
+		// Flat string pairs only: 'system' => 'src'.
+		preg_match_all ("/['\"]?([A-Za-z_][A-Za-z0-9_]*)['\"]?\s*=>\s*['\"]([^'\"]*)['\"]/", $body, $pairs, PREG_SET_ORDER);
+
+		$map = [];
+		foreach ($pairs as $pair) { $map[$pair[1]] = $pair[2]; }
+
+		return $map;
+	}
+
+	return [];
+}
+
+/**
+ * Access $_SERVER superglobal safely.
+ *
+ * NOTE: `System\Support\WordPress::server()` does not exist in the repo;
+ * this remains the entry point for request-path/uri reads
+ * (Router::tryAliases). Do not deprecate without a real replacement.
+ */
+function __server (?string $args = null, ?string $default = null): mixed
+{
+    if (is_null ($args)) {return $_SERVER;}
+    $args = strtoupper (str_replace ('.', '_', $args));
+    return $_SERVER[$args] ?? $default;
+}
+
+/**
+ * Cast a raw .env string value to its native PHP type.
+ *
+ * "true" / "(true)"   → bool true
+ * "false" / "(false)" → bool false
+ * "null" / "(null)"   → null
+ * Numeric strings     → int or float
+ * Everything else     → string as-is
+ *
+ * @param  string $value Raw value from the .env file.
+ * @return mixed
+ */
+function cast_value (string $value): mixed
+{
+	return match (strtolower ($value))
+	{
+		'true', '(true)'   => true,
+		'false', '(false)' => false,
+		'null', '(null)'   => null,
+		default            => is_numeric ($value)
+			? (str_contains ($value, '.') ? (float) $value : (int) $value)
+			: $value,
+	};
+}
+
+/**
+ * Retrieve environment values with dot-notation grouping.
+ *
+ * CACHING: Parsed .env values are cached in a static variable for
+ * performance. The cache is populated on the first call and reused
+ * for all subsequent calls within the same process. To force a
+ * re-read (e.g., after .env changes at runtime), call env_clear_cache().
+ *
+ * @since  1.0.0
+ * @see    env_clear_cache() — clear the static cache
+ * @param  string $key     Dot-notation key: "app.port" for a single
+ *                         value, "app" for the whole group.
+ * @param  mixed  $default Fallback when key/group is missing.
+ *                         Defaults to false.
+ * @return mixed Typed scalar for a leaf key, associative array for
+ *               a group prefix, or $default.
+ */
+function __env (string $key, mixed $default = false): mixed
+{
+	static $cache = null;
+	global $_env_cache_cleared;
+
+	// env_clear_cache() sets this flag to force a re-read of .env.
+	if (isset ($_env_cache_cleared) && is ($_env_cache_cleared, true))
+	{
+		$cache = null;
+		$_env_cache_cleared = false;
+	}
+
+	$key = trim ($key);
+	// Key must be a valid env-var name or prefix.
+	if (is ($key, '') || !preg_match ('/^[a-zA-Z_][a-zA-Z0-9_.]*$/', $key)) {return $default;}
+	// --- Load & cache the .env file on first invocation. ---
+	if (is_null ($cache))
+	{
+		// Path-traversal guard.
+		$file_resolved = realpath (interlace (basepath, '.env'));
+		if (is ($file_resolved, false) || !str_starts_with ($file_resolved, basepath)) {return $default;}
+		// Readability & size guard.
+		if (!is_file ($file_resolved) || !is_readable ($file_resolved)) {return $default;}
+
+		$max_bytes = 102400;
+		if (filesize ($file_resolved) > $max_bytes) {return $default;}
+
+		$lines = file ($file_resolved, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+		if (is ($lines, false)) {return $default;}
+
+		$tmp = [];
+
+		foreach ($lines as $line)
+		{
+			$line = trim ($line);
+			if (is ($line, '') || str_starts_with ($line, '#')) {continue;}
+
+			$pos = strpos ($line, '=');
+			if (is ($pos, false)) {continue;}
+
+			$k = trim (substr ($line, 0, $pos));
+			$v = trim (substr ($line, $pos + 1));
+			if (is ($k, '') || !preg_match ('/^[a-zA-Z_][a-zA-Z0-9_.]*$/', $k)) {continue;}
+			
+			// Strip inline comments (# …) except inside quotes.
+			if (!str_starts_with ($v, '"') && !str_starts_with ($v, "'"))
+			{
+				$hash = strpos ($v, '#');
+				if ($hash !== false) $v = trim (substr ($v, 0, $hash));
+			}
+
+			// Strip surrounding quotes and unescape.
+			if (str_starts_with ($v, '"') && str_ends_with ($v, '"'))
+			{
+				$v = substr ($v, 1, -1);
+				$v = str_replace (['\\n', '\\"'], ["\n", '"'], $v);
+			}
+			elseif (str_starts_with ($v, "'") && str_ends_with ($v, "'")) {$v = substr ($v, 1, -1);}
+			// Leftmost-wins — keep first occurrence.
+			if (!array_key_exists ($k, $tmp)) {$tmp[$k] = $v;}
+			
+		}
+
+		// Cache the raw strings; typed casting is applied per-request.
+		$cache = $tmp;
+	}
+
+	// --- Single-key lookup (exact match). ---
+	if (array_key_exists ($key, $cache)) {return cast_value ($cache[$key]);}
+	// --- Group lookup (prefix match). ---
+	// Catches keys like "app.cdn" → collects app.cdn.enabled, app.cdn.url.
+	// If no keys match the prefix, $result stays empty → $default returned.
+	$prefix = $key . '.';
+	$result = [];
+
+	foreach ($cache as $k => $v)
+	{
+		if (str_starts_with ($k, $prefix))
+		{
+			$leaf = substr ($k, strlen ($prefix));
+			$result[$leaf] = cast_value ($v);
+		}
+	}
+
+	// Empty group = key genuinely missing → return $default.
+	if (is ($result, [])) {return $default;}
+	return $result;
+}
+
+/**
+ * Clear the env() static cache, forcing a re-read of the .env file.
+ *
+ * The env() function caches parsed .env values in a static variable
+ * for performance. Call this helper when you need env() to pick up
+ * changes made to the .env file at runtime (e.g., after a deploy
+ * or during tests that modify environment variables).
+ *
+ * This is NOT safe across parallel requests — the flag is process-global.
+ * In CLI long-running processes, call after each request cycle if the
+ * .env file may have changed.
+ *
+ * @return void
+ */
+function env_clear_cache (): void
+{
+	global $_env_cache_cleared;
+	$_env_cache_cleared = true;
+}

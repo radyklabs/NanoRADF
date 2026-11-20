@@ -1,0 +1,73 @@
+<?php declare (strict_types=1);
+
+if (!defined ('basepath'))
+{
+    $heading = 'Internal System Error';
+    $message = 'An unexpected error occurred. Please contact the Administrator.';
+    http_response_code (500);
+    header ('Content-Type: text/html; charset=utf-8');
+    exit ("<h1>{$heading}</h1><p>{$message}</p>");
+}
+
+$appfs = [
+    'configfapp' => false, 
+    'modulesfapp' => 'nsappmod', 
+    'servicesfapp' => 'nsappserv',
+    ];
+foreach ($appfs as $f => $d)
+{
+    $dir = ucfirst (substr ($f, 0, -4));
+    $path = interlace (appf, $dir);
+
+    if (is_dir ($path))
+    {
+        define ($f, $path);
+        
+        if ($d !== false)
+        {
+            define ($d, namespacify (interlace (nsapp, $dir)));
+        }
+    }
+    // echo "{$f} : {$path} : ".($d?constant($d):'')."<br/>";
+}
+
+$modulesfs = ['config', 'controllers', 'model', 'services', 'views'];
+
+$systemfs = [
+    'contractsf'    => 'nscont', 
+    'controllersf'  => 'nsctrl', 
+    'helperf'       => false, 
+    'kernelf'       => 'nskernel', 
+    'servicesf'     => 'nsserv', 
+    'themesf'       => false, 
+    'viewsf'        => false,
+    ];
+foreach ($systemfs as $f => $d)
+{
+    $dir = ucfirst (substr ($f, 0, -1));
+    $path = interlace (systemf, $dir);
+
+    if (is_dir ($path))
+    {
+        define ($f, $path);
+        
+        if ($d !== false)
+        {
+            define ($d, namespacify (interlace (nssys, $dir)));
+        }
+    }
+    // echo "{$f} : {$path} : ".($d?constant($d):'')."<br/>";
+}
+
+$viewfs = ['components', 'elements', 'errors', 'layouts', 'patterns', 'scripts', 'tokens'];
+foreach ($viewfs as $f)
+{
+    $dir = ucfirst ($f);
+    $path = interlace (viewsf, $f);
+    if (is_dir ($path))
+    {
+        define ($f, $path);
+    }
+
+    // echo "{$f} : {$path}<br/>";
+}

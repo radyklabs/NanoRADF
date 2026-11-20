@@ -17,6 +17,7 @@ Definition of done (v1): all PRD acceptance criteria pass; smoke checks recorded
 | D5 | 2026-11-20 | Plan first, execution in later phases/tasks. | User choice: no implementation beyond D3 fix in this change set. |
 | D6 | 2026-11-20 | `app.modules` env toggle: `false` **or key absent (default)** → flat `apps/` layout — `Config/`, `Services/`, `Controllers/`, `Model/`, `Views/` directly under `apps/`, no `apps/Modules/`, no `Manifest.json`. `true` → current modular layout. Namespace = single PSR-4 root `App\` → `apps/` mirroring folders (one mapping serves both modes). | User: missing key → false; flat scope = everything except manifest; namespace chosen by PSR-4 best practice (also closes the `apps/Config`/`apps/Services` autoload gap). |
 | D7 | 2026-11-20 | **All test files live in `/tests`** (new tracked top-level dir); smoke checks never in `public/` or `src/`. Bootstrap smoke check: `tests/smoke_check.php` (self-contained, any CWD). | User directive; keeps the web root clean. Recorded per the no-new-top-directory rule. |
+| D8 | 2026-11-20 | `app.mode` env toggle: `bone` (headless API backend only), `face` (SSR frontend → headless backend, server-to-server), `full` (both; default). Selectable before app development. Pair of FR-12 and Phase 4; `.env` carries the key with a docblock. | PRD §1 already defines the two selectable modes; this makes the selection an explicit env key instead of an implicit convention. |
 
 ## Status legend
 

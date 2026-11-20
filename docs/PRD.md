@@ -36,6 +36,7 @@ Design mandate: minimal, small, light, fast. Zero runtime dependencies.
 | FR-9 | Environment config via `.env` with dot-notation typed access (`__env()`), cached per process. | ✅ done |
 | FR-10 | Error handling: generic 500 in prod, gated detail in local/dev, always `error_log`. | ✅ done (entry gateway) |
 | FR-11 | **Layout mode toggle** via env `app.modules`: `false` **or key absent (default)** → flat layout — no `apps/Modules/`, no `Manifest.json`; `Config/`, `Services/`, `Controllers/`, `Model/`, `Views/` live directly under `apps/`. `true` → current modular layout. Namespace: single PSR-4 root `App\` → `apps/` mirroring folders in **both** modes (`App\Controllers\...` flat; `App\Modules\<Name>\...` modular). | ⚠️ planned (Phase 0b) |
+| FR-12 | **Runtime mode toggle** via env `app.mode`: `bone` (headless backend only — API surfaces, no SSR frontend), `face` (SSR frontend talking to a headless backend over HTTP server-to-server), `full` (both surfaces in one codebase; default). Chosen by the developer before building the app; gates which surfaces the framework wires. Values documented in `.env`; key stays gitignored. | ⚠️ planned (Phase 4) |
 
 ## 4. Non-functional requirements
 

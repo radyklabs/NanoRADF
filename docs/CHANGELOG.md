@@ -14,6 +14,7 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning: [S
 - Web entry hardening: `.htaccess` front controller, `app.env`/`app.debug` gated error disclosure with `error_log` fallback.
 - `.env` environment template (RADYK-style dot-notation keys).
 - Project documentation: completed `CLAUDE.md` (Dev URL, Modular Architecture, Blade-shaped View System, Directory Layout, File Boundary, Secure Coding Rules) and new `docs/RULES.md`, `docs/PLAN.md`, `docs/PRD.md`, `docs/REPORT.md`, `docs/CHANGELOG.md`; expanded `README.md`.
+- `docs/PLAN.md` track log: plan-vs-code status verification records (`>track` runs).
 - `.gitignore` for local-only files (`.env`, `.envrc`, `.vscode/`, `sql/local.sql`, `docs/CONFIG.md`, `/vendor/`).
 
 ### Fixed

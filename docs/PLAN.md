@@ -79,6 +79,12 @@ Definition of done (v1): all PRD acceptance criteria pass; smoke checks recorded
 | 5 | 6 | Phases 3 + 4 done |
 | 6 | 7 | everything above done, user invokes `>audit`/`>release` |
 
+## Track log
+
+| Date | Result | Evidence |
+|------|--------|----------|
+| 2026-11-20 15:11 | **Plan == code, no drift.** Phase 0 re-verified (boot smoke + autoload: `BOOT-LOADED`, `autoload sys=YES mod=YES`, exit 0). Phases 1–6: every target file still a 0-byte scaffold (`Kernel/Router.php`, `Kernel/Controller.php`, Api/Private/Public controllers, `apps/Config/Routes.php`, `Helper/Utilities.php`, `AssetsService.php`, all `src/Views/*`, Welcome module, themes) → ⚠️ statuses correct, no phase advanced. Open risks #1–#3 unchanged. Working tree clean at `24404fa`; no `origin` remote → push skipped. | `git status`, per-file size inventory, `boot_check.php` |
+
 ## Open risks
 
 - Autoloader maps only `System\` and `App\Modules\` — shared `apps/Services/` classes have no namespace mapping yet (resolve in Phase 1; record decision when routing wires them).

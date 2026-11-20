@@ -90,7 +90,7 @@ Release workflow (`>release`) prepares, merges, and tags in one invocation; neve
 
 | Command | Action |
 |---------|--------|
-| `>branch <description>` | Choose a concise prefixed kebab-case branch name, verify it is unused, then create and switch to it. |
+| `>branch <description>` | Branching model: pick the type prefix from the task (`feat` new capability, `fix` defect, `hotfix` urgent prod defect, `patch` small adjustment), turn `<description>` into a concise kebab-case slug, and build `<type>/<slug>` (e.g. `feat/router-matcher`, following the Branching Model section). Verify the name is unused locally and on `origin`; create it from the current `dev` tip and switch to it. |
 | `>release` | One invocation prepares changelog/version, opens and merges a `chore(release): X.Y.Z` PR to `main` when rules permit, then waits for `release-tag.yml` to validate and create/push the tag. |
 | `>push` | Inspect status and diff, add a per-file summary under `[Unreleased]` in the changelog, then stage, commit, and push the current branch. |
 | `>sync` | Run `>push`, update against `dev`, create and merge a PR into `dev`, then delete the merged branch. |

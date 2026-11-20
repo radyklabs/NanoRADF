@@ -30,6 +30,8 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning: [S
 
 ### Changed
 
+- `CLAUDE.md` — `>branch` custom command now follows the Branching Model: derive `<type>/<slug>` from the task (`feat`/`fix`/`hotfix`/`patch`), verify unused local + `origin`, create from the `dev` tip, and switch.
+
 - `.config` — registers `appf`/`modulesf`/`systemf` from entry vars + namespaces `nsapp`/`nsmod`/`nssys`; structural guard requires `modulesf` + `kernelf`.
 - `public/nanoradf` — failure handler: `$code = $th->getCode() ?: 500`; error appended to `<root>/storage/logs/system.log` via `error_log(…, 3, $path)` (auto-mkdir, fallback to default log if unwritable); generic body unless `$debug`; 404 guard requires all entry folder vars (`||`).
 - `public/nanoradf` — error path uses plain concatenation (`basepath . '/storage/logs/system.log'`, `"{$log_dir}/system.log"`) instead of `interlace()`; double separator tolerated by Windows paths.

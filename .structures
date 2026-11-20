@@ -2,18 +2,20 @@
 
 if (!defined ('basepath'))
 {
-    $heading = 'Internal System Error';
-    $message = 'An unexpected error occurred. Please contact the Administrator.';
-    http_response_code (500);
+    http_response_code (404);
     header ('Content-Type: text/html; charset=utf-8');
-    exit ("<h1>{$heading}</h1><p>{$message}</p>");
+    exit ("<h1>404 Not Found</h1><p>The requested page (or file) could not be found.</p>");
 }
 
 $appfs = [
-    'configfapp' => false, 
-    'modulesfapp' => 'nsappmod', 
-    'servicesfapp' => 'nsappserv',
+    'configfapp'        => false,
+    'controllersfapp'   => 'nsappctrl',
+    'modelfapp'         => 'nsappmodel',
+    'modulesfapp'       => 'nsappmod', 
+    'servicesfapp'      => 'nsappserv',
+    'viewsfapp'         => false,
     ];
+
 foreach ($appfs as $f => $d)
 {
     $dir = ucfirst (substr ($f, 0, -4));
@@ -28,10 +30,34 @@ foreach ($appfs as $f => $d)
             define ($d, namespacify (interlace (nsapp, $dir)));
         }
     }
+
+    else {continue;}
+
     // echo "{$f} : {$path} : ".($d?constant($d):'')."<br/>";
 }
 
-$modulesfs = ['config', 'controllers', 'model', 'services', 'views'];
+$modulesfs = [
+    'configf'       => false, 
+    'controllersf'  => 'nsctrl', 
+    'modelf'        => 'nsmodel', 
+    'servicesf'     => 'nsserv', 
+    'viewsf'        => false,
+    ];
+
+foreach ($modulesfs as $f => $d)
+{
+    $dir = ucfirst (substr ($f, 0, -1));
+    $path = interlace (modulesfapp, '%s', $dir);
+
+    define ($f, $path);
+    if ($d !== false)
+    {
+        $find = 'XNsX';
+        $format = str_replace ($find, '%s', namespacify (interlace (nsappmod, 'XNsX', $dir)));
+        define ($d, $format);
+    }
+    // echo "{$f} : {$path} : ".($d?constant($d):'')."<br/>";
+}
 
 $systemfs = [
     'contractsf'    => 'nscont', 
@@ -42,6 +68,7 @@ $systemfs = [
     'themesf'       => false, 
     'viewsf'        => false,
     ];
+
 foreach ($systemfs as $f => $d)
 {
     $dir = ucfirst (substr ($f, 0, -1));
@@ -56,6 +83,8 @@ foreach ($systemfs as $f => $d)
             define ($d, namespacify (interlace (nssys, $dir)));
         }
     }
+
+    else {continue;}
     // echo "{$f} : {$path} : ".($d?constant($d):'')."<br/>";
 }
 
@@ -69,5 +98,6 @@ foreach ($viewfs as $f)
         define ($f, $path);
     }
 
+    else {continue;}
     // echo "{$f} : {$path}<br/>";
 }

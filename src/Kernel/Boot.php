@@ -2,7 +2,14 @@
 
 namespace System\Kernel;
 
-use Exception;
+if (!defined ('basepath'))
+{
+    http_response_code (404);
+    header ('Content-Type: text/html; charset=utf-8');
+    exit ("<h1>404 Not Found</h1><p>The requested page (or file) could not be found.</p>");
+}
+
+// use Exception;
 
 final class Boot
 {
@@ -10,57 +17,6 @@ final class Boot
     {
         static $registered = false;
         if ($registered) {return;}
-
-        if (!defined ('sep'))
-        {
-            define ('basepath', dirname (__DIR__, 2));
-            define ('publicpath', basepath."/public");
-            define ('sep', DIRECTORY_SEPARATOR);
-        }
-
-        // if (self::$basepath === '') {self::$basepath = basepath;}
-        // if (self::$publicpath === '') {self::$publicpath = publicpath;}
-
-        $supports_file = interlace (basepath, '.supports');
-        if (!is_readable ($supports_file))
-        {
-            throw new Exception ('No supports');
-        }
-
-        require_once $supports_file;
-
-        $structures_file = interlace (basepath, '.structures');
-        if (!is_readable ($structures_file))
-        {
-            throw new Exception ('No structures');
-        }
-
-        require_once $structures_file;
-
-        // Directories are declared by the web entry point. For CLI
-        // consumers (bin/face, tests) that never include public/index.php
-        // the system directory is resolved from this file's own location.
-        // $map = [];
-
-        // $index_file = interlace (publicpath, 'index.php');
-        // if (!is_readable ($index_file)) {die('No index');}
-
-        // foreach (read_directories ($index_file) as $type => $dir)
-        // {
-        //     if (!defined ($type))
-        //     {
-        //         define ($type, interlace (basepath, $dir));
-        //     }
-        // }
-        // $map += ['system' => 'system', 'modules' => 'modules', 'views' => 'views'];
-
-        // foreach ($map as $type => $dir) {
-        //     if (!defined($type)) {
-        //         define($type, interlace(basepath, $dir));
-        //     }
-        // }
-
-
         $registered = true;
 
         spl_autoload_register ([self::class, 'autoloader']);

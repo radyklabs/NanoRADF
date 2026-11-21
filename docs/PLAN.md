@@ -29,7 +29,7 @@ Definition of done (v1): all PRD acceptance criteria pass; smoke checks recorded
 
 ### Phase 0 — Bootstrap & kernel ✅
 - Entry chain `public/index.php` → `nanoradf` → `.config` → `.supports` → `.structures` → `Boot::initiate()`.
-- Global helpers (`is`, `interlace`, `pathify`, `namespacify`, `urlify`, `__env`, `__server`, `cast_value`, `env_clear_cache`, `read_directories`).
+- Global helpers (`is`, `interlace`, `pathify`, `namespacify`, `urlify`, `__env`, `__server`, `cast_value`, `read_directories`).
 - Path/namespace constants, `is_dir` guarded; PSR-4 autoloader.
 - **2026-11-20 fixes (D3):** undeclared `self::$nssys`/`self::$nsmod` → global constants; undefined `modulesf` → `modulesfapp`. Fail-before/pass-after recorded in `docs/REPORT.md`.
 - **D10 (2026-11-20, post-audit):** two-root autoload contract — `App\…`→`apps/`, `Modules\…`→`modules/` always active; `nsapp`/`nsmod` replace `nsappmod`/`appmodf`.

@@ -1,13 +1,14 @@
 <?php declare (strict_types=1);
 
 /**
- * Gateway — loads helpers, configuration, and kernel.
+ * The Gateway: NanoRADF
+ * --
+ * An open source rapid application development framework for php 8.1+
  *
- * Bootstrap stage 1: defines path constants, requires `.supports` and
- * `.config`, then initiates Boot. Failures render a generic error page;
- * details are appended to storage/logs/system.log.
- *
- * @since 1.0.0
+ * @package     NarnoRADF
+ * @author      RADLabs Development Team
+ * @copyright   Radlabs Studio (c) 1986 - 2026
+ * @since       0.0.1
  */
 
 if (!isset ($application_folder)
@@ -19,15 +20,22 @@ if (!isset ($application_folder)
     exit ("<h1>404 Not Found</h1><p>The requested page (or file) could not be found.</p>");
 }
 
-// Bootstrap below is fragile — edits here can break the whole system.
-// These messages surface only when the framework cannot load at all.
+/**
+ * System brain: core logic
+ * --
+ * Bootstrap below is fragile — edits here can break the whole system.
+ * Treat every change here as fragile.
+ */
+
 $heading = 'Internal System Error';
 $message = 'An unexpected error occurred. Please contact the Administrator.';
 
 define ('sep', DIRECTORY_SEPARATOR);
-define ('publicpath', realpath (__DIR__).sep);
-define ('basepath', dirname (__DIR__).sep);
-define ('isdebug', (isset ($debug) && $debug===true));
+define ('publicpath', realpath (__DIR__.sep.'public').sep);
+define ('basepath', realpath (__DIR__).sep);
+// define ('appdebug', (isset ($debug) && $debug===true));
+
+require_once realpath (basepath . '.starter');
 
 try
 {
@@ -47,24 +55,12 @@ try
 
     $configuration_key = 'config';
 
-    if (isdebug)
-    {
-        error_reporting (E_ALL);
-        @ini_set ('display_errors', 1);
-    }
-
-    else
-    {
-        error_reporting (0);
-        @ini_set ('display_errors', 0);
-    }
-
-    if (!is_readable (interlace (basepath, __f ($configuration_key, false))))
+    if (!is_readable (interlace (basepath, fl ($configuration_key, false))))
     {
         throw new Exception ('Configuration key is missing', 404);
     }
 
-    require_once interlace (basepath, __f ($configuration_key, false));
+    require_once interlace (basepath, fl ($configuration_key, false));
 
     if (isset ($kernel) && class_exists ($kernel))
     {
@@ -75,17 +71,17 @@ try
 }
 catch (Throwable $th)
 {
-    $status = [
+    $heading = [
 		404	=> 'Not Found',
 		500	=> 'Internal Server Error',
     ][$th->getCode()] ?? 'Internal System Error';
 
     $code = $th->getCode() ?: 500;
-    $message = $th->getMessage () . ' in ' . $th->getFile () . ':' . $th->getLine ();
+    if (defined ('appdebug') && appdebug===true)
+    {
+        $message = "{$th->getMessage ()} in {$th->getFile ()}:{$th->getLine ()}";
+    }
 
-    // Explicit destination: <root>/storage/logs/system.log (portable, NFR-5).
-    // mode 3 = append; if the dir can't be made writable, error_log() without
-    // a path falls back to PHP's default log (silent).
     $log_dir = dirname (basepath . '/storage/logs/system.log');
     if (!is_dir ($log_dir)) {@mkdir ($log_dir, 0775, true);}
 
@@ -93,13 +89,9 @@ catch (Throwable $th)
     {
         error_log ("[{$code}] {$message}", 3, "{$log_dir}/system.log");
     }
-    else
-    {
-        error_log ("[{$code}] {$message}");
-    }
+    else {error_log ("[{$code}] {$message}");}
 
-    http_response_code ($code);
-    header ('Content-Type: text/html; charset=utf-8');
-
-    exit ("<h1>{$heading}</h1><p>{$message}</p>");
+    // http_response_code ($code);
+    header ('Content-Type: text/html; charset=utf-8', true, $code);
+    exit ("<h1>{$code} {$heading}</h1><p>{$message}</p>");
 }

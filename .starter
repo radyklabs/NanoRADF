@@ -2,7 +2,7 @@
 
 /**
  * Starter environment
- *
+ * --
  * Preparing all things that needed for the nanoradf to be boot
  * and running smoothly
  *
@@ -18,10 +18,11 @@ if (!defined ('basepath'))
 
 /**
  * Load `.env` into the process environment.
- *
+ * --
  * Parses `KEY=VALUE` lines (skips blanks and `#` comments, strips
  * surrounding quotes and inline `#` comments) and registers each
- * entry via putenv(), so getenv() and $_ENV can read it. Keys allow
+ * entry via putenv() and $_ENV, so getenv() and __env() can read it.
+ * Keys allow
  * dots (`app.modules`); an already-set environment variable wins;
  * invalid keys are ignored. Missing `.env` is skipped silently.
  *
@@ -59,15 +60,42 @@ if (is_file ($env_file) && is_readable ($env_file))
         }
 
         putenv ("{$key}={$value}");
+        $_ENV[$key] = $value;   // group lookup in __env() scans $_ENV
     }
 }
 
 unset ($env_file);
 
-if (isdebug)
+/** 
+ * Application debug mode
+ * --
+ * Basically read the dotenv but it will replaced if user or developer
+ * set (define) `appdebug` in `index.php`
+*/
+define ('appdebug', (getenv('app.debug')==='true'));
+
+if (appdebug===true)
 {
-    error_reporting (E_ALL);
-    @ini_set ('display_errors', 1);
+    switch (getenv('app.env'))
+    {
+        case 'dev':
+        case 'development':
+        case 'local':
+            error_reporting (E_ALL);
+            @ini_set ('display_errors', 1);
+            break;
+        
+        case 'testing':
+        case 'staging':
+            error_reporting(E_ALL & ~E_NOTICE & ~E_STRICT & ~E_USER_NOTICE);
+            ini_set('display_errors', 0);
+            break;
+
+        default:
+            error_reporting (0);
+            @ini_set ('display_errors', 0);
+            break;
+    }
 }
 
 else

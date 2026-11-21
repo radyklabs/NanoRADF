@@ -236,119 +236,44 @@ function cast_value (string $value): mixed
 }
 
 /**
- * Read a .env value with dot-notation keys.
+ * Read a typed environment value registered by `.starter`.
  *
- * Parsed values are cached per process; call env_clear_cache() after
- * changing .env at runtime. Key, path, and size guards apply.
+ * Wraps getenv() with dot-notation keys, typed casting, and a
+ * fallback default. Group lookup ("app") scans process env plus
+ * $_ENV (registered by `.starter`) by prefix. Requires the gateway
+ * to have run `.starter` first.
  *
  * @since  1.0.0
- * @see    env_clear_cache()
  * @param  string $key     "app.port" for a leaf, "app" for the whole group.
  * @param  mixed  $default Fallback when the key/group is missing.
  * @return mixed Typed leaf value, group array, or $default.
  */
 function __env (string $key, mixed $default = false): mixed
 {
-	static $cache = null;
-	global $_env_cache_cleared;
-
-	// env_clear_cache() sets this flag to force a re-read of .env.
-	if (isset ($_env_cache_cleared) && is ($_env_cache_cleared, true))
-	{
-		$cache = null;
-		$_env_cache_cleared = false;
-	}
-
 	$key = trim ($key);
 	// Key must be a valid env-var name or prefix.
 	if (is ($key, '') || !preg_match ('/^[a-zA-Z_][a-zA-Z0-9_.]*$/', $key)) {return $default;}
-	// --- Load & cache the .env file on first invocation. ---
-	if (is_null ($cache))
-	{
-		// Path-traversal guard.
-		$file_resolved = realpath (interlace (basepath, '.env'));
-		if (is ($file_resolved, false) || !str_starts_with ($file_resolved, basepath)) {return $default;}
-		// Readability & size guard.
-		if (!is_file ($file_resolved) || !is_readable ($file_resolved)) {return $default;}
 
-		$max_bytes = 102400;
-		if (filesize ($file_resolved) > $max_bytes) {return $default;}
+	// Leaf lookup: exact key registered by .starter via putenv().
+	$value = getenv ($key);
+	if (!is ($value, false)) {return cast_value ($value);}
 
-		$lines = file ($file_resolved, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
-		if (is ($lines, false)) {return $default;}
-
-		$tmp = [];
-
-		foreach ($lines as $line)
-		{
-			$line = trim ($line);
-			if (is ($line, '') || str_starts_with ($line, '#')) {continue;}
-
-			$pos = strpos ($line, '=');
-			if (is ($pos, false)) {continue;}
-
-			$k = trim (substr ($line, 0, $pos));
-			$v = trim (substr ($line, $pos + 1));
-			if (is ($k, '') || !preg_match ('/^[a-zA-Z_][a-zA-Z0-9_.]*$/', $k)) {continue;}
-			
-			// Strip inline comments (# …) except inside quotes.
-			if (!str_starts_with ($v, '"') && !str_starts_with ($v, "'"))
-			{
-				$hash = strpos ($v, '#');
-				if ($hash !== false) $v = trim (substr ($v, 0, $hash));
-			}
-
-			// Strip surrounding quotes and unescape.
-			if (str_starts_with ($v, '"') && str_ends_with ($v, '"'))
-			{
-				$v = substr ($v, 1, -1);
-				$v = str_replace (['\\n', '\\"'], ["\n", '"'], $v);
-			}
-			elseif (str_starts_with ($v, "'") && str_ends_with ($v, "'")) {$v = substr ($v, 1, -1);}
-			// Leftmost-wins — keep first occurrence.
-			if (!array_key_exists ($k, $tmp)) {$tmp[$k] = $v;}
-			
-		}
-
-		// Cache the raw strings; typed casting is applied per-request.
-		$cache = $tmp;
-	}
-
-	// --- Single-key lookup (exact match). ---
-	if (array_key_exists ($key, $cache)) {return cast_value ($cache[$key]);}
-	// --- Group lookup (prefix match). ---
-	// Catches keys like "app.cdn" → collects app.cdn.enabled, app.cdn.url.
-	// If no keys match the prefix, $result stays empty → $default returned.
+	// Group lookup: prefix match (e.g. "app" → app.cdn.enabled, app.cdn.url).
+	// getenv() no-arg omits putenv() vars, so overlay $_ENV (written by .starter).
 	$prefix = $key . '.';
+	$all = array_merge (getenv () ?: [], $_ENV);
 	$result = [];
 
-	foreach ($cache as $k => $v)
+	foreach ($all as $k => $v)
 	{
-		if (str_starts_with ($k, $prefix))
+		if (str_starts_with ((string) $k, $prefix))
 		{
-			$leaf = substr ($k, strlen ($prefix));
-			$result[$leaf] = cast_value ($v);
+			$result[substr ((string) $k, strlen ($prefix))] = cast_value ((string) $v);
 		}
 	}
 
 	// Empty group = key genuinely missing → return $default.
-	if (is ($result, [])) {return $default;}
-	return $result;
-}
-
-/**
- * Invalidate the .env cache so the next __env() call re-reads the file.
- *
- * Process-global flag — not safe across parallel requests. In
- * long-running CLI processes, call once per request cycle.
- *
- * @since  1.0.0
- * @return void
- */
-function env_clear_cache (): void
-{
-	global $_env_cache_cleared;
-	$_env_cache_cleared = true;
+	return is ($result, []) ? $default : $result;
 }
 
 /**
@@ -422,7 +347,7 @@ function __s (int $code = 200): string
  * @param  string|bool $ext      'php' → "name.php" (default), false → ".name", other → "name.ext".
  * @return string File name.
  */
-function __f (string $filename, string|bool $ext = 'php'): string
+function fl (string $filename, string|bool $ext = 'php'): string
 {
 	return [
 		'php' => "{$filename}.php",

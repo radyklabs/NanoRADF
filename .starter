@@ -1,11 +1,13 @@
 <?php declare (strict_types=1);
 
 /**
- * Starter environment — constants, dotenv, error reporting.
+ * Starter environment — constants, dotenv, reporting, library chain.
  * --
  * Runs first in the gateway: defines version/path constants, loads
- * `.env` into the process environment, then configures error
- * reporting per `app.env` / `APP_DEBUG`.
+ * `.env` into the process environment, configures error reporting
+ * per `app.env` / `APP_DEBUG`, then starts the `$error` sentinel
+ * chain — PHP version gate ('phpmin'), `.supports` ('common'),
+ * `.config` ('config') — reported by the gateway switch.
  *
  * @since 0.0.1
  */
@@ -30,9 +32,9 @@ define ('publicpath', realpath (basepath.'public').sep);
  * Parses `KEY=VALUE` lines (skips blanks and `#` comments, strips
  * surrounding quotes and inline `#` comments) and registers each
  * entry via putenv() and $_ENV, so getenv() and genv() can read it.
- * Keys allow
- * dots (`app.modules`); an already-set environment variable wins;
- * invalid keys are ignored. Missing `.env` is skipped silently.
+ * Keys allow dots (`app.modules`); an already-set environment
+ * variable wins; invalid keys are ignored. Missing `.env` is
+ * skipped silently.
  *
  * @since  0.0.1
  * @return void
@@ -115,3 +117,22 @@ else
 
 // Minimum PHP version required by the gateway's runtime gate.
 define ('PHP_MIN_VERSION', '8.1.34');
+
+// Runtime version gate; failure → $error='phpmin'.
+if (version_compare (PHP_VERSION, PHP_MIN_VERSION, "<")) {$error = 'phpmin';}
+
+// Helper library (interlace, genv, …); failure → $error='common'.
+if (!isset ($error))
+{
+    $common_key = call_user_func ('implode', '.', [basepath, 'supports']);
+    if (!is_readable ($common_key)) {$error = 'common';}
+    else {require_once $common_key;}
+}
+
+// Bootstrap config (roots, structures, kernel); failure → $error='config'.
+if (!isset ($error))
+{
+    $configuration_key = interlace (basepath, fl ('config', false));
+    if (!is_readable ($configuration_key)) {$error = 'config';}
+    else {require_once $configuration_key;}
+}

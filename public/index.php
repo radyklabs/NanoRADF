@@ -31,6 +31,12 @@ $system_folder = 'src';
  */
 $modules_folder = 'modules';
 
+/**
+ * Debug disclosure master switch (gates runtime detail in `nanoradf`).
+ * -- false (default): generic message. true: `message in file:line`.
+ */
+$debug = false;
+
 /** 
  * End of configuration. 
  * --

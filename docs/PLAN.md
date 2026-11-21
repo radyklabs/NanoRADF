@@ -29,9 +29,9 @@ Definition of done (v1): all PRD acceptance criteria pass; smoke checks recorded
 
 ### Phase 0 — Bootstrap & kernel ✅
 - Entry chain `public/index.php` → `nanoradf` → `.config` → `.supports` → `.structures` → `Boot::initiate()`.
-- Global helpers (`is`, `interlace`, `pathify`, `namespacify`, `urlify`, `genv`, `gserver`, `enval`, `read_directories`).
+- Global helpers (`is`, `interlace`, `pathify`, `namespacify`, `urlify`, `genv`, `gserver`, `enval`).
 - Path/namespace constants, `is_dir` guarded; PSR-4 autoloader.
-- **2026-11-20 fixes (D3):** undeclared `self::$nssys`/`self::$nsmod` → global constants; undefined `modulesf` → `modulesfapp`. Fail-before/pass-after recorded in `docs/REPORT.md`.
+- **2026-11-20 fixes (D3):** undeclared `self::$nssys`/`self::$nsmod` → global constants; undefined `modulesf` → resolved via the `Modules\…` branch. Fail-before/pass-after recorded in `docs/REPORT.md`.
 - **D10 (2026-11-20, post-audit):** two-root autoload contract — `App\…`→`apps/`, `Modules\…`→`modules/` always active; `nsapp`/`nsmod` replace `nsappmod`/`appmodf`.
 - **D9:** root-modules relocation (see Phase 0b) — `modulesf` replaces the old combined constant; `modulesfapp` removed.
 - Verification: boot smoke check + autoload resolution of `System\Helper\Utilities` and `App\Modules\Welcome\Controllers\WelcomeController` → PASS (exit 0).
@@ -45,13 +45,14 @@ Definition of done (v1): all PRD acceptance criteria pass; smoke checks recorded
 - Current `.env` carries `app.modules=false` (working default); the key itself stays gitignored — semantics documented here and in PRD FR-11.
 - Verification: `tests/layout_check.php` boots **both** ways asserting `nsapp`/`nsmod` + both roots resolve + template gate; `tests/smoke_check.php` exit 0; `http://nanoradfw.local` → 200. Fail-before/pass-after in `docs/REPORT.md`.
 
-### Phase 1 — Routing & controllers ⚠️
+### Phase 1 — Routing & controllers 🔵
 - **Depends on:** Phase 0, Phase 0b (controller/model/view locations are defined there).
 - **Owner:** main thread.
 - Implement `src/Kernel/Router.php` (method + path matching, params, 404 fallthrough) and `src/Kernel/Controller.php` (request lifecycle, response helpers, render hook).
 - Wire `apps/Config/Routes.php` as the route table consumed by the router.
 - Base controllers `PublicController` / `PrivateController` / `ApiController` (surface-specific auth/response rules).
 - Verification: CLI route-match checks (match/miss/param cases) + `http://nanoradfw.local` returns a controller response, unknown path → 404 handler.
+- **2026-11-21 (in progress):** Router (exact-first, `{name}`/`{name:regex}`, 405/404, normalise), Controller base + `authorize()`/`respond()`, three base controllers with distinct surfaces, `Routes.php` wired through the gateway; dispatch runs on web SAPIs only (`php_sapi_name () === 'cli'` skips). `tests/route_check.php` covers match/miss/param/regex/normalise/malformed target; smoke + layout checks stay green; root and unknown paths return 404. Route table currently empty (no app controllers yet) → root 404 is expected.
 
 ### Phase 2 — View system & assets ⚠️
 - **Depends on:** Phase 1. **Owner:** main thread.
@@ -106,5 +107,5 @@ Definition of done (v1): all PRD acceptance criteria pass; smoke checks recorded
 ## Open risks
 
 - `apps/Services` / `apps/Config` classes have no namespace mapping today — closed **by design** in Phase 0b (single `App\` → `apps/` root); confirm with the both-mode verification there.
-- `read_directories()` is currently uncalled (entry no longer declares `$directories`) — decide keep-or-remove in Phase 1, record in REPORT/CHANGELOG.
+- `read_directories()` removed in Phase 1 (no caller; entry no longer declares `$directories`).
 - No test framework: smoke checks are manual until a test runner is agreed (candidate: plain-PHP assert scripts, zero deps).

@@ -27,8 +27,8 @@ Design mandate: minimal, small, light, fast. Zero runtime dependencies.
 |----|-------------|--------|
 | FR-1 | Boot chain: entry → gateway → helpers → structures → kernel autoloader, working on PHP 8.1+. | ✅ done |
 | FR-2 | PSR-4 autoload for `System\...` → `src/`, `App\...` → `apps/`, and `Modules\...` → `modules/` (two app roots, always active). | ✅ done |
-| FR-3 | Central route table (`apps/Config/Routes.php`) dispatched by a router to controllers. | ⚠️ planned (Phase 1) |
-| FR-4 | Base controllers for the three surfaces: `PublicController`, `PrivateController`, `ApiController`. | ⚠️ planned (Phase 1) |
+| FR-3 | Central route table (`apps/Config/Routes.php`) dispatched by a router to controllers. | 🔵 in progress (Phase 1: Router + Controller + base controllers + gateway wiring done; app routes/controllers come with Phase 3) |
+| FR-4 | Base controllers for the three surfaces: `PublicController`, `PrivateController`, `ApiController`. | ✅ done (Phase 1 scaffolding; auth rules land in Phase 5) |
 | FR-5 | Blade-shaped server-side view composition from the role taxonomy + module view classes. | ⚠️ planned (Phase 2) |
 | FR-6 | Modular HMVC — only when `app.modules=true`: `Manifest.json` + Config/Controllers/Model/Services/Views under `modules/<Name>/` (project root), wired into routing. | ⚠️ planned (Phase 3) |
 | FR-7 | Server-to-server HTTP client frontend → headless backend with status + schema validation. | ⚠️ planned (Phase 4) |

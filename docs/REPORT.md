@@ -64,7 +64,7 @@ nsapp=App · nsmod=Modules · app_resolve=YES · mod_resolve=YES · mod_template
 | 1 | CONFIRMED | critical | `src/Kernel/Boot.php:78` (pre-fix) | `autoloader()` used `self::$nssys` / `self::$nsmod` — static properties never declared anywhere. Any class load → `Error: Access to undeclared static property System\Kernel\Boot::$nssys`. | ✅ fixed (D3) |
 | 2 | CONFIRMED | critical | `src/Kernel/Boot.php` (pre-fix, module branch) | Module path built from undefined constant `modulesf`. `.structures` defines `modulesfapp` (loop `$appfs`, key `modulesfapp`). First `App\Modules\...` load → `Error: Undefined constant "System\Kernel\modulesf"`. Surfaced only after fixing #1. | ✅ fixed (D3) |
 | 3 | CONFIRMED | low | `public/nanoradf.php` (comment above `define ('basepath', ...)`) | Stale comment: "`basepath` stays /public (mirrors BoneRADF contract)" — code sets `basepath` = project root and `publicpath` = `/public`. Comment contradicts behavior. | ⚠️ open (out of requested scope) |
-| 4 | CONFIRMED | info | `.supports` → `read_directories()` | No active caller: `public/index.php` no longer declares `$directories`; the consuming block in `Boot::initiate()` is commented out. Dead path pending Phase 1 decision (keep for CLI consumers or remove). | ⚠️ open (tracked in PLAN "Open risks") |
+| 4 | CONFIRMED | info | `.supports` → `read_directories()` | No active caller: `public/index.php` no longer declares `$directories`; the consuming block in `Boot::initiate()` is commented out. Dead path pending Phase 1 decision (keep for CLI consumers or remove). | ✅ resolved 2026-11-21 (Phase 1): removed from `.supports` with a CHANGELOG entry; no caller existed. |
 | 5 | CONFIRMED | info | `sql/local.sql` | Leftover WordPress (`wp_*`) dump from LocalWP MySQL 8.4 — not a project asset. | ✅ resolved (D2: gitignored, not deleted) |
 | 6 | HYPOTHESIS | medium | `apps/Services/` (empty) + autoloader | Shared app services have no namespace prefix in the autoloader (`System\` and `App\Modules\` only); classes dropped there will not autoload. Needs decision when Phase 1 wires services. | ⚠️ open (PLAN risk #1) |
 
@@ -102,5 +102,5 @@ D1–D5 recorded in `docs/PLAN.md` → Decision log (dev URL, `sql/local.sql` ig
 ### Remediation plan for open findings
 
 - #3: correct the comment when `nanoradf.php` is next touched (Phase 1); no behavior impact.
-- #4: decide keep-or-remove `read_directories()` in Phase 1; if kept, give it a caller or mark `@internal`.
+- #4: resolve `read_directories()` in Phase 1 — **resolved 2026-11-21**: removed from `.supports` (no caller; documented free-text helper list entry updated).
 - #6: define the `apps/Services` namespace contract in Phase 1 and extend the autoloader accordingly; record in PLAN + CHANGELOG.

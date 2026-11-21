@@ -6,6 +6,15 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning: [S
 ## [Unreleased]
 
 ### Added
+- Phase 1 — routing & controllers: `src/Kernel/Router.php` (method + path matching, required `{name}` and constrained `{name:regex}` params, exact-before-parameterised, 405 vs 404 fallthrough) and `src/Kernel/Controller.php` (action lifecycle: return-array contract, public/private/api surfaces, `authorize()` guard, `respond()`/`notFound()` helpers). Base controllers `PublicController`, `PrivateController`, `ApiController`. Route table `apps/Config/Routes.php` consumed by the router through the gateway; dispatch runs on web SAPIs only so CLI smoke checks stay loader-only. Verification: `tests/route_check.php` (match/miss/param/regex/normalise/malformed target) + `tests/smoke_check.php` + `tests/layout_check.php`; unknown path → 404.
+
+### Removed
+- `.supports` → `read_directories()` (dead code, no caller since `public/index.php` stopped declaring `$directories`; REPORT #4 closed).
+
+### Changed
+- The gateway's runtime error branch is now gated by `$debug` (`nanoradf`) instead of `APP_DEBUG`/`app.debug`, and logs status-normalised entries; bootstrap sentinels keep their friendly messages.
+- `src/Kernel/Boot.php::initiate()` no longer emits the leftover `echo 'boot initiated!'` debug line (it leaked into every response body).
+- `.config` preserves the entry `$debug` value for the gateway catch-all.
 - Two-root autoload contract (D10, Phase 0b): `App\…` → `apps/` and `Modules\…` → `modules/` always active; namespaces `nssys`/`nsapp`/`nsmod`; `app.modules` gates the per-module templates (`configfmod`, `controllersfmod`, `modelfmod`, `servicesfmod`, `viewsfmod`). `tests/layout_check.php` asserts both roots resolve + template gate.
 
 ### Fixed
@@ -15,7 +24,7 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning: [S
 ### Added
 
 - Project bootstrap chain: `public/index.php` → `public/nanoradf` → `.config` → `.supports` → `.structures` → `src/Kernel/Boot.php` with `initiate()` guard and gated error output.
-- Global helper library in `.supports` (`is`, `urlify`, `namespacify`, `pathify`, `interlace`, `read_directories`, `gserver`, `enval`, `genv`, `statc`, `fl`).
+- Global helper library in `.supports` (`is`, `urlify`, `namespacify`, `pathify`, `interlace`, `gserver`, `enval`, `genv`, `statc`, `fl`).
 - Directory/namespace structure map (`.structures`, `is_dir` guarded) and PSR-4 autoloader for `System\...` and `App\...` / `App\Modules\...`.
 - Application scaffold: `apps/` (Routes, Welcome module, shared Services) and `src/` core placeholders (Kernel Router/Controller, base controllers, Services, Helper, Contracts, Views taxonomy, themes).
 - Web entry hardening: `.htaccess` front controller, `$debug`-gated error disclosure (was `app.env`/`app.debug`) with `error_log` fallback.

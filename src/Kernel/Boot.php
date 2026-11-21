@@ -29,8 +29,6 @@ final class Boot
         $registered = true;
 
         spl_autoload_register ([self::class, 'autoloader']);
-
-        echo 'boot initiated!'; //ignore this line, this is debugging flow
     }
 
     /**

@@ -1,5 +1,7 @@
 <?php declare (strict_types=1);
 
+use System\Kernel\Router;
+
 /**
  * The Gateway: NanoRADF
  * --
@@ -40,19 +42,62 @@ if (!is_readable ($starter_key)) {$error = 'starter';}
 else {require_once $starter_key;}
 
 try
-{
-    if (isset ($error)) {throw new Exception ($error, 500);}    
-    unset ($error);
-    call_user_func ([$kernel, 'initiate']);
-}
+    {
+        if (isset ($error)) {throw new Exception ($error, 500);}
+        unset ($error);
+        call_user_func ([$kernel, 'initiate']);
+
+        // Dispatch on web SAPIs; CLI stays a plain loader so tests/smoke_check.php
+        // loads without resolving routes.
+        if ($debug === true || php_sapi_name () !== 'cli')
+        {
+                    $method     = strtoupper ((string) gserver ('request.method', 'GET'));
+                    $actionPath = Router::normalise ((string) gserver ('request.uri', '/'));
+
+            try
+            {
+                $response = Router::dispatch ($method, $actionPath);
+
+                header ('Content-Type: text/html; charset=utf-8', true, (int) ($response['status'] ?? 200));
+                echo (string) ($response['body'] ?? '');
+            }
+
+            catch (Throwable $th)
+            {
+                        // A throw here is a live runtime fault, not a bootstrap sentinel;
+                        // surface it and log, never fall through to the outer handler.
+                header ('Content-Type: text/html; charset=utf-8', true, 500);
+                exit ('<h1>500 Internal Server Error</h1><p>'.htmlspecialchars (
+                    $th->getMessage ().' in '.$th->getFile ().':'.$th->getLine (), ENT_QUOTES).'</p>');
+            }
+        }
+    }
 
 // Catch-all: map the code to a heading, log file:line, emit the body.
 catch (Throwable $th)
 {
+    // Bootstrap sentinels carry a code and a friendly phrase; runtime faults
+    // (router/controller) fall through to the generic message.
+    $sentinel = ['starter', 'phpmin', 'common', 'config', 'structure', 'boot', 'kernel'];
+    $known    = in_array ($th->getMessage (), $sentinel, true);
+        $code     = $th->getCode () !== 0 ? $th->getCode () : 500;
+
+        // The dispatch block has its own catch so only bootstrap faults land here.
+        if (!$known)
+        {
+            header ('Content-Type: text/html; charset=utf-8', true, $code >= 400 && $code <= 599 ? $code : 500);
+            exit ('<h1>500 Internal Server Error</h1><p>'.htmlspecialchars ($th->getMessage ().' in '.$th->getFile ().':'.$th->getLine (), ENT_QUOTES).'</p>');
+        }
+
+    // Runtime faults (router/controller) get the generic message + status unless
+    // $debug reveals detail.
+    $status = $known ? 500 : ($code >= 400 && $code <= 599 ? $code : 500);
+
     $heading = [
-		404	=> 'Not Found',
-		500	=> 'Internal Server Error',
-    ][$th->getCode()] ?? 'Internal System Error';
+        403 => 'Forbidden',
+        404	=> 'Not Found',
+        500	=> 'Internal Server Error',
+    ][$status] ?? 'Internal System Error';
 
     $message = [
         'starter'   => 'The starter file could not be found. Please reinstall the framework.',
@@ -64,22 +109,23 @@ catch (Throwable $th)
         'kernel'    => 'The application could not be started. Please try again later.',
     ][$th->getMessage ()] ?? 'An unexpected error occurred. Please contact the Administrator.';
 
-    $code = $th->getCode() ?: 500;
-    if (defined ('APP_DEBUG') && APP_DEBUG===true)
+    if ($debug === true && !$known)
     {
-        $message = "{$message} in {$th->getFile ()}:{$th->getLine ()}";
+        $message = "{$message} in {$th->getFile ()}:{$th->getLine ()} ({$th->getMessage ()})";
     }
 
     $log_dir = dirname (basepath . '/storage/logs/system.log');
     if (!is_dir ($log_dir)) {@mkdir ($log_dir, 0775, true);}
 
+// Never reveal internals unless $debug says so; the exception's own text is
+    // safe only under that gate.
     if (is_dir ($log_dir) && is_writable ($log_dir))
     {
-        error_log ("[{$code}] {$message}", 3, "{$log_dir}/system.log");
+        error_log ("[{$status}] {$message}", 3, "{$log_dir}/system.log");
     }
-    else {error_log ("[{$code}] {$message}");}
+    else {error_log ("[{$status}] {$message}");}
 
     // http_response_code ($code);
-    header ('Content-Type: text/html; charset=utf-8', true, $code);
-    exit ("<h1>{$code} {$heading}</h1><p>{$message}</p>");
+    header ('Content-Type: text/html; charset=utf-8', true, $status);
+    exit ("<h1>{$status} {$heading}</h1><p>{$message}</p>");
 }

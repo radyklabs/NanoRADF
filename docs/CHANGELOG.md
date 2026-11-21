@@ -31,6 +31,7 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning: [S
 
 ### Changed
 
+- `nanoradf` — gateway slimmed (+19/−39): guarded `.starter` load (`$error='starter'`), version gate / `.supports` / `.config` loading delegated to the `.starter` sentinel chain, kernel hand-off reduced to a single `$error` throw + `initiate()`; catch maps sentinel codes (`phpmin`, `common`, `config`, `structure`, `boot`, `kernel`) to friendly messages, `APP_DEBUG` appends `file:line`.
 - Gateway relocated: `public/nanoradf` → project-root `nanoradf` (entry `public/index.php` now requires it); `.starter` (dotenv loader) required before `.supports`.
 - `.supports` — helper renames: `__f()`→`fl()`, `__env()`→`genv()`, `__server()`→`gserver()`, `cast_value()`→`enval()`, `__s()`→`statc()`; call sites in `.config`, `nanoradf`, `.structures`, and `tests/bootstrap_probe.php` updated.
 - `CLAUDE.md` — `>branch` custom command now follows the Branching Model: derive `<type>/<slug>` from the task (`feat`/`fix`/`hotfix`/`patch`), verify unused local + `origin`, create from the `dev` tip, and switch.

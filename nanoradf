@@ -30,51 +30,22 @@ if (!isset ($application_folder)
  * Treat every change here as fragile.
  */
 
-$heading = 'Internal System Error';
-$message = 'An unexpected error occurred. Please contact the Administrator.';
+// $heading = 'Internal System Error';
+// $message = 'An unexpected error occurred. Please contact the Administrator.';
 
 define ('basepath', realpath (__DIR__).DIRECTORY_SEPARATOR);
 
-require_once realpath (basepath.'.starter');
+$starter_key = call_user_func ('implode', '.', [basepath, 'starter']);
+if (!is_readable ($starter_key)) {$error = 'starter';}
+else {require_once $starter_key;}
 
 try
 {
-    // Runtime version gate.
-    if (version_compare (PHP_VERSION, PHP_MIN_VERSION, "<"))
-    {
-        throw new Exception ("This framework needs younger php :p", 500);
-    }
-
-    $common_key = 'supports';
-
-    if (!is_readable (call_user_func ('implode', '.', [basepath, $common_key])))
-    {
-        throw new Exception ("Where the hell did you put the common key?!", 404);
-    }
-
-    require_once call_user_func ('implode', '.', [basepath, $common_key]);
-
-    if (!is_callable ('interlace'))
-    {
-        throw new Exception ("Failed to call supports library", 500);
-    }
-
-    $configuration_key = 'config';
-
-    if (!is_readable (interlace (basepath, fl ($configuration_key, false))))
-    {
-        throw new Exception ('Configuration key is missing', 404);
-    }
-
-    require_once interlace (basepath, fl ($configuration_key, false));
-
-    if (isset ($kernel) && class_exists ($kernel))
-    {
-        call_user_func ([$kernel, 'initiate']);
-    }
-
-    else {throw new Exception ('Kernel not booting up', 500);}
+    if (isset ($error)) {throw new Exception ($error, 500);}    
+    unset ($error);
+    call_user_func ([$kernel, 'initiate']);
 }
+
 // Catch-all: map the code to a heading, log file:line, emit the body.
 catch (Throwable $th)
 {
@@ -83,10 +54,19 @@ catch (Throwable $th)
 		500	=> 'Internal Server Error',
     ][$th->getCode()] ?? 'Internal System Error';
 
+    $message = [
+        'phpmin'    => 'This framework needs younger php :p',
+        'common'    => 'Where the hell did you put the common key?!',
+        'config'    => 'Configuration key is missing',
+        'structure' => 'Failed to register core structures',
+        'boot'      => 'Wrong boot key',
+        'kernel'    => 'Kernel not booting up',
+    ][$th->getMessage ()] ?? 'An unexpected error occurred. Please contact the Administrator.';
+
     $code = $th->getCode() ?: 500;
     if (defined ('APP_DEBUG') && APP_DEBUG===true)
     {
-        $message = "{$th->getMessage ()} in {$th->getFile ()}:{$th->getLine ()}";
+        $message = "{$message} in {$th->getFile ()}:{$th->getLine ()}";
     }
 
     $log_dir = dirname (basepath . '/storage/logs/system.log');

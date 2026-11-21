@@ -14,8 +14,8 @@
  */
 
 return [
-    // 'GET' => [
-    //     '/'            => [App\Controllers\HomeController::class, 'index'],
-    //     '/welcome'     => [Modules\Welcome\Controllers\WelcomeController::class, 'index'],
-    // ],
+    'GET' => [
+        '/'            => [App\Controllers\HomeController::class, 'index'],
+        '/hello/{name}' => [App\Controllers\HomeController::class, 'hello'],
+    ],
 ];

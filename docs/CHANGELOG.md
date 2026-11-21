@@ -6,16 +6,21 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning: [S
 ## [Unreleased]
 
 ### Added
-- Phase 1 — routing & controllers: `src/Kernel/Router.php` and `src/Kernel/Controller.php`, base controllers `PublicController`, `PrivateController`, `ApiController`, route table `apps/Config/Routes.php` wired through the gateway. Route keys are flat `'GET /path'` => `Ctrl::class.'::action'`, with prefix groups (`'/admin' => [ 'GET /dash' => ... ] —` inner keys must be full `METHOD /path`); `{name}` required + `{name:regex}` constrained params; exact-before-parameterised; HEAD served from GET (empty body); 405 carries `Allow:` from the table; unknown verbs/paths handled over HTTP. Router dispatch runs on web SAPIs only (`php_sapi_name () === 'cli'` keeps a plain loader so smoke checks resolve no routes). Runtime faults disclose detail only under `APP_DEBUG` (FR-10). Verification: `tests/route_check.php` (match/miss/param/regex/normalise/prefix group/malformed target) + `tests/smoke_check.php` + `tests/layout_check.php`; browser-probed `/`, `/hello/{name}`, `/ping` (JSON), `POST /` → 405.
-- API envelope contract: api-surface `respond()` always emits JSON and sets `Content-Type: application/json; charset=utf-8` through the response headers list; the gateway applies that before the status line.
+- Phase 1 — routing & controllers: `src/Kernel/Router.php` and `src/Kernel/Controller.php`, base controllers `PublicController`, `PrivateController`, `ApiController`, route table `apps/Config/Routes.php` wired through the gateway. Route keys are flat `'GET /path'` => `Ctrl::class.'::action'`, with prefix groups (`'/admin' => [ 'GET /dash' => ... ]`; inner keys must be full `METHOD /path`); exact-before-parameterised; browser-probed `/`, `/hello/{name}`, `/ping`, `/status/{code}`, `POST /` (405).
+- API envelope contract: api-surface `respond()` always emits JSON and sets `Content-Type: application/json; charset=utf-8`. `/status/{code:[45]\d\d}` returns the error envelope `{"ok":false,"error":"scoped failure"}` for a real API error path.
+- Gateway simplicity (2026-11-22): dispatch moved to `src/Kernel/Dispatcher.php`; one catch-all in `nanoradf` delegates to `blackwall()` from `.starter`; new error page asset `public/themes/default/css/error.css`.
 
 ### Removed
 - `.supports` → `read_directories()` (dead code, no caller since `public/index.php` stopped declaring `$directories`; REPORT #4 closed).
 - `src/Kernel/Boot.php::initiate()` no longer emits the leftover `echo 'boot initiated!'` debug line (it leaked into every response body). `.config` drops unused entry locals and keeps only constants.
 
 ### Changed
-- Gateway simplified: request dispatch moved to `src/Kernel/Dispatcher.php` (route → headers/body) and the gateway now uses a **single catch-all**. Runtime faults no longer have a separate try/catch/render path, so error disclosure follows one rule (`APP_DEBUG`). Bootstrap sentinels still surface through `$error`; log + render behavior unchanged. Verification: `route_check`/`smoke_check`/`layout_check` green; `/`, `/hello/{name}`, `/ping`, `POST /` (405); disclosure detail on with `app.debug=true`, generic with `false`.
-- Phase 1 route-table contract: keys are now flat `'GET /path'` (value `Ctrl::class.'::action'`), replacing the nested `'GET' => ['/path' => [...]]` shape; optional `'/prefix' => ['GET /dash' => ...]` groups keep module blocks grouped (inner keys must be full `METHOD /path`). `Allow:` is derived from the table (was hardcoded `GET`), `HEAD` is served from the GET candidate with an empty body, and a routed path under another verb returns 405.
+- Gateway: one catch-all (`Dispatcher` for the happy path, `blackwall()` for faults). Disclosure per `is_debug()` (driven by `app.debug`); `APP_DEBUG` constant removed.
+- Router capture groups are canonicalized to positional slots so sibling patterns with different placeholder names cannot collide.
+- Route table: flat `'GET /path'` keys; prefix group key is the prefix; inner keys must be full `METHOD /path`; `Allow:` derived from the table; `HEAD` served from the GET candidate with an empty body.
+
+### Fixed
+- Route named-group collision (e.g. `/x/{name}` vs `/x/{id:\d+}`) captured the wrong value; fixed with canonical capture slots. Covered by `tests/route_check.php` and commit `9371800`.
 - API media type: `respond()` on the api surface emits JSON with `Content-Type: application/json; charset=utf-8`; the gateway now applies response headers before the status line so HTML vs JSON never collide.
 - The gateway's runtime error branch is gated by `APP_DEBUG` (from `app.debug`); the earlier entry-level `$debug` switch was removed so `app.debug` drives disclosure again (no duplicate/conflicting master). Logs status-normalised entries; bootstrap sentinels keep their friendly messages.
 - Two-root autoload contract (D10, Phase 0b): `App\…` → `apps/` and `Modules\…` → `modules/` always active; namespaces `nssys`/`nsapp`/`nsmod`; `app.modules` gates the per-module templates (`configfmod`, `controllersfmod`, `modelfmod`, `servicesfmod`, `viewsfmod`). `tests/layout_check.php` asserts both roots resolve + template gate.

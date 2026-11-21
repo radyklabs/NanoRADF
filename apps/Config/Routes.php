@@ -18,4 +18,5 @@ return [
     'GET /'             => App\Controllers\HomeController::class . '::index',
     'GET /hello/{name}' => App\Controllers\HomeController::class . '::hello',
     'GET /ping'         => App\Controllers\PingController::class . '::index',
+    'GET /status/{code:[45]\d\d}' => App\Controllers\PingController::class . '::fail',
 ];

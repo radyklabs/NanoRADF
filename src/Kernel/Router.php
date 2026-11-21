@@ -382,6 +382,7 @@ final class Router
                 ];
         }
 
+        // Route params arrive as decoded strings, positional in declaration order.
         $response = $params === null || $params === []
             ? $controller->{$action}()
             : $controller->{$action}(...array_values ($params));

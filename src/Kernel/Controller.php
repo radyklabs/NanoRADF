@@ -8,8 +8,7 @@ namespace System\Kernel;
  * Actions return an array contract `['status' => int, 'body' => string]` (a bare
  * string is also accepted as a 200 body) and the gateway sends headers once;
  * controllers never echo. Path params arrive positionally in
- * placeholder-declaration order; request readers are exposed as instance helpers
- * so no action touches superglobals directly.
+ * placeholder-declaration order.
  *
  * @since 0.0.1
  */
@@ -37,23 +36,24 @@ class Controller
 
     /**
      * Build a response for the current surface. Public/private return
-     * `['status', 'body']`; the API surface additionally accepts `data` and
-     * always emits JSON.
+     * `['status', 'body', 'headers']`; the api surface additionally accepts
+     * `json` (an array encoded into a JSON body) and always emits JSON.
      *
      * @since  0.0.1
-     * @param  mixed                    $body   HTML body, or data payload on the api surface.
-     * @param  int                      $status HTTP status.
-     * @param  array<string, mixed>     $extra  Surface-specific extras (`headers`, `json`).
-     * @return array{status:int, body:string}
+     * @param  mixed                $body   HTML body, or data payload on the api surface.
+     * @param  int                  $status HTTP status.
+     * @param  array<string, mixed> $extra  `json` envelope, custom `headers`.
+     * @return array{status:int, body:string, headers:list<string>}
      */
     protected function respond (mixed $body = '', int $status = 200, array $extra = []): array
     {
         if ($this->surface === 'api')
         {
-            $body = json_encode ($extra['json'] ?? ['data' => $body], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+            $payload = json_encode ($extra['json'] ?? ['data' => $body], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+            return ['status' => $status, 'body' => (string) $payload, 'headers' => ['Content-Type: application/json; charset=utf-8']];
         }
 
-        return ['status' => $status, 'body' => (string) $body];
+        return ['status' => $status, 'body' => (string) $body, 'headers' => $extra['headers'] ?? []];
     }
 
     /**
@@ -67,7 +67,6 @@ class Controller
     {
         return $this->respond ("<h1>404 Not Found</h1><p>The requested page could not be found.</p>", 404);
     }
-
     /**
      * The normalised path of the current request (`/` for root).
      *

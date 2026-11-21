@@ -6,14 +6,17 @@ namespace System\Kernel;
  * Router — matches a request against the central route table and resolves it
  * to a controller action.
  *
- * Routes come from `apps/Config/Routes.php` (see that file for the table shape).
- * Each entry maps one method + path to a `[class, action]` target; `{name}`
- * segments are required params and `{name:regex}` adds a per-segment pattern,
- * tested after URL-decoding so `%2F`/`%20` cannot smuggle a path break.
+ * Table shape lives in `apps/Config/Routes.php`:
+ *   - flat: `'GET /hello/{name}' => Controller::class . '::hello'`
+ *   - prefix group:
+ *       '/admin' => ['prefix' => '/admin', 'routes' => [
+ *           'GET /dashboard'                 => Ctrl::class . '::index',
+ *           '/stats/{id}'                    => Ctrl::class . '::stats',   // GET by default
+ *       ]]
  *
- * Within a method, exact routes win before parameterised ones, matched in
- * declaration order. A missing class or method on a matched target is a fatal
- * wiring error, not a routing miss.
+ * `{name}` is required (`[^/]+`); `{name:regex}` narrows a segment. Exact
+ * routes win over parameterised ones within a method. A missing class or
+ * action on a matched target is a wiring error, not a miss.
  *
  * @since 0.0.1
  */
@@ -22,17 +25,17 @@ final class Router
     private function __construct () {}
 
     /**
-     * Compiled route groups keyed by upper-case method. Each entry is
-     * `[regexp, "Class::action", paramNames]`. Populated once per process.
+     * Compiled groups keyed by upper-case method. Each entry is
+     * `[regexp, "Class::action", paramNames]`. Built once per process.
      *
      * @var array<string, list<array{0:string, 1:string, 2:list<string>}>>|null
      */
     private static ?array $groups = null;
 
     /**
-     * Resolve a request. Returns a response array (`status`, `body`) for the
-     * first match; an unmatched path yields 404, a path routed under another
-     * method yields 405.
+     * Resolve a request. `['status', 'body']` for the first match; an unrouted
+     * path yields 404, and a routed path under another verb yields 405 with the
+     * real `Allow:` set from the table.
      *
      * @since  0.0.1
      * @param  string $method HTTP method (upper-cased here).
@@ -46,11 +49,25 @@ final class Router
 
         if ($hit !== null) {return $hit;}
 
-        // A routed path under another verb is 405, not 404. `Allow` is only set
-        // when headers are still uncommitted.
-        if (self::hasPath ($path))
+        // HEAD behaves as GET for router purposes but must not execute a body;
+        // the gateway trims it for HEAD, so treat it as a GET candidate.
+        if ($method === 'HEAD')
         {
-            if (!headers_sent ()) {header ('Allow: GET');}
+                    // HEAD is served as a GET candidate; the gateway drops the body.
+            $head = self::match ('GET', $path);
+            if ($head !== null)
+            {
+                        if (!headers_sent ()) {header ('Content-Length: '.strlen ($head['body']));}
+                        return ['status' => $head['status'], 'body' => '', 'headers' => $head['headers']];
+            }
+        }
+
+        $allowed = self::allowedFor ($path);
+
+        // A routed path under another verb is 405, not 404.
+        if ($allowed !== [])
+        {
+            if (!headers_sent ()) {header ('Allow: '.implode (', ', $allowed));}
             return ['status' => 405, 'body' => '<h1>405 '.statc (405).'</h1><p>The request method is not allowed for this route.</p>'];
         }
 
@@ -113,16 +130,45 @@ final class Router
         }
 
         $compiled = [];
-        foreach ($raw as $method => $routes)
+        foreach ($raw as $key => $value)
         {
-            if (!is_string ($method) || !is_array ($routes)) {continue;}
-
-            $method = strtoupper ($method);
-            foreach ($routes as $path => $route)
+                    // Prefix group: value carries its own routes under 'routes'.
+                    if (is_array ($value) && isset ($value['prefix'], $value['routes']) && is_array ($value['routes']))
             {
-                // Entries are `'/{slug}' => [Controller::class, 'action']`.
-                $compiled[$method][] = self::compile ($method, (string) $path, $route);
+                        $prefix = self::normalise ((string) $value['prefix']);
+                        foreach ($value['routes'] as $inner => $target)
+                {
+                            // Inner keys may be `METHOD /path` or just `/path`; default verb GET.
+                            $verb = 'GET';
+                            $path = (string) $inner;
+
+                            if (str_contains ($path, ' '))
+                            {
+                                [$verb, $path] = explode (' ', ltrim ($path), 2);
+                            }
+
+                            $joined = rtrim ($prefix, '/').'/'.ltrim ($path, '/');
+                            $path   = ($joined === '/' ? '/' : $joined);
+
+                            self::parseTarget ($target);
+                            $compiled[strtoupper ($verb)][] = self::compile (strtoupper ($verb), self::normalise ($path), $target);
+                }
+
+                continue;
             }
+
+                    // Flat: 'GET /path' => Controller::method
+                    if (!is_string ($key) || !str_contains ($key, ' ') || !is_string ($value) || $value === '')
+                    {
+                        continue;
+                    }
+
+            [$verb, $pattern] = explode (' ', $key, 2) + ['', ''];
+                    $pattern = trim ($pattern);
+                    if ($pattern === '') {continue;}
+
+                    self::parseTarget ($value); // fail-loud for the whole table
+                    $compiled[strtoupper ($verb)][] = self::compile (strtoupper ($verb), $pattern, $value);
         }
 
         return self::$groups = $compiled;
@@ -137,176 +183,6 @@ final class Router
     public static function flush (): void
     {
         self::$groups = null;
-    }
-
-    /**
-     * True when any compiled route of any method matches `$path` — used to
-     * tell 405 from 404.
-     *
-     * @since  0.0.1
-     * @param  string $path Raw request path.
-     * @return bool
-     */
-    private static function hasPath (string $path): bool
-    {
-        $path = self::normalise ($path);
-        foreach (self::table () as $routes)
-        {
-            foreach ($routes as $route)
-            {
-                if (preg_match ($route[0], $path) === 1) {return true;}
-            }
-        }
-
-        return false;
-    }
-
-
-    /**
-     * Compile one raw group entry into `[regexp, "Class::action", [params]]`.
-     * Malformed entries throw during boot, not on the first hit.
-     *
-     * @since  0.0.1
-     * @param  string     $method Owner method (for messages).
-     * @param  string|int $index  Path key or list index (for messages).
-     * @param  mixed  $route  Raw `[Controller::class, 'action']`.
-     * @return array{0:string, 1:string, 2:list<string>}
-     */
-    private static function compile (string $method, string|int $index, mixed $route): array
-    {
-        if (!is_array ($route) || count ($route) !== 2
-            || !is_string ($route[0]) || !is_string ($route[1]))
-        {
-            throw new \InvalidArgumentException ("Route {$method}#{$index}: expected [Controller::class, 'action'].");
-        }
-
-        [$class, $action] = $route;
-        $pattern = (string) $index;
-
-        if ($pattern === '' || $pattern[0] !== '/')
-        {
-            throw new \InvalidArgumentException ("Route {$method}#{$index}: path '{$pattern}' must start with '/'.");
-        }
-
-        $names = [];
-        $regexp = preg_replace_callback (
-            '/\{\s*([A-Za-z_][A-Za-z0-9_]*)(?:\s*:\s*([^{}]+))?\s*\}/',
-            function (array $m) use ($method, $index, $pattern, &$names): string
-            {
-                $name = $m[1];
-                $rule = isset ($m[2]) && trim ($m[2]) !== ''
-                    ? trim ($m[2])
-                    : '[^/]+';
-
-                // `#` is the delimiter; a literal `#` inside a rule must be escaped.
-                if (str_contains ($rule, '#') && !str_contains ($rule, '\#'))
-                {
-                    throw new \InvalidArgumentException ("Route {$method}#{$index}: regex fragment '{{$name}}' may not contain '#'.");
-                }
-
-                $check = @preg_match ("~^(?:{$rule})$~u", 'x');
-                if ($check === false)
-                {
-                    throw new \InvalidArgumentException ("Route {$method}#{$index}: invalid regex fragment '{{$name}:{$rule}}'.");
-                }
-
-                $names[] = $name;
-                return "(?P<{$name}>{$rule})";
-            },
-            $pattern
-        );
-
-        if (!is_string ($regexp))
-        {
-            throw new \InvalidArgumentException ("Route {$method}#{$index}: could not parse path '{$pattern}'.");
-        }
-
-        return
-        [
-            '~^'.$regexp.'$~u',
-            $class.'::'.$action,
-            $names,
-        ];
-    }
-
-    /**
-     * Test a path against one route regexp. Returns decoded params, `[]` for
-     * an exact match, or null on no match.
-     *
-     * @since  0.0.1
-     * @param  string       $regexp Route regexp including delimiters.
-     * @param  list<string> $names  Param names in capture order.
-     * @param  string       $path   Normalised request path.
-     * @return array<string, string>|null
-     */
-    private static function capture (string $regexp, array $names, string $path): ?array
-    {
-        if (preg_match ($regexp, $path, $m) !== 1) {return null;}
-        if ($names === []) {return [];}
-
-        $params = [];
-        foreach ($names as $name)
-        {
-            $params[$name] = rawurldecode ((string) ($m[$name] ?? ''));
-        }
-
-        return $params;
-    }
-
-    /**
-     * Invoke the matched target and enforce the response contract.
-     *
-     * @since  0.0.1
-     * @param  string                     $target "Class::action".
-     * @param  array<string, string>|null $params Named path params, decoded.
-     * @return array{status:int, body:string}
-     */
-        /**
-     * Invoke the matched target and normalise its answer. Parameters are
-     * passed positionally, in placeholder-declaration order.
-     *
-     * @since  0.0.1
-     * @param  string                     $target "Class::action".
-     * @param  array<string, string>|null $params Named path params, decoded.
-     * @return array{status:int, body:string}
-     */
-    private static function run (string $target, ?array $params = null): array
-    {
-        $parts = explode ('::', $target);
-        $class = $parts[0];
-        $action = $parts[1] ?? '';
-
-        if (!class_exists ($class))
-        {
-            throw new \RuntimeException ("Router target class not found: {$target}");
-        }
-
-        if ($action === '' || !method_exists ($class, $action))
-        {
-            throw new \RuntimeException ("Router action '{$action}' does not exist on {$class}.");
-        }
-
-        $controller = new $class ();
-
-        // Surface gate runs before the action; Phase 5 overrides `authorize()`
-        // on private/api controllers.
-        if ($controller instanceof Controller && !$controller->authorize ())
-        {
-            return $controller->surface === 'api'
-                ? ['status' => 401, 'body' => (string) json_encode (['error' => 'unauthenticated'], JSON_UNESCAPED_SLASHES)]
-                : ['status' => 403, 'body' => '<h1>403 Forbidden</h1><p>You are not allowed to access this page.</p>'];
-        }
-
-        $response = $params === null || $params === []
-            ? $controller->{$action}()
-            : $controller->{$action}(...array_values ($params));
-
-        if (is_array ($response))
-        {
-            return ['status' => (int) ($response['status'] ?? 200), 'body' => (string) ($response['body'] ?? '')];
-        }
-
-        return ['status' => 200, 'body' => (string) $response];
     }
 
     /**
@@ -330,5 +206,204 @@ final class Router
 
         if ($path === '') {return '/';}
         return str_starts_with ($path, '/') ? $path : '/'.$path;
+    }
+
+    /**
+     * Methods whose compiled regexp matches `$path`; empty when routed nowhere.
+     *
+     * @since  0.0.1
+     * @param  string $path Raw request path.
+     * @return list<string>
+     */
+    private static function allowedFor (string $path): array
+    {
+        $path  = self::normalise ($path);
+        $found = [];
+
+        foreach (self::table () as $verb => $routes)
+        {
+            foreach ($routes as $route)
+            {
+                if (preg_match ($route[0], $path) === 1) {$found[] = $verb; break;}
+            }
+        }
+
+        return $found;
+    }
+
+    /**
+     * Compile one raw entry into `[regexp, "Class::action", [params]]`.
+     * Malformed entries throw at boot, not on the first hit.
+     *
+     * @since  0.0.1
+     * @param  string     $method Owner verb (for messages).
+         * @param  string     $pattern Raw route path pattern, must start with '/'.
+     * @param  mixed      $target  `Controller::class . '::' . action`.
+     * @return array{0:string, 1:string, 2:list<string>}
+     */
+    private static function compile (string $method, string $pattern, mixed $target): array
+    {
+        if (!is_string ($target) || substr_count ($target, '::') !== 1)
+        {
+            throw new \InvalidArgumentException ("Route {$method} {$pattern}: target must be \"Controller::class::action\".");
+        }
+
+        if ($pattern === '' || $pattern[0] !== '/')
+        {
+            throw new \InvalidArgumentException ("Route {$method} {$pattern}: path must start with '/'.");
+        }
+
+            self::parseTarget ($target); // fail-loud for bad class/action
+
+        $names  = [];
+        $regexp = preg_replace_callback (
+            '/\{\s*([A-Za-z_][A-Za-z0-9_]*)(?:\s*:\s*([^{}]+))?\s*\}/',
+            function (array $m) use ($method, $pattern, &$names): string
+            {
+                $name = $m[1];
+                $rule = isset ($m[2]) && trim ($m[2]) !== '' ? trim ($m[2]) : '[^/]+';
+
+                // `#` is the delimiter; a literal `#` inside a rule must be escaped.
+                if (str_contains ($rule, '#') && !str_contains ($rule, '\#'))
+                {
+                    throw new \InvalidArgumentException ("Route {$method} {$pattern}: regex fragment '{{$name}}' may not contain '#'.");
+                }
+
+                if (@preg_match ("~^(?:{$rule})$~u", 'x') === false)
+                {
+                    throw new \InvalidArgumentException ("Route {$method} {$pattern}: invalid regex fragment '{{$name}:{$rule}}'.");
+                }
+
+                $names[] = $name;
+                return "(?P<{$name}>{$rule})";
+            },
+            $pattern
+        );
+
+        if (!is_string ($regexp))
+        {
+            throw new \InvalidArgumentException ("Route {$method} {$pattern}: could not parse path.");
+        }
+
+        return ['~^'.$regexp.'$~u', $target, $names];
+    }
+
+    /**
+     * Test a path against one route regexp. Returns decoded params, `[]` for an
+     * exact match, or null on no match.
+     *
+     * @since  0.0.1
+     * @param  string       $regexp Route regexp including delimiters.
+     * @param  list<string> $names  Param names in capture order.
+     * @param  string       $path   Normalised request path.
+     * @return array<string, string>|null
+     */
+    private static function capture (string $regexp, array $names, string $path): ?array
+    {
+        if (preg_match ($regexp, $path, $m) !== 1) {return null;}
+        if ($names === []) {return [];}
+
+        $params = [];
+        foreach ($names as $name)
+        {
+            $params[$name] = rawurldecode ((string) ($m[$name] ?? ''));
+        }
+
+        return $params;
+    }
+
+    /**
+     * Split a `"Class::method"` target and validate both halves exist.
+     *
+     * @since  0.0.1
+     * @param  string $target "Class::method".
+     * @return list{0:class-string, 1:string}
+     */
+    private static function parseTarget (mixed $target): array
+    {
+        [$class, $action] = explode ('::', (string) $target) + [1 => null];
+
+        if ($action === null || $action === '' || !class_exists ($class))
+        {
+            throw new \RuntimeException ("Route target class not exist: {$target}");
+        }
+
+        if (!method_exists ($class, $action))
+        {
+            throw new \RuntimeException ("Route target method '{$action}' not exist on {$class}.");
+        }
+
+        return [$class, $action];
+    }
+
+    /**
+     * Invoke the matched target and normalise its answer. Parameters are passed
+     * positionally, in placeholder-declaration order.
+     *
+     * @since  0.0.1
+     * @param  string                     $target "Class::action".
+     * @param  array<string, string>|null $params Named path params, decoded.
+     * @return array{status:int, body:string, headers:list<string>}
+     */
+    private static function run (string $target, ?array $params = null): array
+    {
+        [$class, $action] = self::resolve ($target);
+            $controller = new $class ();
+
+        // Gate runs before the action; Phase 5 overrides `authorize()` on
+        // private/api controllers.
+        if ($controller instanceof Controller && !$controller->authorize ())
+        {
+                $body = $controller->surface === 'api'
+                    ? json_encode (['ok' => false, 'error' => 'unauthenticated'], JSON_UNESCAPED_SLASHES)
+                    : '<h1>403 Forbidden</h1><p>You are not allowed to access this page.</p>';
+
+                return [
+                    'status'  => $controller->surface === 'api' ? 401 : 403,
+                    'body'    => $body,
+                    'headers' => $controller->surface === 'api' ? ['Content-Type: application/json; charset=utf-8'] : [],
+                ];
+        }
+
+        $response = $params === null || $params === []
+            ? $controller->{$action}()
+            : $controller->{$action}(...array_values ($params));
+
+        if (is_array ($response))
+        {
+            return [
+                'status'  => (int) ($response['status'] ?? 200),
+                'body'    => (string) ($response['body'] ?? ''),
+                'headers' => $response['headers'] ?? [],
+            ];
+        }
+
+        return ['status' => 200, 'body' => (string) $response];
+    }
+
+    /**
+     * Resolve a `Class::action` target to a verified pair.
+     *
+     * @since  0.0.1
+     * @param  string $target "Class::action".
+     * @return list{0:class-string, 1:string}
+     */
+    private static function resolve (string $target): array
+    {
+        $pair = explode ('::', $target);
+        $class = $pair[0];
+        $action = $pair[1] ?? '';
+
+        if (!class_exists ($class))
+        {
+            throw new \RuntimeException ("Route target class not found: {$target}");
+        }
+
+        if ($action === '' || !method_exists ($class, $action))
+        {
+            throw new \RuntimeException ("Route action '{$action}' not exist on {$class}.");
+        }
+
+        return [$class, $action];
     }
 }

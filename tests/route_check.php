@@ -1,16 +1,12 @@
 <?php declare(strict_types=1);
 
 /**
- * Phase 1 route-match smoke check (decision D7: tests live in /tests).
+ * Phase 1 route smoke check (decision D7: tests live in /tests).
  * Run from anywhere: php tests/route_check.php
  *
- * Boots the real entry chain, loads System\Kernel\Router, and asserts:
- *   - exact route wins over a parameterised one,
- *   - required params captured + regex constrained,
- *   - method mismatch on a routed path is 405 (POST /),
- *   - unrouted path is 404,
- *   - bad controller target throws.
- * Pass = exit 0.
+ * Writes a temporary Routes.php to exercise the real table shape, then restores.
+ * Covers flat `METHOD /path` keys and prefix groups, params, regex, method
+ * mismatch, normalisation, and malformed targets. Pass = exit 0.
  */
 
 chdir (dirname (__DIR__) . '/public');
@@ -18,18 +14,30 @@ require dirname (__DIR__) . '/public/index.php';
 
 use System\Kernel\Router;
 
-// A throwaway controller so no phase-3 file can mask router behaviour.
+// Probe controller loaded through the autoloader; nothing in phase-3 can mask
+// router behaviour.
 if (!class_exists (RouteProbeController::class))
 {
-    eval ('namespace { final class RouteProbeController extends \System\Controllers\PublicController { public function index (): array { return ["status" => 200, "body" => "ok"]; } public function show (string $name): array { return ["status" => 200, "body" => "show ".$name]; } } }');
+    eval ('namespace { final class RouteProbeController extends \System\Controllers\PublicController { public function index (): array { return ["status" => 200, "body" => "ok"]; } public function show (string $name): array { return ["status" => 200, "body" => "show ".$name]; } public function digits (string $n): array { return ["status" => 200, "body" => "num ".$n]; } } }');
 }
 
 $routesFile = interlace (appf, 'Config', 'Routes.php');
-$expected   = "<?php\nreturn [\n    'GET' => [\n        '/'                    => [\\{cls}::class, 'index'],\n        '/hello/{name}'        => [\\{cls}::class, 'show'],\n        '/hello-digits/{name:\\d+}' => [\\{cls}::class, 'show'],\n    ],\n];\n";
 $backup     = file_get_contents ($routesFile);
-file_put_contents ($routesFile, str_replace ('{cls}', RouteProbeController::class, $expected));
+$cluster    = '\\RouteProbeController';
+$fixture    = "<?php\nreturn [\n"
+    ."        'GET /'                         => {$cluster}::class.'::index',\n"
+    ."        'GET /hello/{name}'             => {$cluster}::class.'::show',\n"
+    ."        'GET /hello-digits/{name:\\d+}' => {$cluster}::class.'::digits',\n"
+    ."        'POST /submit'                  => {$cluster}::class.'::index',\n"
+    ."        '/admin' => ['prefix' => '/admin', 'routes' => [\n"
+    ."            'GET /dashboard' => {$cluster}::class.'::index',\n"
+    ."            '/stats/{id}'    => {$cluster}::class.'::digits',\n"
+    ."        ]],\n"
+    ."];\n";
 
-register_shutdown_function (function () use ($routesFile, $backup)
+file_put_contents ($routesFile, $fixture);
+
+register_shutdown_function (function () use ($routesFile, $backup): void
 {
     file_put_contents ($routesFile, $backup);
 });
@@ -43,31 +51,26 @@ $check = function (string $label, bool $cond) use (&$pass): void
     if (!$cond) {$pass = false;}
 };
 
-// Exact route wins over `/hello/{name}` for the same shape.
-$check ('exact "/" dispatches', Router::dispatch ('GET', '/') === ['status' => 200, 'body' => 'ok']);
+$check ('exact "/" dispatches', Router::dispatch ('GET', '/') === ['status' => 200, 'body' => 'ok', 'headers' => []]);
+$check ('param captured', Router::dispatch ('GET', '/hello/world')['body'] === 'show world');
+$check ('regex rejects non-digit', Router::dispatch ('GET', '/hello-digits/abc')['status'] === 404);
+$check ('regex accepts digit', Router::dispatch ('GET', '/hello-digits/123')['body'] === 'num 123');
 
-// Param route captures + passes positionally.
-$r = Router::dispatch ('GET', '/hello/nanoradfw');
-$check ('param captured', $r['status'] === 200 && $r['body'] === 'show nanoradfw');
+$check ('group flat key', Router::dispatch ('GET', '/admin/dashboard')['body'] === 'ok');
+$check ('group default verb', Router::dispatch ('GET', '/admin/stats/7')['body'] === 'num 7');
 
-// Regex-constrained variant rejects non-digits with 404 (falls through).
-$check ('regex constraint rejects non-digit', Router::dispatch ('GET', '/hello-digits/abc')['status'] === 404);
-$check ('regex constraint accepts digits', Router::dispatch ('GET', '/hello-digits/123')['body'] === 'show 123');
-
-// Method mismatch on a routed path → 405; unknown path → 404.
-$check ('wrong method is 405', Router::dispatch ('POST', '/')['status'] === 405);
+$check ('POST route', Router::dispatch ('POST', '/submit')['status'] === 200);
+$check ('DELETE / only => 405', Router::dispatch ('DELETE', '/')['status'] === 405);
 $check ('unknown path is 404', Router::dispatch ('GET', '/missing')['status'] === 404);
+$check ('HEAD falls back to GET', Router::dispatch ('HEAD', '/hello/x')['status'] === 200);
 
-// Trailing slash and duplicate slashes normalise to the canonical path.
-$check ('trailing slash normalises',
-    Router::dispatch ('GET', '//hello/nano/')['body'] === 'show nano'
-);
+$check ('normalises duplicate/trailing slashes',
+    Router::dispatch ('GET', '//hello/nano/')['body'] === 'show nano');
 
-// Malformed target throws (missing class).
-file_put_contents ($routesFile, "<?php\nreturn ['GET' => ['/' => [\\Nope\\Missing::class, 'index']]];\n");
+file_put_contents ($routesFile, "<?php\nreturn ['GET /bad' => '{RouteProbeController::class}'];\n");
 Router::flush ();
-try {Router::dispatch ('GET', '/'); $check ('missing target throws', false);}
-catch (RuntimeException $th) {$check ('missing target throws', true);}
+try {Router::dispatch ('GET', '/bad'); $check ('malformed target throws', false);}
+catch (RuntimeException $th) {$check ('malformed target throws', true);}
 
 file_put_contents ($routesFile, $backup);
 Router::flush ();

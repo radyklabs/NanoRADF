@@ -6,15 +6,17 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning: [S
 ## [Unreleased]
 
 ### Added
-- Phase 1 — routing & controllers: `src/Kernel/Router.php` (method + path matching, required `{name}` and constrained `{name:regex}` params, exact-before-parameterised, 405 vs 404 fallthrough) and `src/Kernel/Controller.php` (action lifecycle: return-array contract, public/private/api surfaces, `authorize()` guard, `respond()`/`notFound()` helpers). Base controllers `PublicController`, `PrivateController`, `ApiController`. Route table `apps/Config/Routes.php` consumed by the router through the gateway; dispatch runs on web SAPIs only so CLI smoke checks stay loader-only. Verification: `tests/route_check.php` (match/miss/param/regex/normalise/malformed target) + `tests/smoke_check.php` + `tests/layout_check.php`; unknown path → 404.
+- Phase 1 — routing & controllers: `src/Kernel/Router.php` and `src/Kernel/Controller.php`, base controllers `PublicController`, `PrivateController`, `ApiController`, route table `apps/Config/Routes.php` wired through the gateway. Route keys are flat `'GET /path'` => `Ctrl::class.'::action'`, with optional `'/prefix' => ['prefix'=>…, 'routes'=>[…]]` groups; `{name}` required + `{name:regex}` constrained params; exact-before-parameterised; HEAD served from GET (empty body); 405 carries `Allow:` from the table; `HEAD`/`OPTIONS`/unknown handled over HTTP. Router dispatch runs on web SAPIs only (`php_sapi_name () === 'cli'` keeps a plain loader so smoke checks resolve no routes). Runtime faults in dispatch follow the `$debug` gate instead of ever printing `message in file:line`. Verification: `tests/route_check.php` (match/miss/param/regex/normalise/prefix group/malformed target) + `tests/smoke_check.php` + `tests/layout_check.php`; browser-probed `/`, `/hello/{name}`, `/ping` (JSON), `POST /` → 405.
+- API envelope contract: api-surface `respond()` always emits JSON and sets `Content-Type: application/json; charset=utf-8` through the response headers list; the gateway applies that before the status line.
 
 ### Removed
 - `.supports` → `read_directories()` (dead code, no caller since `public/index.php` stopped declaring `$directories`; REPORT #4 closed).
+- `src/Kernel/Boot.php::initiate()` no longer emits the leftover `echo 'boot initiated!'` debug line (it leaked into every response body). `.config` now preserves the entry `$debug` value for the gateway catch-all instead of dropping it.
 
 ### Changed
+- Phase 1 route-table contract: keys are now flat `'GET /path'` (value `Ctrl::class.'::action'`), replacing the nested `'GET' => ['/path' => [...]]` shape; optional `'/prefix' => ['prefix'=>…,'routes'=>[…]]` groups keep module blocks grouped. `Allow:` is derived from the table (was hardcoded `GET`), `HEAD` is served from the GET candidate with an empty body, and a routed path under another verb returns 405.
+- API media type: `respond()` on the api surface emits JSON with `Content-Type: application/json; charset=utf-8`; the gateway now applies response headers before the status line so HTML vs JSON never collide.
 - The gateway's runtime error branch is now gated by `$debug` (`nanoradf`) instead of `APP_DEBUG`/`app.debug`, and logs status-normalised entries; bootstrap sentinels keep their friendly messages.
-- `src/Kernel/Boot.php::initiate()` no longer emits the leftover `echo 'boot initiated!'` debug line (it leaked into every response body).
-- `.config` preserves the entry `$debug` value for the gateway catch-all.
 - Two-root autoload contract (D10, Phase 0b): `App\…` → `apps/` and `Modules\…` → `modules/` always active; namespaces `nssys`/`nsapp`/`nsmod`; `app.modules` gates the per-module templates (`configfmod`, `controllersfmod`, `modelfmod`, `servicesfmod`, `viewsfmod`). `tests/layout_check.php` asserts both roots resolve + template gate.
 
 ### Fixed
@@ -23,7 +25,7 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning: [S
 
 ### Added
 
-- Project bootstrap chain: `public/index.php` → `public/nanoradf` → `.config` → `.supports` → `.structures` → `src/Kernel/Boot.php` with `initiate()` guard and gated error output.
+- Project bootstrap chain: `public/index.php` → `nanoradf` → `.config` → `.supports` → `.structures` → `src/Kernel/Boot.php` with `initiate()` guard and gated error output.
 - Global helper library in `.supports` (`is`, `urlify`, `namespacify`, `pathify`, `interlace`, `gserver`, `enval`, `genv`, `statc`, `fl`).
 - Directory/namespace structure map (`.structures`, `is_dir` guarded) and PSR-4 autoloader for `System\...` and `App\...` / `App\Modules\...`.
 - Application scaffold: `apps/` (Routes, Welcome module, shared Services) and `src/` core placeholders (Kernel Router/Controller, base controllers, Services, Helper, Contracts, Views taxonomy, themes).

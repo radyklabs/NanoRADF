@@ -45,14 +45,15 @@ Definition of done (v1): all PRD acceptance criteria pass; smoke checks recorded
 - Current `.env` carries `app.modules=false` (working default); the key itself stays gitignored — semantics documented here and in PRD FR-11.
 - Verification: `tests/layout_check.php` boots **both** ways asserting `nsapp`/`nsmod` + both roots resolve + template gate; `tests/smoke_check.php` exit 0; `http://nanoradfw.local` → 200. Fail-before/pass-after in `docs/REPORT.md`.
 
-### Phase 1 — Routing & controllers 🔵
+### Phase 1 — Routing & controllers ✅
 - **Depends on:** Phase 0, Phase 0b (controller/model/view locations are defined there).
 - **Owner:** main thread.
 - Implement `src/Kernel/Router.php` (method + path matching, params, 404 fallthrough) and `src/Kernel/Controller.php` (request lifecycle, response helpers, render hook).
 - Wire `apps/Config/Routes.php` as the route table consumed by the router.
 - Base controllers `PublicController` / `PrivateController` / `ApiController` (surface-specific auth/response rules).
 - Verification: CLI route-match checks (match/miss/param cases) + `http://nanoradfw.local` returns a controller response, unknown path → 404 handler.
-- **2026-11-21 (in progress):** Router (exact-first, `{name}`/`{name:regex}`, 405/404, normalise), Controller base + `authorize()`/`respond()`, three base controllers with distinct surfaces, `Routes.php` wired through the gateway; dispatch runs on web SAPIs only (`php_sapi_name () === 'cli'` skips). `tests/route_check.php` covers match/miss/param/regex/normalise/malformed target; smoke + layout checks stay green; root and unknown paths return 404. Route table currently empty (no app controllers yet) → root 404 is expected.
+- **2026-11-21:** Router (exact-first, `{name}`/`{name:regex}`, 405/404, normalise, prefix groups), Controller base + `authorize()`/`respond()`, three base controllers with distinct surfaces; gateway dispatches only on web SAPIs. `tests/route_check.php` covers match/miss/param/regex/normalise/group/malformed; smoke + layout stay green.
+- **2026-11-21 follow-up (format + priority batch):** route table keys are now flat `'GET /path'` / value `Ctrl::class.'::action'`, plus optional `'/prefix' => ['prefix'=>…,'routes'=>[…]]` groups; `Allow:` derived from the table, HEAD served from GET with empty body; runtime faults gated by `$debug`; api responses carry `application/json` through the gateway headers contract. Browser-verified: `/`, `/hello/{name}`, `/ping` (JSON), `POST /` → 405 with `Allow: GET`.
 
 ### Phase 2 — View system & assets ⚠️
 - **Depends on:** Phase 1. **Owner:** main thread.

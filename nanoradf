@@ -51,24 +51,42 @@ try
         // loads without resolving routes.
         if ($debug === true || php_sapi_name () !== 'cli')
         {
-                    $method     = strtoupper ((string) gserver ('request.method', 'GET'));
-                    $actionPath = Router::normalise ((string) gserver ('request.uri', '/'));
+            $method     = strtoupper ((string) gserver ('request.method', 'GET'));
+            $actionPath = Router::normalise ((string) gserver ('request.uri', '/'));
 
             try
             {
                 $response = Router::dispatch ($method, $actionPath);
 
-                header ('Content-Type: text/html; charset=utf-8', true, (int) ($response['status'] ?? 200));
+                            // Surface-specific headers (e.g. application/json on api) are
+                            // enforced here, before the status line goes out.
+                            $headers = (array) ($response['headers'] ?? []);
+                            $isJson = in_array ('Content-Type: application/json; charset=utf-8', $headers, true);
+
+                            if ($isJson)
+                            {
+                                header ('Content-Type: application/json; charset=utf-8', true, (int) ($response['status'] ?? 200));
+                            }
+                            else
+                            {
+                                foreach ($headers as $line)
+                                {
+                                    header ((string) $line);
+                                }
+
+                                header ('Content-Type: text/html; charset=utf-8', true, (int) ($response['status'] ?? 200));
+                            }
+
                 echo (string) ($response['body'] ?? '');
             }
 
             catch (Throwable $th)
             {
-                        // A throw here is a live runtime fault, not a bootstrap sentinel;
-                        // surface it and log, never fall through to the outer handler.
+                // Runtime fault: honour the $debug gate (FR-10).
+                $message = $th->getMessage ().' in '.$th->getFile ().':'.$th->getLine ();
                 header ('Content-Type: text/html; charset=utf-8', true, 500);
-                exit ('<h1>500 Internal Server Error</h1><p>'.htmlspecialchars (
-                    $th->getMessage ().' in '.$th->getFile ().':'.$th->getLine (), ENT_QUOTES).'</p>');
+                exit ('<h1>500 Internal Server Error</h1><p>'
+                    .htmlspecialchars ($debug === true ? $message : 'An unexpected error occurred.', ENT_QUOTES).'</p>');
             }
         }
     }

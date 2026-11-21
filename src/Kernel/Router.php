@@ -8,11 +8,12 @@ namespace System\Kernel;
  *
  * Table shape lives in `apps/Config/Routes.php`:
  *   - flat: `'GET /hello/{name}' => Controller::class . '::hello'`
- *   - prefix group:
- *       '/admin' => ['prefix' => '/admin', 'routes' => [
- *           'GET /dashboard'                 => Ctrl::class . '::index',
- *           '/stats/{id}'                    => Ctrl::class . '::stats',   // GET by default
- *       ]]
+ *   - prefix group (the string key IS the prefix; inner keys must be full
+ *     `METHOD /path` entries — a bare `/stats` is rejected):
+ *       '/admin' => [
+ *           'GET /dashboard'   => Ctrl::class . '::index',
+ *           'GET /stats/{id}'  => Ctrl::class . '::show',
+ *       ]
  *
  * `{name}` is required (`[^/]+`); `{name:regex}` narrows a segment. Exact
  * routes win over parameterised ones within a method. A missing class or
@@ -132,47 +133,57 @@ final class Router
         $compiled = [];
         foreach ($raw as $key => $value)
         {
-                    // Prefix group: value carries its own routes under 'routes'.
-                    if (is_array ($value) && isset ($value['prefix'], $value['routes']) && is_array ($value['routes']))
+                    // Prefix group: `'/admin' => [ 'GET /dash' => ..., ... ]` — the string
+                    // key is the prefix; every inner key must be a full `METHOD /path`.
+                    if (is_string ($key) && is_array ($value) && str_starts_with ($key, '/'))
             {
-                        $prefix = self::normalise ((string) $value['prefix']);
-                        foreach ($value['routes'] as $inner => $target)
+                        $prefix = self::normalise ($key);
+
+                        foreach ($value as $inner => $target)
                 {
-                            // Inner keys may be `METHOD /path` or just `/path`; default verb GET.
-                            $verb = 'GET';
-                            $path = (string) $inner;
-
-                            if (str_contains ($path, ' '))
-                            {
-                                [$verb, $path] = explode (' ', ltrim ($path), 2);
-                            }
-
-                            $joined = rtrim ($prefix, '/').'/'.ltrim ($path, '/');
-                            $path   = ($joined === '/' ? '/' : $joined);
+                            [$verb, $path] = self::splitKey ((string) $inner);
+                            $full = rtrim ($prefix, '/').'/'.ltrim ($path, '/');
+                            $full = $full === '' ? '/' : $full;
 
                             self::parseTarget ($target);
-                            $compiled[strtoupper ($verb)][] = self::compile (strtoupper ($verb), self::normalise ($path), $target);
+                            $compiled[strtoupper ($verb)][] = self::compile ($verb, self::normalise ($full), $target);
                 }
 
                 continue;
             }
 
-                    // Flat: 'GET /path' => Controller::method
-                    if (!is_string ($key) || !str_contains ($key, ' ') || !is_string ($value) || $value === '')
-                    {
-                        continue;
+                    // Flat route: 'METHOD /path' => Controller::method
+                    [$verb, $pattern] = self::splitKey ((string) $key);
+                    self::parseTarget ($value); // fail-loud for the whole table
+                    $compiled[strtoupper ($verb)][] = self::compile ($verb, $pattern, $value);
+                }
+
+                return self::$groups = $compiled;
                     }
 
-            [$verb, $pattern] = explode (' ', $key, 2) + ['', ''];
-                    $pattern = trim ($pattern);
-                    if ($pattern === '') {continue;}
+                    /**
+                     * Split a route key into `[verb, path]`; requires the `METHOD /path` form.
+                     *
+                     * @since  0.0.1
+                     * @param  string $key Route key as written in the table.
+                     * @return array{0:string, 1:string}
+                     */
+                    private static function splitKey (string $key): array
+                    {
+                        [$verb, $path] = explode (' ', $key, 2) + ['', ''];
 
-                    self::parseTarget ($value); // fail-loud for the whole table
-                    $compiled[strtoupper ($verb)][] = self::compile (strtoupper ($verb), $pattern, $value);
-        }
+                        if (!in_array (strtoupper (trim ($verb)), ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS'], true))
+                        {
+                            throw new \InvalidArgumentException ("Route key '{$key}' must start with an HTTP verb (e.g. 'GET /').");
+                        }
 
-        return self::$groups = $compiled;
-    }
+                        if (trim ($path) === '' || trim ($path)[0] !== '/')
+                        {
+                            throw new \InvalidArgumentException ("Route key '{$key}': path part must start with '/'.");
+                        }
+
+                        return [trim ($verb), trim ($path)];
+                    }
 
     /**
      * Re-read the table (explicit rebuild helper).

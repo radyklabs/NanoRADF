@@ -29,10 +29,10 @@ $fixture    = "<?php\nreturn [\n"
     ."        'GET /hello/{name}'             => {$cluster}::class.'::show',\n"
     ."        'GET /hello-digits/{name:\\d+}' => {$cluster}::class.'::digits',\n"
     ."        'POST /submit'                  => {$cluster}::class.'::index',\n"
-    ."        '/admin' => ['prefix' => '/admin', 'routes' => [\n"
+    ."        '/admin' => [\n"
     ."            'GET /dashboard' => {$cluster}::class.'::index',\n"
-    ."            '/stats/{id}'    => {$cluster}::class.'::digits',\n"
-    ."        ]],\n"
+    ."            'GET /stats/{id}' => {$cluster}::class.'::digits',\n"
+    ."        ],\n"
     ."];\n";
 
 file_put_contents ($routesFile, $fixture);
@@ -57,7 +57,8 @@ $check ('regex rejects non-digit', Router::dispatch ('GET', '/hello-digits/abc')
 $check ('regex accepts digit', Router::dispatch ('GET', '/hello-digits/123')['body'] === 'num 123');
 
 $check ('group flat key', Router::dispatch ('GET', '/admin/dashboard')['body'] === 'ok');
-$check ('group default verb', Router::dispatch ('GET', '/admin/stats/7')['body'] === 'num 7');
+$check ('group verb enforced', Router::dispatch ('GET', '/admin/stats/7')['body'] === 'num 7');
+$check ('group wrong verb is miss', Router::dispatch ('POST', '/admin/stats/7')['status'] === 405);
 
 $check ('POST route', Router::dispatch ('POST', '/submit')['status'] === 200);
 $check ('DELETE / only => 405', Router::dispatch ('DELETE', '/')['status'] === 405);

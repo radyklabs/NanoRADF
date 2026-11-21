@@ -49,7 +49,7 @@ try
 
         // Dispatch on web SAPIs; CLI stays a plain loader so tests/smoke_check.php
         // loads without resolving routes.
-        if ($debug === true || php_sapi_name () !== 'cli')
+        if (php_sapi_name () !== 'cli')
         {
             $method     = strtoupper ((string) gserver ('request.method', 'GET'));
             $actionPath = Router::normalise ((string) gserver ('request.uri', '/'));
@@ -61,7 +61,7 @@ try
                             // Surface-specific headers (e.g. application/json on api) are
                             // enforced here, before the status line goes out.
                             $headers = (array) ($response['headers'] ?? []);
-                            $isJson = in_array ('Content-Type: application/json; charset=utf-8', $headers, true);
+                            $isJson  = in_array ('Content-Type: application/json; charset=utf-8', $headers, true);
 
                             if ($isJson)
                             {
@@ -69,11 +69,7 @@ try
                             }
                             else
                             {
-                                foreach ($headers as $line)
-                                {
-                                    header ((string) $line);
-                                }
-
+                                foreach ($headers as $line) {header ((string) $line);}
                                 header ('Content-Type: text/html; charset=utf-8', true, (int) ($response['status'] ?? 200));
                             }
 
@@ -82,11 +78,11 @@ try
 
             catch (Throwable $th)
             {
-                // Runtime fault: honour the $debug gate (FR-10).
+                            // Runtime fault; disclosure follows APP_DEBUG (FR-10).
                 $message = $th->getMessage ().' in '.$th->getFile ().':'.$th->getLine ();
                 header ('Content-Type: text/html; charset=utf-8', true, 500);
                 exit ('<h1>500 Internal Server Error</h1><p>'
-                    .htmlspecialchars ($debug === true ? $message : 'An unexpected error occurred.', ENT_QUOTES).'</p>');
+                                .htmlspecialchars (APP_DEBUG ? $message : 'An unexpected error occurred.', ENT_QUOTES).'</p>');
             }
         }
     }
@@ -107,8 +103,7 @@ catch (Throwable $th)
             exit ('<h1>500 Internal Server Error</h1><p>'.htmlspecialchars ($th->getMessage ().' in '.$th->getFile ().':'.$th->getLine (), ENT_QUOTES).'</p>');
         }
 
-    // Runtime faults (router/controller) get the generic message + status unless
-    // $debug reveals detail.
+    // Debug detail is disclosed only under APP_DEBUG (FR-10).
     $status = $known ? 500 : ($code >= 400 && $code <= 599 ? $code : 500);
 
     $heading = [
@@ -127,7 +122,7 @@ catch (Throwable $th)
         'kernel'    => 'The application could not be started. Please try again later.',
     ][$th->getMessage ()] ?? 'An unexpected error occurred. Please contact the Administrator.';
 
-    if ($debug === true && !$known)
+    if (APP_DEBUG && !$known)
     {
         $message = "{$message} in {$th->getFile ()}:{$th->getLine ()} ({$th->getMessage ()})";
     }
@@ -135,8 +130,7 @@ catch (Throwable $th)
     $log_dir = dirname (basepath . '/storage/logs/system.log');
     if (!is_dir ($log_dir)) {@mkdir ($log_dir, 0775, true);}
 
-// Never reveal internals unless $debug says so; the exception's own text is
-    // safe only under that gate.
+// Never reveal internals: APP_DEBUG gates the exception text.
     if (is_dir ($log_dir) && is_writable ($log_dir))
     {
         error_log ("[{$status}] {$message}", 3, "{$log_dir}/system.log");

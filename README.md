@@ -41,7 +41,7 @@ Autoload map (two roots, always active): `System\...` → `src/...`, `App\...` �
 ## Getting started
 
 1. Point the LocalWP site docroot at `public/` → open http://nanoradfw.local.
-2. Copy `.env` values as needed (gitignored; `app.env=local` by default; debug disclosure via `APP_DEBUG`, derived from `app.debug`).
+2. Copy `.env` values as needed (gitignored; `app.env=local` by default; debug disclosure via `is_debug()`, driven by `app.debug`).
 3. Read [docs/RULES.md](docs/RULES.md) before changing code — especially the boot smoke check for the bootstrap dotfiles.
 
 ## License

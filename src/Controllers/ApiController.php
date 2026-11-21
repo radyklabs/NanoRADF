@@ -23,7 +23,7 @@ class ApiController extends BaseController
      * @param  bool  $ok     false sends `{error}` instead of `{data}`.
      * @return array{status:int, body:string, headers:list<string>}
      */
-        protected function json (mixed $data = null, int $status = 200, bool $ok = true): array
+    protected function json (mixed $data = null, int $status = 200, bool $ok = true): array
     {
         $envelope = $ok ? ['ok' => true, 'data' => $data] : ['ok' => false, 'error' => is_string ($data) ? $data : 'Request failed'];
 

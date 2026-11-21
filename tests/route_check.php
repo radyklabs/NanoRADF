@@ -25,23 +25,19 @@ $routesFile = interlace (appf, 'Config', 'Routes.php');
 $backup     = file_get_contents ($routesFile);
 $cluster    = '\\RouteProbeController';
 $fixture    = "<?php\nreturn [\n"
-    ."        'GET /'                         => {$cluster}::class.'::index',\n"
-    ."        'GET /hello/{name}'             => {$cluster}::class.'::show',\n"
-    ."        'GET /hello-digits/{name:\\d+}' => {$cluster}::class.'::digits',\n"
-    ."        'POST /submit'                  => {$cluster}::class.'::index',\n"
-    ."        '/admin' => [\n"
-    ."            'GET /dashboard' => {$cluster}::class.'::index',\n"
-    ."            'GET /stats/{id}' => {$cluster}::class.'::digits',\n"
-    ."        ],\n"
+    ."    'GET /'                          => {$cluster}::class.'::index',\n"
+    ."    'GET /hello/{name}'              => {$cluster}::class.'::show',\n"
+    ."    'GET /hello-digits/{name:\\d+}'  => {$cluster}::class.'::digits',\n"
+    ."    'POST /submit'                   => {$cluster}::class.'::index',\n"
+    ."    'GET /variant/{id:\\d+}'         => {$cluster}::class.'::digits',\n"
+    ."    'GET /variant/{slug}'            => {$cluster}::class.'::show',\n"
+    ."    '/admin' => [\n"
+    ."        'GET /dashboard'  => {$cluster}::class.'::index',\n"
+    ."        'GET /stats/{id}' => {$cluster}::class.'::digits',\n"
+    ."    ],\n"
     ."];\n";
 
 file_put_contents ($routesFile, $fixture);
-
-register_shutdown_function (function () use ($routesFile, $backup): void
-{
-    file_put_contents ($routesFile, $backup);
-});
-
 Router::flush ();
 
 $pass  = true;
@@ -58,7 +54,14 @@ $check ('regex accepts digit', Router::dispatch ('GET', '/hello-digits/123')['bo
 
 $check ('group flat key', Router::dispatch ('GET', '/admin/dashboard')['body'] === 'ok');
 $check ('group verb enforced', Router::dispatch ('GET', '/admin/stats/7')['body'] === 'num 7');
-$check ('group wrong verb is miss', Router::dispatch ('POST', '/admin/stats/7')['status'] === 405);
+$check ('group wrong verb is miss', Router::dispatch ('POST', '/admin/stars/7')['status'] === 404);
+
+// Same param slot, different placeholder names across sibling patterns: the
+// canonical group name must keep captures from colliding.
+$check ('variant regex matches digits first',
+    Router::dispatch ('GET', '/variant/123') === ['status' => 200, 'body' => 'num 123', 'headers' => []]);
+$check ('variant loose catches non-digits',
+    Router::dispatch ('GET', '/variant/abc') === ['status' => 200, 'body' => 'show abc', 'headers' => []]);
 
 $check ('POST route', Router::dispatch ('POST', '/submit')['status'] === 200);
 $check ('DELETE / only => 405', Router::dispatch ('DELETE', '/')['status'] === 405);

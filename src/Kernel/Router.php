@@ -152,13 +152,13 @@ final class Router
                 continue;
             }
 
-                    // Flat route: 'METHOD /path' => Controller::method
-                    [$verb, $pattern] = self::splitKey ((string) $key);
-                    self::parseTarget ($value); // fail-loud for the whole table
-                    $compiled[strtoupper ($verb)][] = self::compile ($verb, $pattern, $value);
-                }
+                            // Flat route: 'METHOD /path' => Controller::method
+                            [$verb, $pattern] = self::splitKey ((string) $key);
+                            self::parseTarget ($value); // fail-loud for the whole table
+                            $compiled[strtoupper ($verb)][] = self::compile ($verb, $pattern, $value);
+                        }
 
-                return self::$groups = $compiled;
+                        return self::$groups = $compiled;
                     }
 
                     /**
@@ -248,9 +248,9 @@ final class Router
      *
      * @since  0.0.1
      * @param  string     $method Owner verb (for messages).
-         * @param  string     $pattern Raw route path pattern, must start with '/'.
+     * @param  string     $pattern Raw route path pattern, must start with '/'.
      * @param  mixed      $target  `Controller::class . '::' . action`.
-     * @return array{0:string, 1:string, 2:list<string>}
+     * @return array{0:string, 1:string, 2:array<string, string>}
      */
     private static function compile (string $method, string $pattern, mixed $target): array
     {
@@ -285,8 +285,13 @@ final class Router
                     throw new \InvalidArgumentException ("Route {$method} {$pattern}: invalid regex fragment '{{$name}:{$rule}}'.");
                 }
 
-                $names[] = $name;
-                return "(?P<{$name}>{$rule})";
+                        // Canonical group name avoids collisions between sibling routes
+                        // whose declared params differ (e.g. /item/{name} vs /item/{id}).
+                        $slot       = count ($names);
+                        $group      = 'p'.$slot;
+                        $names[$name] = $group;
+
+                        return "(?P<{$group}>{$rule})";
             },
             $pattern
         );
@@ -300,13 +305,14 @@ final class Router
     }
 
     /**
-     * Test a path against one route regexp. Returns decoded params, `[]` for an
-     * exact match, or null on no match.
+     * Capture params from a route match. `$names` maps declared param → regex
+     * group slot (`name => p0`), so a collision between sibling patterns cannot
+     * lose a value.
      *
      * @since  0.0.1
-     * @param  string       $regexp Route regexp including delimiters.
-     * @param  list<string> $names  Param names in capture order.
-     * @param  string       $path   Normalised request path.
+     * @param  string                $regexp Route regexp including delimiters.
+     * @param  array<string, string> $names  Declared param => capture group.
+     * @param  string                $path   Normalised request path.
      * @return array<string, string>|null
      */
     private static function capture (string $regexp, array $names, string $path): ?array
@@ -315,9 +321,9 @@ final class Router
         if ($names === []) {return [];}
 
         $params = [];
-        foreach ($names as $name)
+        foreach ($names as $name => $group)
         {
-            $params[$name] = rawurldecode ((string) ($m[$name] ?? ''));
+            $params[$name] = rawurldecode ((string) ($m[$group] ?? ''));
         }
 
         return $params;

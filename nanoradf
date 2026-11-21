@@ -55,13 +55,13 @@ catch (Throwable $th)
     ][$th->getCode()] ?? 'Internal System Error';
 
     $message = [
-        'starter'   => 'Starter environment is missing',
-        'phpmin'    => 'This framework needs younger php :p',
-        'common'    => 'Where the hell did you put the common key?!',
-        'config'    => 'Configuration key is missing',
-        'structure' => 'Failed to register core structures',
-        'boot'      => 'Wrong boot key',
-        'kernel'    => 'Kernel not booting up',
+        'starter'   => 'The starter file could not be found. Please reinstall the framework.',
+        'phpmin'    => 'This version of PHP is not supported. Please upgrade to a newer release.',
+        'common'    => 'The helper library could not be loaded. Please check the installation.',
+        'config'    => 'The configuration file could not be found. Please check the installation.',
+        'structure' => 'The framework directories could not be registered. Please check the installation.',
+        'boot'      => 'The kernel could not be started. Please check the installation.',
+        'kernel'    => 'The application could not be started. Please try again later.',
     ][$th->getMessage ()] ?? 'An unexpected error occurred. Please contact the Administrator.';
 
     $code = $th->getCode() ?: 500;

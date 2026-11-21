@@ -3,8 +3,8 @@
 /**
  * Web entry point — folder configuration and gateway hand-off.
  * --
- * Sets the three source-root names and the debug master switch,
- * then requires the project-root `nanoradf` gateway. No other logic here.
+ * Sets the three source-root names, then requires the project-root
+ * `nanoradf` gateway. No other logic here.
  *
  * @since 0.0.1
  */
@@ -37,6 +37,6 @@ $modules_folder = 'modules';
  * Open `.env` file to see the others configuration settings
 */
 
-require realpath ( dirname (__DIR__) . DIRECTORY_SEPARATOR . 'nanoradf');
+require realpath ( dirname (__DIR__).DIRECTORY_SEPARATOR.'nanoradf');
 
 // Says who only silence is golden?!

@@ -13,7 +13,7 @@ require dirname (__DIR__) . '/public/index.php';
 
 $const = fn (string $c): string => defined ($c) ? (string) constant ($c) : 'UNDEF';
 
-printf ("mode=%s\n", var_export (__env ('app.modules'), true));
+printf ("mode=%s\n", var_export (genv ('app.modules'), true));
 printf ("nsapp=%s\n", $const ('nsapp'));
 printf ("nsmod=%s\n", $const ('nsmod'));
 printf ("appf=%s\n", str_replace ('\\', '/', $const ('appf')));

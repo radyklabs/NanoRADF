@@ -12,13 +12,14 @@ if (!defined ('basepath'))
 /**
  * Kernel bootstrap — one-shot autoloader registration.
  *
- * @since 1.0.0
+ * @since 0.0.1
  */
 final class Boot
 {
     /**
      * Register the PSR-4 autoloader. Idempotent: safe to call repeatedly.
      *
+     * @since  0.0.1
      * @return void
      */
     public static function initiate ()
@@ -42,6 +43,8 @@ final class Boot
      * Prefixes come from the global namespace constants defined in `.config`:
      * `nssys` ("System"), `nsapp` ("App"), `nsmod` ("Modules"). `app.modules`
      * gates only the per-module folder/namespace templates in `.structures`.
+     *
+     * @since 0.0.1
      */
     public static function autoloader (string $class): void
     {

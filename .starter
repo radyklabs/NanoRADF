@@ -1,10 +1,11 @@
 <?php declare (strict_types=1);
 
 /**
- * Starter environment
+ * Starter environment — constants, dotenv, error reporting.
  * --
- * Preparing all things that needed for the nanoradf to be boot
- * and running smoothly
+ * Runs first in the gateway: defines version/path constants, loads
+ * `.env` into the process environment, then configures error
+ * reporting per `app.env` / `APP_DEBUG`.
  *
  * @since 0.0.1
  */
@@ -16,12 +17,19 @@ if (!defined ('basepath'))
     exit ("<h1>404 Not Found</h1><p>The requested page (or file) could not be found.</p>");
 }
 
+// Framework version + path constants.
+define ('appversion', '0.0.1');
+
+define ('sep', DIRECTORY_SEPARATOR);
+
+define ('publicpath', realpath (basepath.'public').sep);
+
 /**
  * Load `.env` into the process environment.
  * --
  * Parses `KEY=VALUE` lines (skips blanks and `#` comments, strips
  * surrounding quotes and inline `#` comments) and registers each
- * entry via putenv() and $_ENV, so getenv() and __env() can read it.
+ * entry via putenv() and $_ENV, so getenv() and genv() can read it.
  * Keys allow
  * dots (`app.modules`); an already-set environment variable wins;
  * invalid keys are ignored. Missing `.env` is skipped silently.
@@ -60,21 +68,22 @@ if (is_file ($env_file) && is_readable ($env_file))
         }
 
         putenv ("{$key}={$value}");
-        $_ENV[$key] = $value;   // group lookup in __env() scans $_ENV
+        $_ENV[$key] = $value;   // group lookup in genv() scans $_ENV
     }
 }
 
 unset ($env_file);
 
 /** 
- * Application debug mode
+ * Error reporting profile.
  * --
- * Basically read the dotenv but it will replaced if user or developer
- * set (define) `appdebug` in `index.php`
+ * With `app.debug=true`, maps `app.env` to a reporting level
+ * (dev/local → full display; testing → reduced notices; else
+ * silent). Without it, errors are silenced.
 */
-define ('appdebug', (getenv('app.debug')==='true'));
+define ('APP_DEBUG', (getenv('app.debug')==='true'));
 
-if (appdebug===true)
+if (APP_DEBUG)
 {
     switch (getenv('app.env'))
     {
@@ -103,3 +112,6 @@ else
     error_reporting (0);
     @ini_set ('display_errors', 0);
 }
+
+// Minimum PHP version required by the gateway's runtime gate.
+define ('PHP_MIN_VERSION', '8.1.34');

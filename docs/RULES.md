@@ -15,9 +15,9 @@ Read this before touching the repository. It is the normative companion to `CLAU
 - Naming:
   - Classes: PascalCase, one class per file, `final` where extension is not designed.
   - Methods/properties: camelCase.
-  - Global helper functions: snake_case (`namespacify`, `read_directories`); `__` prefix for superglobal accessors (`__env`, `__server`).
+  - Global helper functions: snake_case or short lowercase (`namespacify`, `read_directories`, `genv`, `gserver`, `enval`, `statc`, `fl`).
   - Global constants: lowercase (`basepath`, `sep`, `systemf`, `nssys`).
-- Prefer the existing helpers in `.supports` (`interlace`, `pathify`, `is`, `__env`) over ad-hoc path/string logic.
+- Prefer the existing helpers in `.supports` (`interlace`, `pathify`, `is`, `genv`) over ad-hoc path/string logic.
 
 ## 2. Placement & boundaries
 

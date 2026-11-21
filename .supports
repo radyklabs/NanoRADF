@@ -6,7 +6,7 @@
  * Pure functions shared across every bootstrap stage: path/namespace
  * normalisation, .env access, and HTTP utilities. Zero dependencies.
  *
- * @since 1.0.0
+ * @since 0.0.1
  */
 
 if (!defined ('basepath'))
@@ -19,7 +19,7 @@ if (!defined ('basepath'))
 /**
  * Strict equality check (`$value === $expecting`).
  *
- * @since  1.0.0
+ * @since  0.0.1
  * @param  mixed $value     The value to test.
  * @param  mixed $expecting The reference value.
  * @return bool True when strictly equal.
@@ -33,7 +33,7 @@ function is (mixed $value, mixed $expecting): bool { return $value === $expectin
  * Backslashes become forward slashes and duplicate slashes collapse;
  * the `//` in protocol schemes (http://, ftp://) is preserved.
  *
- * @since  1.0.0
+ * @since  0.0.1
  * @param  string $path Raw path or URL.
  * @return string URL-friendly path.
  */
@@ -52,7 +52,7 @@ function urlify (string $path): string
  * Splits on separators, strips characters invalid in a namespace
  * part, and formats each segment as PascalCase.
  *
- * @since  1.0.0
+ * @since  0.0.1
  * @param  string $string Input path or identifier.
  * @return string Namespace-formatted string.
  */
@@ -82,7 +82,7 @@ function namespacify (string $string): string
  * Collapses `/` and `\` runs into DIRECTORY_SEPARATOR; UNC prefixes
  * (\\server\share) are preserved.
  *
- * @since  1.0.0
+ * @since  0.0.1
  * @param  string $path Raw path.
  * @return string Canonical OS-native path.
  */
@@ -108,7 +108,7 @@ function pathify (string $path): string
  *
  * Example: interlace('system', 'Core', 'Boot.core') → 'system/Core/Boot.core'
  *
- * @since  1.0.0
+ * @since  0.0.1
  * @param  string ...$segments Path parts to concatenate.
  * @return string Combined path.
  */
@@ -141,7 +141,7 @@ function interlace (...$segments)
  * and returns its top-level `key => value` string pairs. Empty array
  * when the file is missing or holds no such array.
  *
- * @since  1.0.0
+ * @since  0.0.1
  * @param  string $file Absolute path to the entry file.
  * @return array<string, string> name => directory.
  */
@@ -195,17 +195,16 @@ function read_directories (string $file): array
 }
 
 /**
- * Access the $_SERVER superglobal safely.
+ * Read a value from the $_SERVER superglobal.
  *
- * Entry point for request path/uri reads (Router::tryAliases). Do not
- * deprecate without a real replacement — the previously referenced
- * WordPress::server() helper does not exist in this repo.
+ * Entry point for request path/uri reads (Router::tryAliases).
  *
- * @param  string|null $key     Superglobal key; dots become underscores ("request.uri" → REQUEST_URI). Null returns the whole array.
+ * @since  0.0.1
+ * @param  string|null $args    Key; dots become underscores ("request.uri" → REQUEST_URI). Null returns the whole array.
  * @param  string|null $default Fallback when the key is missing.
  * @return mixed
  */
-function __server (?string $args = null, ?string $default = null): mixed
+function gserver (?string $args = null, ?string $default = null): mixed
 {
     if (is_null ($args)) {return $_SERVER;}
     $args = strtoupper (str_replace ('.', '_', $args));
@@ -218,11 +217,11 @@ function __server (?string $args = null, ?string $default = null): mixed
  * true/false/null literals → typed value; numeric strings → int|float;
  * everything else → string as-is.
  *
- * @since  1.0.0
+ * @since  0.0.1
  * @param  string $value Raw .env value.
  * @return mixed
  */
-function cast_value (string $value): mixed
+function enval (string $value): mixed
 {
 	return match (strtolower ($value))
 	{
@@ -243,12 +242,12 @@ function cast_value (string $value): mixed
  * $_ENV (registered by `.starter`) by prefix. Requires the gateway
  * to have run `.starter` first.
  *
- * @since  1.0.0
+ * @since  0.0.1
  * @param  string $key     "app.port" for a leaf, "app" for the whole group.
  * @param  mixed  $default Fallback when the key/group is missing.
  * @return mixed Typed leaf value, group array, or $default.
  */
-function __env (string $key, mixed $default = false): mixed
+function genv (string $key, mixed $default = false): mixed
 {
 	$key = trim ($key);
 	// Key must be a valid env-var name or prefix.
@@ -256,7 +255,7 @@ function __env (string $key, mixed $default = false): mixed
 
 	// Leaf lookup: exact key registered by .starter via putenv().
 	$value = getenv ($key);
-	if (!is ($value, false)) {return cast_value ($value);}
+	if (!is ($value, false)) {return enval ($value);}
 
 	// Group lookup: prefix match (e.g. "app" → app.cdn.enabled, app.cdn.url).
 	// getenv() no-arg omits putenv() vars, so overlay $_ENV (written by .starter).
@@ -268,7 +267,7 @@ function __env (string $key, mixed $default = false): mixed
 	{
 		if (str_starts_with ((string) $k, $prefix))
 		{
-			$result[substr ((string) $k, strlen ($prefix))] = cast_value ((string) $v);
+			$result[substr ((string) $k, strlen ($prefix))] = enval ((string) $v);
 		}
 	}
 
@@ -279,11 +278,11 @@ function __env (string $key, mixed $default = false): mixed
 /**
  * Look up the HTTP reason phrase for a status code.
  *
- * @since  1.0.0
+ * @since  0.0.1
  * @param  int $code HTTP status code.
  * @return string Reason phrase, or a generic message when unknown.
  */
-function __s (int $code = 200): string
+function statc (int $code = 200): string
 {
 	return [
 		100	=> 'Continue',
@@ -342,7 +341,7 @@ function __s (int $code = 200): string
 /**
  * Build a file name in the requested extension form.
  *
- * @since  1.0.0
+ * @since  0.0.1
  * @param  string      $filename Base name without extension.
  * @param  string|bool $ext      'php' → "name.php" (default), false → ".name", other → "name.ext".
  * @return string File name.

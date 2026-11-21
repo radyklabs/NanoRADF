@@ -3,14 +3,17 @@
 /**
  * The Gateway: NanoRADF
  * --
- * An open source rapid application development framework for php 8.1+
+ * Bootstrap stage 1: entry guard → constants → dotenv → helper
+ * libraries → kernel hand-off, wrapped by a catch-all error path
+ * that logs to storage/logs/system.log.
  *
- * @package     NarnoRADF
+ * @package     NanoRADF
  * @author      RADLabs Development Team
  * @copyright   Radlabs Studio (c) 1986 - 2026
  * @since       0.0.1
  */
 
+// Entry guard: folder names must be set by public/index.php.
 if (!isset ($application_folder)
     || !isset ($system_folder)
     || !isset ($modules_folder))
@@ -30,15 +33,18 @@ if (!isset ($application_folder)
 $heading = 'Internal System Error';
 $message = 'An unexpected error occurred. Please contact the Administrator.';
 
-define ('sep', DIRECTORY_SEPARATOR);
-define ('publicpath', realpath (__DIR__.sep.'public').sep);
-define ('basepath', realpath (__DIR__).sep);
-// define ('appdebug', (isset ($debug) && $debug===true));
+define ('basepath', realpath (__DIR__).DIRECTORY_SEPARATOR);
 
-require_once realpath (basepath . '.starter');
+require_once realpath (basepath.'.starter');
 
 try
 {
+    // Runtime version gate.
+    if (version_compare (PHP_VERSION, PHP_MIN_VERSION, "<"))
+    {
+        throw new Exception ("This framework needs younger php :p", 500);
+    }
+
     $common_key = 'supports';
 
     if (!is_readable (call_user_func ('implode', '.', [basepath, $common_key])))
@@ -69,6 +75,7 @@ try
 
     else {throw new Exception ('Kernel not booting up', 500);}
 }
+// Catch-all: map the code to a heading, log file:line, emit the body.
 catch (Throwable $th)
 {
     $heading = [
@@ -77,7 +84,7 @@ catch (Throwable $th)
     ][$th->getCode()] ?? 'Internal System Error';
 
     $code = $th->getCode() ?: 500;
-    if (defined ('appdebug') && appdebug===true)
+    if (defined ('APP_DEBUG') && APP_DEBUG===true)
     {
         $message = "{$th->getMessage ()} in {$th->getFile ()}:{$th->getLine ()}";
     }

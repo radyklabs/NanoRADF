@@ -7,7 +7,7 @@
  * defines the `*f` directory constant and, where mapped, the `ns*` namespace
  * constant; missing directories are skipped silently.
  *
- * @since 1.0.0
+ * @since 0.0.1
  */
 
 if (!defined ('basepath'))
@@ -17,6 +17,7 @@ if (!defined ('basepath'))
     exit ("<h1>404 Not Found</h1><p>The requested page (or file) could not be found.</p>");
 }
 
+// Application layer map (apps/): folder path + namespace per MVC role.
 $appfs = [
     'configfapp'        => false,
     'controllersfapp'   => 'nsctrlapp',
@@ -45,7 +46,7 @@ foreach ($appfs as $f => $d)
 // D6/D9: app.modules=true registers the per-module folder/namespace templates
 // (modules/<Name>/…). Autoload roots are always App\… → apps/, Modules\… →
 // modules/; the flag gates only the template map below.
-if (__env ('app.modules') === true && defined ('nsmod') && is_dir (modulesf))
+if (genv ('app.modules') === true && defined ('nsmod') && is_dir (modulesf))
 {
     $modulesfs = [
         'configfmod'       => false,
@@ -70,6 +71,7 @@ if (__env ('app.modules') === true && defined ('nsmod') && is_dir (modulesf))
     }
 }
 
+// Framework core map (src/): folder path + System\ namespace per role.
 $systemfs = [
     'contractsf'    => 'nscont', 
     'controllersf'  => 'nsctrl', 
@@ -99,6 +101,7 @@ foreach ($systemfs as $f => $d)
     // echo "{$f} : {$path} : ".($d?constant($d):'')."<br/>";
 }
 
+// View taxonomy roles (src/Views/<role>): path constants only, no namespace.
 $viewfs = ['components', 'elements', 'errors', 'layouts', 'patterns', 'scripts', 'tokens'];
 foreach ($viewfs as $f)
 {

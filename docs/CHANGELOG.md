@@ -10,12 +10,12 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning: [S
 
 ### Fixed
 - Audit of the refactored bootstrap (`index.php`, `nanoradf`, `.config`, `.structures`, `Boot.php`): removed a fatal `Undefined constant "nsappmod"` in the autoloader/tests (`nsappmod`/`appmodf` were never defined), removed the `echo` debug leak in `.structures`, corrected modular namespace to `Modules\`, made `app.modules` functional again, and gated error disclosure with `$debug` in `index.php` (was hardcoded true, breaking FR-10).
-- `.starter` / `__env` dotenv consolidation: `.starter` is now the single `.env` parser (dotted keys, first-wins, inline `#` strip, silent skip when missing; registers via `putenv()` + `$_ENV`); `__env()` became a `getenv()` wrapper with `cast_value()` typing — removed its duplicate file parser, static cache, and `env_clear_cache()` (no callers).
+- `.starter` / `genv` dotenv consolidation: `.starter` is now the single `.env` parser (dotted keys, first-wins, inline `#` strip, silent skip when missing; registers via `putenv()` + `$_ENV`); `genv()` became a `getenv()` wrapper with `enval()` typing — removed its duplicate file parser, static cache, and `env_clear_cache()` (no callers).
 
 ### Added
 
 - Project bootstrap chain: `public/index.php` → `public/nanoradf` → `.config` → `.supports` → `.structures` → `src/Kernel/Boot.php` with `initiate()` guard and gated error output.
-- Global helper library in `.supports` (`is`, `urlify`, `namespacify`, `pathify`, `interlace`, `read_directories`, `__server`, `cast_value`, `__env`).
+- Global helper library in `.supports` (`is`, `urlify`, `namespacify`, `pathify`, `interlace`, `read_directories`, `gserver`, `enval`, `genv`, `statc`, `fl`).
 - Directory/namespace structure map (`.structures`, `is_dir` guarded) and PSR-4 autoloader for `System\...` and `App\...` / `App\Modules\...`.
 - Application scaffold: `apps/` (Routes, Welcome module, shared Services) and `src/` core placeholders (Kernel Router/Controller, base controllers, Services, Helper, Contracts, Views taxonomy, themes).
 - Web entry hardening: `.htaccess` front controller, `$debug`-gated error disclosure (was `app.env`/`app.debug`) with `error_log` fallback.
@@ -32,7 +32,7 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning: [S
 ### Changed
 
 - Gateway relocated: `public/nanoradf` → project-root `nanoradf` (entry `public/index.php` now requires it); `.starter` (dotenv loader) required before `.supports`.
-- `.supports` — filename helper `__f()` renamed to `fl()`; call sites in `.config` and `nanoradf` updated.
+- `.supports` — helper renames: `__f()`→`fl()`, `__env()`→`genv()`, `__server()`→`gserver()`, `cast_value()`→`enval()`, `__s()`→`statc()`; call sites in `.config`, `nanoradf`, `.structures`, and `tests/bootstrap_probe.php` updated.
 - `CLAUDE.md` — `>branch` custom command now follows the Branching Model: derive `<type>/<slug>` from the task (`feat`/`fix`/`hotfix`/`patch`), verify unused local + `origin`, create from the `dev` tip, and switch.
 
 - `.config` — registers `appf`/`modulesf`/`systemf` from entry vars + namespaces `nsapp`/`nsmod`/`nssys`; structural guard requires `modulesf` + `kernelf`.

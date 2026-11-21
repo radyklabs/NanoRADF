@@ -160,7 +160,7 @@ Module views live in `modules/<Name>/Views/` as PHP view classes (e.g. `WelcomeV
 .
 ├── .config              # bootstrap #2: helpers → structures → Boot   [code]
 ├── .structures          # path + namespace constants (is_dir guarded) [code]
-├── .supports            # global helper library (is/interlace/__env…) [code]
+├── .supports            # global helper library (is/interlace/genv…) [code]
 ├── .env                 # environment config (gitignored)             [config]
 ├── .envrc               # LocalWP direnv (gitignored)                 [config]
 ├── .gitignore

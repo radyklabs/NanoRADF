@@ -55,6 +55,7 @@ catch (Throwable $th)
     ][$th->getCode()] ?? 'Internal System Error';
 
     $message = [
+        'starter'   => 'Starter environment is missing',
         'phpmin'    => 'This framework needs younger php :p',
         'common'    => 'Where the hell did you put the common key?!',
         'config'    => 'Configuration key is missing',

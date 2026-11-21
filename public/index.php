@@ -1,19 +1,22 @@
 <?php declare (strict_types=1);
 
-// Application folder name
-$application_folder = 'apps';
+/**
+ * Web entry point — folder configuration and gateway hand-off.
+ *
+ * Sets the three source-root names and the debug master switch,
+ * then requires the `public/nanoradf` gateway. No other logic here.
+ *
+ * @since 1.0.0
+ */
 
-// Modules folder name
-$modules_folder = 'modules';
+$application_folder = 'apps';   // main MVC root
+$system_folder = 'src';         // framework core — do not change
+$modules_folder = 'modules';    // optional HMVC root
 
-// System folder name, don't change except you know what're you doing
-$system_folder = 'src';
-
-// Debug disclosure: detail (file:line) in bootstrap error output when true.
-// Master switch for local/dev. Set false for production. See .env app.env.
+// Debug master switch: file:line detail in bootstrap error output.
+// True for local/dev, false for production.
 $debug = true;
 
-// Calling nanoradf gateway
 require realpath ('nanoradf');
 
 // Says who only silence is golden

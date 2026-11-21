@@ -9,10 +9,18 @@ if (!defined ('basepath'))
     exit ("<h1>404 Not Found</h1><p>The requested page (or file) could not be found.</p>");
 }
 
-// use Exception;
-
+/**
+ * Kernel bootstrap — one-shot autoloader registration.
+ *
+ * @since 1.0.0
+ */
 final class Boot
 {
+    /**
+     * Register the PSR-4 autoloader. Idempotent: safe to call repeatedly.
+     *
+     * @return void
+     */
     public static function initiate ()
     {
         static $registered = false;

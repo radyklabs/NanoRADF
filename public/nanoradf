@@ -1,5 +1,15 @@
 <?php declare (strict_types=1);
 
+/**
+ * Gateway — loads helpers, configuration, and kernel.
+ *
+ * Bootstrap stage 1: defines path constants, requires `.supports` and
+ * `.config`, then initiates Boot. Failures render a generic error page;
+ * details are appended to storage/logs/system.log.
+ *
+ * @since 1.0.0
+ */
+
 if (!isset ($application_folder)
     || !isset ($system_folder)
     || !isset ($modules_folder))
@@ -9,8 +19,8 @@ if (!isset ($application_folder)
     exit ("<h1>404 Not Found</h1><p>The requested page (or file) could not be found.</p>");
 }
 
-// Stop editing. Leave code below, it's fragile to the system.
-// These messages are visible only if the framework cannot load at all.
+// Bootstrap below is fragile — edits here can break the whole system.
+// These messages surface only when the framework cannot load at all.
 $heading = 'Internal System Error';
 $message = 'An unexpected error occurred. Please contact the Administrator.';
 

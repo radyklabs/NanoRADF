@@ -1,5 +1,14 @@
 <?php declare (strict_types=1);
 
+/**
+ * Global helper library — loaded first by the gateway.
+ *
+ * Pure functions shared across every bootstrap stage: path/namespace
+ * normalisation, .env access, and HTTP utilities. Zero dependencies.
+ *
+ * @since 1.0.0
+ */
+
 if (!defined ('basepath'))
 {
     http_response_code (404);
@@ -8,29 +17,25 @@ if (!defined ('basepath'))
 }
 
 /**
- * Strict equality check.
- *
- * Shorthand helper for `$value === $expecting`.
+ * Strict equality check (`$value === $expecting`).
  *
  * @since  1.0.0
  * @param  mixed $value     The value to test.
  * @param  mixed $expecting The reference value.
- * @return bool True if strictly equal.
+ * @return bool True when strictly equal.
  */
 function is (mixed $value, mixed $expecting): bool { return $value === $expecting; }
 
 
 /**
- * Normalise path separators for URL usage.
+ * Normalise a path or URL for web usage.
  *
- * Converts all backslashes to forward slashes and removes
- * any duplicate slashes, ensuring a clean, web-friendly path.
- * It intelligently preserves the double slash in protocol schemes
- * like 'http://' or 'ftp://'.
+ * Backslashes become forward slashes and duplicate slashes collapse;
+ * the `//` in protocol schemes (http://, ftp://) is preserved.
  *
  * @since  1.0.0
- * @param  string $path The raw path or URL string.
- * @return string A clean, URL-friendly path string.
+ * @param  string $path Raw path or URL.
+ * @return string URL-friendly path.
  */
 function urlify (string $path): string
 {
@@ -42,17 +47,14 @@ function urlify (string $path): string
 }
 
 /**
- * Converts a string into a valid, PSR-4 compliant namespace.
+ * Convert a path or identifier into a PSR-4 namespace.
  *
- * This function takes a string, such as a file path or a simple
- * identifier, and transforms it into a clean, well-formed PHP namespace.
- * It handles various separators, sanitizes segment names, and formats
- * them in PascalCase, ensuring the output is ready for use in
- * class definitions and dynamic lookups.
+ * Splits on separators, strips characters invalid in a namespace
+ * part, and formats each segment as PascalCase.
  *
  * @since  1.0.0
- * @param  string $string The input string to convert.
- * @return string The formatted, namespace-friendly string.
+ * @param  string $string Input path or identifier.
+ * @return string Namespace-formatted string.
  */
 function namespacify (string $string): string
 {
@@ -75,16 +77,14 @@ function namespacify (string $string): string
 }
 
 /**
- * Normalise path separators to the current OS.
+ * Normalise separators to the current OS convention.
  *
- * Converts both '/' and '\' into the OS-native DIRECTORY_SEPARATOR,
- * collapses consecutive separators, and correctly handles UNC paths
- * (e.g., '\\server\share'). This creates a canonical, reliable
- * filesystem path.
+ * Collapses `/` and `\` runs into DIRECTORY_SEPARATOR; UNC prefixes
+ * (\\server\share) are preserved.
  *
  * @since  1.0.0
- * @param  string $path Raw path string to clean.
- * @return string A clean path using the correct OS separator.
+ * @param  string $path Raw path.
+ * @return string Canonical OS-native path.
  */
 function pathify (string $path): string
 {
@@ -101,17 +101,16 @@ function pathify (string $path): string
 }
 
 /**
- * Join path segments into a single normalised path.
+ * Join path segments into one normalised path.
  *
- * Glues multiple folder/file parts together with '/' separator,
- * safe for both filesystem (Windows accepts '/') and URLs.
- * Trims extra slashes and skips empty segments.
+ * Trims stray slashes, skips empty segments, then converts to the
+ * OS separator — safe for filesystem and URLs.
  *
  * Example: interlace('system', 'Core', 'Boot.core') → 'system/Core/Boot.core'
  *
  * @since  1.0.0
- * @param  string ...$segments One or more path parts to concatenate.
- * @return string The resulting combined path.
+ * @param  string ...$segments Path parts to concatenate.
+ * @return string Combined path.
  */
 function interlace (...$segments)
 {
@@ -136,15 +135,15 @@ function interlace (...$segments)
 }
 
 /**
- * Extract the `$directories` map from the web entry file (index.php).
+ * Extract the `$directories` map from an entry file.
  *
- * Tokenizes the source, locates the `$directories = [ ... ]` assignment
- * and returns its top-level `key => value` string pairs. Returns an empty
- * array when the file is missing or holds no such array literal.
+ * Tokenizes the source, locates the `$directories = [ … ]` literal,
+ * and returns its top-level `key => value` string pairs. Empty array
+ * when the file is missing or holds no such array.
  *
  * @since  1.0.0
- * @param  string $file Absolute path to the entry file (index.php).
- * @return array<string, string>  name => directory (relative to project root).
+ * @param  string $file Absolute path to the entry file.
+ * @return array<string, string> name => directory.
  */
 function read_directories (string $file): array
 {
@@ -196,11 +195,15 @@ function read_directories (string $file): array
 }
 
 /**
- * Access $_SERVER superglobal safely.
+ * Access the $_SERVER superglobal safely.
  *
- * NOTE: `System\Support\WordPress::server()` does not exist in the repo;
- * this remains the entry point for request-path/uri reads
- * (Router::tryAliases). Do not deprecate without a real replacement.
+ * Entry point for request path/uri reads (Router::tryAliases). Do not
+ * deprecate without a real replacement — the previously referenced
+ * WordPress::server() helper does not exist in this repo.
+ *
+ * @param  string|null $key     Superglobal key; dots become underscores ("request.uri" → REQUEST_URI). Null returns the whole array.
+ * @param  string|null $default Fallback when the key is missing.
+ * @return mixed
  */
 function __server (?string $args = null, ?string $default = null): mixed
 {
@@ -210,15 +213,13 @@ function __server (?string $args = null, ?string $default = null): mixed
 }
 
 /**
- * Cast a raw .env string value to its native PHP type.
+ * Cast a raw .env value to its native PHP type.
  *
- * "true" / "(true)"   → bool true
- * "false" / "(false)" → bool false
- * "null" / "(null)"   → null
- * Numeric strings     → int or float
- * Everything else     → string as-is
+ * true/false/null literals → typed value; numeric strings → int|float;
+ * everything else → string as-is.
  *
- * @param  string $value Raw value from the .env file.
+ * @since  1.0.0
+ * @param  string $value Raw .env value.
  * @return mixed
  */
 function cast_value (string $value): mixed
@@ -235,21 +236,16 @@ function cast_value (string $value): mixed
 }
 
 /**
- * Retrieve environment values with dot-notation grouping.
+ * Read a .env value with dot-notation keys.
  *
- * CACHING: Parsed .env values are cached in a static variable for
- * performance. The cache is populated on the first call and reused
- * for all subsequent calls within the same process. To force a
- * re-read (e.g., after .env changes at runtime), call env_clear_cache().
+ * Parsed values are cached per process; call env_clear_cache() after
+ * changing .env at runtime. Key, path, and size guards apply.
  *
  * @since  1.0.0
- * @see    env_clear_cache() — clear the static cache
- * @param  string $key     Dot-notation key: "app.port" for a single
- *                         value, "app" for the whole group.
- * @param  mixed  $default Fallback when key/group is missing.
- *                         Defaults to false.
- * @return mixed Typed scalar for a leaf key, associative array for
- *               a group prefix, or $default.
+ * @see    env_clear_cache()
+ * @param  string $key     "app.port" for a leaf, "app" for the whole group.
+ * @param  mixed  $default Fallback when the key/group is missing.
+ * @return mixed Typed leaf value, group array, or $default.
  */
 function __env (string $key, mixed $default = false): mixed
 {
@@ -341,17 +337,12 @@ function __env (string $key, mixed $default = false): mixed
 }
 
 /**
- * Clear the env() static cache, forcing a re-read of the .env file.
+ * Invalidate the .env cache so the next __env() call re-reads the file.
  *
- * The env() function caches parsed .env values in a static variable
- * for performance. Call this helper when you need env() to pick up
- * changes made to the .env file at runtime (e.g., after a deploy
- * or during tests that modify environment variables).
+ * Process-global flag — not safe across parallel requests. In
+ * long-running CLI processes, call once per request cycle.
  *
- * This is NOT safe across parallel requests — the flag is process-global.
- * In CLI long-running processes, call after each request cycle if the
- * .env file may have changed.
- *
+ * @since  1.0.0
  * @return void
  */
 function env_clear_cache (): void
@@ -360,7 +351,13 @@ function env_clear_cache (): void
 	$_env_cache_cleared = true;
 }
 
-// get status code title
+/**
+ * Look up the HTTP reason phrase for a status code.
+ *
+ * @since  1.0.0
+ * @param  int $code HTTP status code.
+ * @return string Reason phrase, or a generic message when unknown.
+ */
 function __s (int $code = 200): string
 {
 	return [
@@ -417,7 +414,14 @@ function __s (int $code = 200): string
 	][$code] ?? 'An unexpected error occurred. Please contact the Administrator.';
 }
 
-// simplify calling filename
+/**
+ * Build a file name in the requested extension form.
+ *
+ * @since  1.0.0
+ * @param  string      $filename Base name without extension.
+ * @param  string|bool $ext      'php' → "name.php" (default), false → ".name", other → "name.ext".
+ * @return string File name.
+ */
 function __f (string $filename, string|bool $ext = 'php'): string
 {
 	return [

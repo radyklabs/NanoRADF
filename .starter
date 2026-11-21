@@ -1,0 +1,66 @@
+<?php declare (strict_types=1);
+
+/**
+ * Starter environment
+ *
+ * Preparing all things that needed for the nanoradf to be boot
+ * and running smoothly
+ *
+ * @since 0.0.1
+ */
+
+if (!defined ('basepath'))
+{
+    http_response_code (404);
+    header ('Content-Type: text/html; charset=utf-8');
+    exit ("<h1>404 Not Found</h1><p>The requested page (or file) could not be found.</p>");
+}
+
+if (isdebug)
+{
+    error_reporting (E_ALL);
+    @ini_set ('display_errors', 1);
+}
+
+else
+{
+    error_reporting (0);
+    @ini_set ('display_errors', 0);
+}
+
+/**
+ * Load `.env` into the process environment.
+ *
+ * Parses `KEY=VALUE` lines (skips blanks and `#` comments, strips
+ * surrounding quotes) and registers each entry via putenv(), so both
+ * getenv() and $_ENV can read it. Leftmost occurrence wins; invalid
+ * keys are ignored.
+ *
+ * @since  0.0.1
+ * @return void
+ */
+$env_file = basepath . '.env';
+if (is_file ($env_file) && is_readable ($env_file))
+{
+    foreach (file ($env_file, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) ?: [] as $line)
+    {
+        $line = trim ($line);
+        if ($line === '' || str_starts_with ($line, '#')) {continue;}
+
+        $pos = strpos ($line, '=');
+        if ($pos === false) {continue;}
+
+        $key = trim (substr ($line, 0, $pos));
+        if (!preg_match ('/^[A-Za-z_][A-Za-z0-9_]*$/', $key)) {continue;}
+
+        $value = trim (substr ($line, $pos + 1));
+        if (strlen ($value) >= 2 && ($value[0] === '"' || $value[0] === "'") && str_ends_with ($value, $value[0]))
+        {
+            $value = substr ($value, 1, -1);
+        }
+
+        putenv ("{$key}={$value}");
+    }
+}
+
+unset ($env_file);

@@ -15,7 +15,7 @@ final class HomeController extends PublicController
      * `/` — proves the route table reaches a real action.
      *
      * @since  0.0.1
-     * @return array{status:int, body:string}
+     * @return array{status:int, body:string, headers:list<string>}
      */
     public function index (): array
     {
@@ -27,7 +27,7 @@ final class HomeController extends PublicController
      *
      * @since  0.0.1
      * @param  string $name Captured segment, URL-decoded by the router.
-     * @return array{status:int, body:string}
+     * @return array{status:int, body:string, headers:list<string>}
      */
     public function hello (string $name): array
     {

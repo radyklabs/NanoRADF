@@ -6,17 +6,43 @@
  * Sets the three source-root names and the debug master switch,
  * then requires the `public/nanoradf` gateway. No other logic here.
  *
- * @since 1.0.0
+ * @since 0.0.1
  */
 
-$application_folder = 'apps';   // main MVC root
-$system_folder = 'src';         // framework core — do not change
-$modules_folder = 'modules';    // optional HMVC root
+/**
+ * Application MVC root folder name.
+ *
+ * Point this at a different folder name or location to relocate
+ * the application layer.
+ */
+$application_folder = 'apps';
 
-// Debug master switch: file:line detail in bootstrap error output.
-// True for local/dev, false for production.
+/**
+ * Framework core folder name.
+ *
+ * Holds the system brain — treat every change here as fragile.
+ */
+$system_folder = 'src';
+
+/**
+ * Optional HMVC root folder name.
+ *
+ * Used only when `app.modules` is true in the environment config.
+ */
+$modules_folder = 'modules';
+
+/**
+ * Debug master switch.
+ *
+ * True shows file:line detail in bootstrap error output during
+ * development; set false for production.
+ *
+ * @link https://nanoradf.local/support/article/debugging-in-actions/
+ */
 $debug = true;
+
+/* End of configuration. */
 
 require realpath ('nanoradf');
 
-// Says who only silence is golden
+// Says who only silence is golden?!

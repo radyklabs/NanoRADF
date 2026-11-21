@@ -71,3 +71,11 @@ Follow `CLAUDE.md` → Secure Coding Rules without exception. Extra operational 
 - Trivial one-liners need no test.
 - Documentation-only changes need no runtime validation.
 - Web check: `http://nanoradfw.local` must render without a 500 after bootstrap-touching changes.
+
+## 8. Edit discipline (read-before-touch)
+
+- Never rush an edit. Read the whole file first and understand its flow line by line; map what "works today" before deciding what to change.
+- Think about the target diff before writing: prefer rehearsing/verifying the idea; apply slowly and carefully, never reckless bulk rewrites.
+- Preserve working behaviour: when simplifying/refactoring, keep a failing-before / passing-after record so an equivalent guarantee is shown, not assumed.
+- If a safe change turns out to need more than expected, stop, restore state (e.g. `git stash`/checkout), and re-plan instead of piling edits.
+- Verify with the project's real checks (§3/§7) and web probes after each incremental step, not only at the end.

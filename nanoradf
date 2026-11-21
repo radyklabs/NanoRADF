@@ -1,7 +1,5 @@
 <?php declare (strict_types=1);
 
-use System\Kernel\Router;
-
 /**
  * The Gateway: NanoRADF
  * --
@@ -25,16 +23,6 @@ if (!isset ($application_folder)
     exit ("<h1>404 Not Found</h1><p>The requested page (or file) could not be found.</p>");
 }
 
-/**
- * System brain: core logic
- * --
- * Bootstrap below is fragile — edits here can break the whole system.
- * Treat every change here as fragile.
- */
-
-// $heading = 'Internal System Error';
-// $message = 'An unexpected error occurred. Please contact the Administrator.';
-
 define ('basepath', realpath (__DIR__).DIRECTORY_SEPARATOR);
 
 $starter_key = call_user_func ('implode', '.', [basepath, 'starter']);
@@ -42,69 +30,29 @@ if (!is_readable ($starter_key)) {$error = 'starter';}
 else {require_once $starter_key;}
 
 try
+{
+    if (isset ($error)) {throw new Exception ($error, 500);}
+    unset ($error);
+    call_user_func ([$kernel, 'initiate']);
+
+    // Dispatch on web SAPIs; CLI stays a plain loader so tests/smoke_check.php
+    // loads without resolving routes.
+    if (php_sapi_name () !== 'cli')
     {
-        if (isset ($error)) {throw new Exception ($error, 500);}
-        unset ($error);
-        call_user_func ([$kernel, 'initiate']);
-
-        // Dispatch on web SAPIs; CLI stays a plain loader so tests/smoke_check.php
-        // loads without resolving routes.
-        if (php_sapi_name () !== 'cli')
-        {
-            $method     = strtoupper ((string) gserver ('request.method', 'GET'));
-            $actionPath = Router::normalise ((string) gserver ('request.uri', '/'));
-
-            try
-            {
-                $response = Router::dispatch ($method, $actionPath);
-
-                            // Surface-specific headers (e.g. application/json on api) are
-                            // enforced here, before the status line goes out.
-                            $headers = (array) ($response['headers'] ?? []);
-                            $isJson  = in_array ('Content-Type: application/json; charset=utf-8', $headers, true);
-
-                            if ($isJson)
-                            {
-                                header ('Content-Type: application/json; charset=utf-8', true, (int) ($response['status'] ?? 200));
-                            }
-                            else
-                            {
-                                foreach ($headers as $line) {header ((string) $line);}
-                                header ('Content-Type: text/html; charset=utf-8', true, (int) ($response['status'] ?? 200));
-                            }
-
-                echo (string) ($response['body'] ?? '');
-            }
-
-            catch (Throwable $th)
-            {
-                            // Runtime fault; disclosure follows APP_DEBUG (FR-10).
-                $message = $th->getMessage ().' in '.$th->getFile ().':'.$th->getLine ();
-                header ('Content-Type: text/html; charset=utf-8', true, 500);
-                exit ('<h1>500 Internal Server Error</h1><p>'
-                                .htmlspecialchars (APP_DEBUG ? $message : 'An unexpected error occurred.', ENT_QUOTES).'</p>');
-            }
-        }
+        System\Kernel\Dispatcher::handle ();
     }
+}
 
-// Catch-all: map the code to a heading, log file:line, emit the body.
+// Catch-all: friendly text for bootstrap sentinels, generic/gated text otherwise,
+// plus the storage/logs/system.log entry.
 catch (Throwable $th)
 {
-    // Bootstrap sentinels carry a code and a friendly phrase; runtime faults
-    // (router/controller) fall through to the generic message.
+    // Bootstrap sentinels are the friendly phrases; runtime faults (router,
+    // controller) get the generic message unless APP_DEBUG reveals internals.
     $sentinel = ['starter', 'phpmin', 'common', 'config', 'structure', 'boot', 'kernel'];
     $known    = in_array ($th->getMessage (), $sentinel, true);
-        $code     = $th->getCode () !== 0 ? $th->getCode () : 500;
-
-        // The dispatch block has its own catch so only bootstrap faults land here.
-        if (!$known)
-        {
-            header ('Content-Type: text/html; charset=utf-8', true, $code >= 400 && $code <= 599 ? $code : 500);
-            exit ('<h1>500 Internal Server Error</h1><p>'.htmlspecialchars ($th->getMessage ().' in '.$th->getFile ().':'.$th->getLine (), ENT_QUOTES).'</p>');
-        }
-
-    // Debug detail is disclosed only under APP_DEBUG (FR-10).
-    $status = $known ? 500 : ($code >= 400 && $code <= 599 ? $code : 500);
+    $code     = $th->getCode () !== 0 ? $th->getCode () : 500;
+    $status   = ($code >= 400 && $code <= 599) ? $code : 500;
 
     $heading = [
         403 => 'Forbidden',
@@ -112,32 +60,33 @@ catch (Throwable $th)
         500	=> 'Internal Server Error',
     ][$status] ?? 'Internal System Error';
 
-    $message = [
-        'starter'   => 'The starter file could not be found. Please reinstall the framework.',
-        'phpmin'    => 'This version of PHP is not supported. Please upgrade to a newer release.',
-        'common'    => 'The helper library could not be loaded. Please check the installation.',
-        'config'    => 'The configuration file could not be found. Please check the installation.',
-        'structure' => 'The framework directories could not be registered. Please check the installation.',
-        'boot'      => 'The kernel could not be started. Please check the installation.',
-        'kernel'    => 'The application could not be started. Please try again later.',
-    ][$th->getMessage ()] ?? 'An unexpected error occurred. Please contact the Administrator.';
-
-    if (APP_DEBUG && !$known)
+    if ($known)
     {
-        $message = "{$message} in {$th->getFile ()}:{$th->getLine ()} ({$th->getMessage ()})";
+        $message = [
+            'starter'   => 'The starter file could not be found. Please reinstall the framework.',
+            'phpmin'    => 'This version of PHP is not supported. Please upgrade to a newer release.',
+            'common'    => 'The helper library could not be loaded. Please check the installation.',
+            'config'    => 'The configuration file could not be found. Please check the installation.',
+            'structure' => 'The framework directories could not be registered. Please check the installation.',
+            'boot'      => 'The kernel could not be started. Please check the installation.',
+            'kernel'    => 'The application could not be started. Please try again later.',
+        ][$th->getMessage ()];
+    }
+    else
+    {
+        $detail  = $th->getMessage ().' in '.$th->getFile ().':'.$th->getLine ();
+        $message = APP_DEBUG === true ? $detail : 'An unexpected error occurred. Please contact the Administrator.';
     }
 
     $log_dir = dirname (basepath . '/storage/logs/system.log');
     if (!is_dir ($log_dir)) {@mkdir ($log_dir, 0775, true);}
 
-// Never reveal internals: APP_DEBUG gates the exception text.
     if (is_dir ($log_dir) && is_writable ($log_dir))
     {
         error_log ("[{$status}] {$message}", 3, "{$log_dir}/system.log");
     }
     else {error_log ("[{$status}] {$message}");}
 
-    // http_response_code ($code);
     header ('Content-Type: text/html; charset=utf-8', true, $status);
     exit ("<h1>{$status} {$heading}</h1><p>{$message}</p>");
 }

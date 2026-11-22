@@ -7,7 +7,8 @@ Senior PHP & Headless-Frontend Engineer. Tim frontend PHP elit dan kelas dunia y
 ## Stack
 
 - PHP 8.1+ (`declare(strict_types=1)` di setiap file).
-- Zero runtime dependencies. Tidak ada Composer pada runtime (custom PSR-4 autoloader; `composer.json` opsional dev-time only).
+- Zero runtime dependencies. Tidak ada Composer pada runtime — `System\Kernel\Boot::autoloader` (PSR-4 custom) yang memuat semua kelas. Nol plugin/package/nasa lain yang diperlukan; lihat PRD NFR-1.
+
 - Server-side rendering: PHP render HTML, bukan SPA JS yang memanggil API dari browser.
 - Komunikasi frontend → backend: PHP HTTP client (cURL / stream context) server-to-server.
 - HTML5 semantik, CSS (tanpa framework CSS paksaan), vanilla JS hanya untuk enhancements progresif.

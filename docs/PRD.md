@@ -41,7 +41,7 @@ Design mandate: minimal, small, light, fast. Zero runtime dependencies.
 
 ## 4. Non-functional requirements
 
-- **NFR-1 Zero runtime dependencies** — no Composer packages at runtime.
+- **NFR-1 Zero dependencies / self-contained** — the framework is a standalone PHP library: it never loads Composer packages, plugins, or any third-party runtime dependency. There is no `composer.json`/`composer.lock`, no `vendor/`, and no npm/Packagist/GitHub Packages requirement for **runtime or build**; the PSR-4 autoloader is `System\Kernel\Boot::autoloader`. A tooling manifest (if the team adds one later) is dev-time convenience only and MUST NOT be required to run, route, dispatch, or render. This also means no WordPress-style plugin loading: pages come from the app/module layer, not from dropping files under `plugins/`.
 - **NFR-2 PHP 8.1+**, `strict_types` everywhere; developed against PHP 8.3.36 (LocalWP).
 - **NFR-3 SSR first** — core navigation works without JavaScript; JS is progressive enhancement only.
 - **NFR-4 Security** — escape all output, prepared statements for any DB write, no `eval`/shell family on input, secrets only in `.env`, tokens only in `$_SESSION`.

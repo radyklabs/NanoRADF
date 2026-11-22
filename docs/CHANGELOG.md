@@ -5,6 +5,9 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning: [S
 
 ## [Unreleased]
 
+### Changed
+- NFR-1 strengthened: the framework is fully self-contained — no Composer packages, plugins, or third-party runtime/build dependency is required to run, route, dispatch, or render; PSR-4 via `System\Kernel\Boot::autoloader`, no `vendor/`. Dev-time tooling (if any) is optional and never a runtime requirement. Background: every `require`/`use` in the codebase resolves to the app's own namespaces, so no package registry or plugin loader exists.
+
 ### Added
 - Phase 1 — routing & controllers: `src/Kernel/Router.php` and `src/Kernel/Controller.php`, base controllers `PublicController`, `PrivateController`, `ApiController`, route table `apps/Config/Routes.php` wired through the gateway. Route keys are flat `'GET /path'` => `Ctrl::class.'::action'`, with prefix groups (`'/admin' => [ 'GET /dash' => ... ]`; inner keys must be full `METHOD /path`); exact-before-parameterised; browser-probed `/`, `/hello/{name}`, `/ping`, `/status/{code}`, `POST /` (405).
 - API envelope contract: api-surface `respond()` always emits JSON and sets `Content-Type: application/json; charset=utf-8`. `/status/{code:[45]\d\d}` returns the error envelope `{"ok":false,"error":"scoped failure"}` for a real API error path.

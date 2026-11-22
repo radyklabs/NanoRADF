@@ -12,10 +12,12 @@
 # Never commit platform-local config (see RULES.md)
 /docs/CONFIG.md
 
-# Dev-time only
-# /tests
+# Dev-time only — NEVER required to run the framework (see PRD NFR-1). If a
+# manifest is added later it must stay optional, not a runtime/build dependency.
+#/tests
 /vendor/
 /composer.lock
+/composer.json
 
 # Runtime-generated framework logs
 /storage/

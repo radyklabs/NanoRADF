@@ -2,7 +2,7 @@
 
 Goal: deliver the v1 framework defined in `docs/PRD.md` — two-mode (SSR frontend / headless backend), zero-dependency PHP, module-based, server-to-server communication.
 
-Constraints: PHP 8.1+, zero runtime deps, English docs, dev URL `http://nanoradfw.local`, no new top-level dirs without a recorded decision.
+Constraints: PHP 8.1+, zero-dependency independent framework (no Composer/packages, no plugins; PSR-4 via `System\Kernel\Boot::autoloader`), SSR frontend / headless backend two-mode, module-based, server-to-server communication.
 
 Definition of done (v1): all PRD acceptance criteria pass; smoke checks recorded in `docs/REPORT.md`; docs in sync; release only via `>release`.
 

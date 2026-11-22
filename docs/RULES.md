@@ -5,7 +5,7 @@ Read this before touching the repository. It is the normative companion to `CLAU
 ## 1. Runtime & style
 
 - PHP 8.1+, `declare (strict_types=1);` is the first statement of every PHP file.
-- Zero runtime dependencies: no Composer autoload at runtime. The custom PSR-4 autoloader is `System\Kernel\Boot::autoloader`.
+- **Zero dependencies / self-contained** (NFR-1): no Composer packages, plugins, or third-party runtime/build dependency. Class loading is only `System\Kernel\Boot::autoloader`; there is no `vendor/` and no plugin loader. Any dev-time manifest must stay optional and never be required to run the framework.
 - Formatting conventions observed across the codebase — follow them, do not reformat foreign code:
   - Space before call parentheses: `interlace (...)`, `is_readable ($path)`.
   - Space after control keywords: `if (…)`, `foreach (…)`, `while (…)`.

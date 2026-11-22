@@ -7,6 +7,7 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning: [S
 
 ### Added
 - Phase 2 kickoff: view-system contract (dot-notation names, layout as `View::render(..., $layout)` arg, `@extends/@yield/@section/@include`, auto-escaped `{{ }}` with `|raw`), asset mask_url in `apps/Config/Assets.php`, modular token files; PRD acceptance criterion #8; SOP in `docs/RULES.md` §9.
+- Resolution correction: inside a module, its own view is plain `file` (requires `app.modules=true`, else file-not-found); `Module.file`/`Module.folder.file` is only for **cross-module** access.
 
 ### Changed
 - NFR-1 strengthened: the framework is fully self-contained — no Composer packages, plugins, or third-party runtime/build dependency is required to run, route, dispatch, or render; PSR-4 via `System\Kernel\Boot::autoloader`, no `vendor/`. Dev-time tooling (if any) is optional and never a runtime requirement. Background: every `require`/`use` in the codebase resolves to the app's own namespaces, so no package registry or plugin loader exists.

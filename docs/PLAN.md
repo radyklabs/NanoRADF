@@ -61,7 +61,7 @@ Definition of done (v1): all PRD acceptance criteria pass; smoke checks recorded
 ### Phase 2 — View system & assets ⚠️
 - **Depends on:** Phase 1. **Owner:** main thread.
 - Blade-shaped renderer: compose `Layouts/` ← `Patterns/` ← `Components/`/`Elements/`, module `Views/*.php`, escaping helper in `src/Helper/Utilities.php`.
-- Dot-notation view names (no extension): `file` → own scope; `folder.file`; `Module.file` / `Module.folder.file` for module views. Layout is the third argument of `View::render(...)` — no `@layout` in view files; `@extends/@yield/@section/@endsection/@include` inside templates.
+- Dot-notation view names (no extension): `file` → own scope (in a module: its **own** view, requires `app.modules=true` else file-not-found); `folder.file`; cross-module only: `Module.file` / `Module.folder.file`. Layout is the third argument of `View::render(...)` — no `@layout` in view files; `@extends/@yield/@section/@endsection/@include` inside templates.
 - `{{ }}` auto-escaped, `|raw` opt-out.
 - `src/Services/AssetsService.php` + theme registration (`public/themes/default`, `src/Themes/admin`), design tokens from `src/Views/Tokens/System.css`; disk→URL mapping via mask_url configured in `apps/Config/Assets.php`.
 - Verification: rendered page with layout+pattern composition; escaping test (malformed input stays inert HTML).

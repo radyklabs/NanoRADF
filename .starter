@@ -137,6 +137,7 @@ if (version_compare (PHP_VERSION, PHP_MIN_VERSION, "<")) {$error = 'phpmin';}
  */
 function blackwall (Throwable $th)
 {
+    $trace_section = '';
     $sentinel = ['starter', 'phpmin', 'common', 'config', 'structure', 'boot', 'kernel'];
     $known    = in_array ($th->getMessage (), $sentinel, true);
     $code     = $th->getCode () !== 0 ? $th->getCode () : 500;
@@ -162,8 +163,22 @@ function blackwall (Throwable $th)
     }
     else
     {
-        $detail  = $th->getMessage ().' in '.$th->getFile ().':'.$th->getLine ();
-        $message = is_debug () ? $detail : 'An unexpected error occurred. Please contact the Administrator.';
+        if (is_debug())
+        {
+            $trace_section .= '<trace><ul>';
+            $trace_list_format = '<li>%s</li>';
+
+            $trace = explode ('#', $th->getTraceAsString());
+            array_shift ($trace);
+
+            foreach ($trace as $tr) {$trace_section .= sprintf ($trace_list_format, $tr);}
+
+            $trace_section .= '</ul></trace>';
+
+            $message = $th->getMessage ().' in '.$th->getFile ().':'.$th->getLine ();
+        }
+
+        else {$message = 'An unexpected error occurred. Please contact the Administrator.';}
     }
 
     $log_dir = dirname (basepath . '/storage/logs/system.log');
@@ -176,7 +191,12 @@ function blackwall (Throwable $th)
     else {error_log ("[{$status}] {$message}");}
 
     header ('Content-Type: text/html; charset=utf-8', true, $status);
-    exit ("<h1>{$status} {$heading}</h1><p>{$message}</p>");
+    $errorcsspath = 'themes/default/css/error.css';
+    if (is_readable (publicpath.$errorcsspath))
+    {
+        echo "<link rel=\"stylesheet\" href=\"/themes/default/css/error.css\"/>";
+    }
+    exit ("<notice><h1>{$status} {$heading}</h1><p>{$message}</p></notice>{$trace_section}");
 }
 
 // Helper library (interlace, genv, …); failure → $error='common'.

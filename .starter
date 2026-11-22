@@ -138,7 +138,7 @@ if (version_compare (PHP_VERSION, PHP_MIN_VERSION, "<")) {$error = 'phpmin';}
 function blackwall (Throwable $th)
 {
     $trace_section = '';
-    $sentinel = ['starter', 'phpmin', 'common', 'config', 'structure', 'boot', 'kernel'];
+    $sentinel = ['starter', 'phpmin', 'common', 'config', 'structure', 'boot', 'kernel', 'helper'];
     $known    = in_array ($th->getMessage (), $sentinel, true);
     $code     = $th->getCode () !== 0 ? $th->getCode () : 500;
     $status   = ($code >= 400 && $code <= 599) ? $code : 500;
@@ -159,6 +159,7 @@ function blackwall (Throwable $th)
             'structure' => 'The framework directories could not be registered. Please check the installation.',
             'boot'      => 'The kernel could not be started. Please check the installation.',
             'kernel'    => 'The application could not be started. Please try again later.',
+'helper'    => 'The registered helper file could not be loaded. Please check the installation.',
         ][$th->getMessage ()];
     }
     else
@@ -213,4 +214,21 @@ if (!isset ($error))
     $configuration_key = interlace (basepath, fl ('config', false));
     if (!is_readable ($configuration_key)) {$error = 'config';}
     else {require_once $configuration_key;}
+}
+
+// Registered helpers (function-only files); failure → $error='helper'.
+if (!isset ($error))
+{
+    $helper_root = basepath.'src'.sep.'Helper';
+    $stems       = [];
+
+    $helper_config = basepath.'apps'.sep.'Config'.sep.'Helper.php';
+    if (is_readable ($helper_config)) {$stems = (array) require $helper_config;}
+
+    foreach ($stems as $stem)
+    {
+        $file = interlace ($helper_root, $stem.'Helper.php');
+        if (!is_readable ($file)) {$error = 'helper'; break;}
+        require_once $file;
+    }
 }

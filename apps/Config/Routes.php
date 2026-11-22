@@ -21,7 +21,5 @@ return [
     'GET /page/{line}'  => 'App\Controllers\HomeController::page',
     'GET /ping'         => 'App\Controllers\PingController::index',
     'GET /welcome'      => 'App\Controllers\WelcomeController::index',
-    'GET /themes/{path:.*}' => 'App\Controllers\AssetsController::serve',
-    'GET /Files/{path:.*}'  => 'App\Controllers\AssetsController::serve',
     'GET /status/{code:[45]\d\d}' => 'App\Controllers\PingController::fail',
 ];

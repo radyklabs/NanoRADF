@@ -3,12 +3,13 @@
 namespace System\Services;
 
 /**
- * AssetsService — enqueue, URL generation, and masked-URL resolution.
+ * AssetsService — enqueue, URL masking, and asset serving.
  *
- * Theme files live in `public/themes/<scope>` (scope `default`) or
- * `src/Themes/admin` (scope `admin`). Public URLs are `/themes/<scope>/<path>`;
- * masks rewrite them to a virtual prefix (`/Files/<slug>/<path>`) whose disk
- * file is resolved by {@see resolve()} through the asset route.
+ * Mask patterns live in `apps/Config/Assets.php` (`mask_urls`): a URL pattern
+ * maps to a disk pattern. `{*}` matches any number of segments;
+ * `{face_theme_active_name}` / `{bone_theme_active_name}` expand to the active
+ * theme. Only paths matching a pattern are reachable — everything else is
+ * unknown and served 404.
  *
  * @since 0.0.1
  */
@@ -22,7 +23,7 @@ final class AssetsService
     private static array $queue = [];
 
     /**
-     * Read the asset configuration file.
+     * Read the asset configuration.
      *
      * @since  0.0.1
      * @return array<string, mixed>
@@ -36,223 +37,468 @@ final class AssetsService
     }
 
     /**
-     * Register a style for a scope.
+     * Active theme name for a surface (config value, override in controllers).
      *
      * @since  0.0.1
-     * @param  string $path  Asset path relative to the scope root.
-     * @param  string $scope 'default' or 'admin'.
+     * @param  string $surface 'face' or 'bone'.
+     * @return string Theme name.
+     */
+    public static function theme (string $surface = 'face'): string
+    {
+        /** @var array{face?:string, bone?:string} $themes */
+        $themes = (array) (self::config ()['theme'] ?? []);
+
+        return (string) ($themes[$surface] ?? 'default');
+    }
+
+    /**
+     * Register a style for a surface.
+     *
+     * @since  0.0.1
+     * @param  string $path    Asset path relative to the mask base.
+     * @param  string $surface 'face' or 'bone'.
      * @return void
      */
-    public static function enqueueStyle (string $path, string $scope = 'default'): void
+    public static function enqueueStyle (string $path, string $surface = 'face'): void
     {
-        self::$queue[$scope]['styles'][] = $path;
+        self::$queue[$surface]['styles'][] = $path;
     }
 
     /**
-     * Register a script for a scope.
+     * Register a script for a surface.
      *
      * @since  0.0.1
-     * @param  string $path  Asset path relative to the scope root.
-     * @param  string $scope 'default' or 'admin'.
+     * @param  string $path    Asset path relative to the mask base.
+     * @param  string $surface 'face' or 'bone'.
      * @return void
      */
-    public static function enqueueScript (string $path, string $scope = 'default'): void
+    public static function enqueueScript (string $path, string $surface = 'face'): void
     {
-        self::$queue[$scope]['scripts'][] = $path;
+        self::$queue[$surface]['scripts'][] = $path;
     }
 
     /**
-     * All queued styles for a scope (config first, then runtime).
+     * Queued styles for a surface.
      *
      * @since  0.0.1
-     * @param  string $scope 'default' or 'admin'.
-     * @return array<int, array{name:string, base:string}>
+     * @param  string $surface 'face' or 'bone'.
+     * @return list<string>
      */
-    public static function styles (string $scope = 'default'): array
+    public static function styles (string $surface = 'face'): array
     {
         $config = self::config ();
-        $names  = $scope === 'admin' ? 'admin_enqueue_styles' : 'enqueue_styles';
-        $merged = [...(array) ($config[$names] ?? []), ...(self::$queue[$scope]['styles'] ?? [])];
+        $key    = $surface === 'bone' ? 'bone_enqueue_styles' : 'enqueue_styles';
 
-        return self::normalize ($merged, 'style');
+        return self::names ((array) ($config[$key] ?? []), $surface, 'style', $config);
     }
 
     /**
-     * All queued scripts for a scope (config first, then runtime).
+     * Queued scripts for a surface.
      *
      * @since  0.0.1
-     * @param  string $scope 'default' or 'admin'.
-     * @return array<int, array{name:string, base:string}>
+     * @param  string $surface 'face' or 'bone'.
+     * @return list<string>
      */
-    public static function scripts (string $scope = 'default'): array
+    public static function scripts (string $surface = 'face'): array
     {
         $config = self::config ();
-        $names  = $scope === 'admin' ? 'admin_enqueue_scripts' : 'enqueue_scripts';
-        $merged = [...(array) ($config[$names] ?? []), ...(self::$queue[$scope]['scripts'] ?? [])];
+        $key    = $surface === 'bone' ? 'bone_enqueue_scripts' : 'enqueue_scripts';
 
-        return self::normalize ($merged, 'script');
+        return self::names ((array) ($config[$key] ?? []), $surface, 'script', $config);
     }
 
     /**
-     * Render queued styles as `<link>` tags.
+     * Render queued face styles as `<link>` tags.
      *
      * @since  0.0.1
-     * @param  string $scope 'default' or 'admin'.
      * @return string HTML.
      */
-    public static function renderStyles (string $scope = 'default'): string
+    public static function renderFaceStyles (): string
     {
-        $html = '';
-
-        foreach (self::styles ($scope) as $asset)
-        {
-            $href = self::escape (self::mask ($scope, $asset));
-            $html .= '<link rel="stylesheet" href="'.$href.'">';
-        }
-
-        return $html;
+        return self::render (self::styles ('face'), 'face', 'style');
     }
 
     /**
-     * Render queued scripts as `<script>` tags.
+     * Render queued face scripts as `<script>` tags.
      *
      * @since  0.0.1
-     * @param  string $scope 'default' or 'admin'.
      * @return string HTML.
      */
-    public static function renderScripts (string $scope = 'default'): string
+    public static function renderFaceScripts (): string
     {
-        $html = '';
-
-        foreach (self::scripts ($scope) as $asset)
-        {
-            $src  = self::escape (self::mask ($scope, $asset));
-            $html .= '<script src="'.$src.'" defer></script>';
-        }
-
-        return $html;
+        return self::render (self::scripts ('face'), 'face', 'script');
     }
 
     /**
-     * URL for one asset: masked when a mask rule matches its scope, otherwise
-     * the public theme URL.
+     * Render queued bone styles as `<link>` tags.
      *
      * @since  0.0.1
-     * @param  string                          $scope 'default' or 'admin'.
-     * @param  array{name:string, base:string} $asset Resolved asset entry.
-     * @return string URL with a cache buster.
+     * @return string HTML.
      */
-    public static function mask (string $scope, array $asset): string
+    public static function renderBoneStyles (): string
     {
-        $path   = $asset['base'] === '' ? $asset['name'] : $asset['base'].'/'.$asset['name'];
-        $buster = self::version ($scope, $asset);
-
-        foreach ((array) (self::config ()['mask_urls'] ?? []) as $mask)
-        {
-            if (($mask['slug'] ?? '') === '' || ($mask['dir'] ?? '') === '') {continue;}
-
-            $dir = (string) $mask['dir'];
-
-            if ($asset['base'] !== '')
-            {
-                if (realpath ($dir) === realpath (interlace (self::root ($scope), $asset['base'])))
-                {
-                    return '/'.trim ((string) $mask['slug'], '/').'/'.ltrim ($asset['name'], '/').'?v='.$buster;
-                }
-
-                continue;
-            }
-
-            if (str_contains ($dir, interlace (systemf, 'Views', 'Tokens')))
-            {
-                return '/'.trim ((string) $mask['slug'], '/').'/'.ltrim ($asset['name'], '/').'?v='.$buster;
-            }
-        }
-
-        return '/themes/'.$scope.'/'.ltrim ($path, '/').'?v='.$buster;
+        return self::render (self::styles ('bone'), 'bone', 'style');
     }
 
     /**
-     * Theme root directory for a scope.
+     * Render queued bone scripts as `<script>` tags.
      *
      * @since  0.0.1
-     * @param  string $scope 'default' or 'admin'.
-     * @return string Absolute directory path.
+     * @return string HTML.
      */
-    private static function root (string $scope): string
+    public static function renderBoneScripts (): string
     {
-        return $scope === 'admin'
-            ? interlace (systemf, 'Themes', 'admin')
-            : interlace (publicpath, 'themes', 'default');
+        return self::render (self::scripts ('bone'), 'bone', 'script');
     }
 
     /**
-     * Map a request path to a root directory: a mask prefix or a theme scope.
+     * Resolve a URL to a file and MIME type.
      *
      * @since  0.0.1
-     * @param  string $url Path after the front controller.
-     * @return array{root:string, relative:string}|null Null when nothing matches.
+     * @param  string $url URL path (no leading slash required).
+     * @return array{file:string, mime:string}|null Null when unknown, missing, or escaping the root.
      */
-    private static function rootAndRelative (string $url): ?array
+    public static function resolve (string $url): ?array
     {
-        foreach ((array) (self::config ()['mask_urls'] ?? []) as $mask)
+        $url = $url === '' ? '/' : '/'.ltrim ($url, '/');
+
+        foreach (self::config ()['mask_urls'] ?? [] as $pattern => $disk)
         {
-            $slug = trim ((string) ($mask['slug'] ?? ''), '/');
+            if (!is_string ($pattern) || !is_string ($disk)) {continue;}
 
-            if ($slug === '' || ($mask['dir'] ?? '') === '') {continue;}
-            if (!str_starts_with ($url, $slug.'/')) {continue;}
+            $match = self::matchPattern ($pattern, $url);
 
-            return ['root' => (string) $mask['dir'], 'relative' => substr ($url, strlen ($slug) + 1)];
-        }
+            if ($match === null) {continue;}
 
-        if (preg_match ('#^themes/(default|admin)/(.+)$#', $url, $m))
-        {
-            return ['root' => self::root ($m[1]), 'relative' => $m[2]];
+            $file = self::expand ($disk, $match);
+
+            if ($file === null) {continue;}
+
+            $real = realpath ($file);
+
+            if ($real === false || !is_file ($real)) {continue;}
+
+            return ['file' => $real, 'mime' => self::mime ($real)];
         }
 
         return null;
     }
 
     /**
-     * Resolve a request path to a real, contained file and its MIME type.
+     * URL for a queued asset name, masked through the configured patterns.
      *
      * @since  0.0.1
-     * @param  string $url Path after the front controller.
-     * @return array{file:string, mime:string}|null Null when unknown, missing, or escaping the root.
+     * @param  string $name    Asset name, e.g. `style.css` or `css/style.css`.
+     * @param  string $surface 'face' or 'bone'.
+     * @return string URL with a cache buster.
      */
-    public static function resolve (string $url): ?array
+    public static function url (string $name, string $surface = 'face'): string
     {
-        $match = self::rootAndRelative ($url);
+        // Fast paths for known surfaces before scanning the entire pattern list.
+        if (str_starts_with ($name, 'ds/'))
+        {
+            foreach (self::config ()['mask_urls'] ?? [] as $pattern => $disk)
+            {
+                if (!is_string ($pattern) || !is_string ($disk)) {continue;}
+                if (str_contains ($disk, 'Views/Tokens') && preg_match (self::regex ($pattern), '/'.$name, $m) === 1)
+                {
+                    $value = (string) ($m['s'] ?? '');
+                    return str_replace ('{*}', $value, $pattern).'?v='.self::version ($name, $surface);
+                }
+            }
 
-        if ($match === null) {return null;}
+            return '/'.$name;
+        }
 
-        $file = self::contained ($match['root'], $match['relative']);
+        $seen   = [];
+        $prefix = $surface === 'bone' ? 'assets/' : '';
+        $tail   = ltrim ($prefix.$name, '/');
 
-        if ($file === null) {return null;}
+        foreach (self::config ()['mask_urls'] ?? [] as $pattern => $disk)
+        {
+            if (!is_string ($pattern) || !is_string ($disk)) {continue;}
 
-        return ['file' => $file, 'mime' => self::mime ($file)];
+            if (!self::servesSurface ((string) $disk, $surface)) {continue;}
+            if (preg_match (self::regex ($pattern), '/'.$tail, $m) !== 1) {continue;}
+
+            $value = (string) ($m['s'] ?? '');
+
+            // Rewrite only the tokens placeholder to prevent leaking it into URLs.
+            $rewritten = str_replace ($pattern, str_replace ('{*}', $value, $pattern), $pattern);
+            $seen[] = $rewritten;
+        }
+
+        return match (true)
+        {
+            $seen === []        => '/'.$name,
+            count ($seen) === 1 => $seen[0],
+            default             => reset ($seen),
+        };
     }
 
     /**
-     * Join a root and relative path, rejecting traversal outside the root.
+     * Whether a resolved disk path belongs to a surface's theme or to Tokens.
      *
      * @since  0.0.1
-     * @param  string $root     Absolute root directory.
-     * @param  string $relative Relative path from the URL.
-     * @return string|null Absolute file path, or null when absent or outside the root.
+     * @param  string $preview Resolved disk path.
+     * @param  string $surface 'face' or 'bone'.
+     * @return bool
      */
-    private static function contained (string $root, string $relative): ?string
+    private static function servesSurface (string $disk, string $surface): bool
     {
-        $file = interlace ($root, $relative);
+        if (str_contains ($disk, 'Views/Tokens')) {return true;}
+        if (str_contains ($disk, '{face_theme_active_name}')) {return $surface === 'face';}
+        if (str_contains ($disk, '{bone_theme_active_name}')) {return $surface === 'bone';}
+        return false;
+    }
 
-        if (!is_file ($file)) {return null;}
+    /**
+     * Compile a URL pattern into a regex, capturing `{*}` as one group.
+     *
+     * @since  0.0.1
+     * @param  string $pattern Pattern such as `/css/{*}`.
+     * @return string Regex with delimiters, or '' when the pattern is static.
+     */
+    private static function regex (string $pattern): string
+    {
+        $quoted = preg_quote ($pattern, '~');
 
-        $rootReal = realpath ($root);
-        $fileReal = realpath ($file);
+        // `{*}` is the wildcard marker; rebuild it after quoting.
+        $quoted = str_replace (['\{', '\}', '\*'], ['{', '}', '*'], $quoted);
 
-        if ($rootReal === false || $fileReal === false || !str_starts_with ($fileReal, $rootReal)) {return null;}
+        $out = '';
+        $i   = 0;
+        $len = strlen ($quoted);
 
-        return $file;
+        while ($i < $len)
+        {
+            if ($quoted[$i] === '{' && $quoted[$i + 1] === '*' && $quoted[$i + 2] === '}')
+            {
+                $out .= '(?P<s>.+)';
+                $i   += 3;
+                continue;
+            }
+
+            $out .= $quoted[$i];
+            $i++;
+        }
+
+        return '~^'.$out.'$~';
+    }
+
+    /**
+     * Match a URL against a pattern; capture the `{*}` tail.
+     *
+     * @since  0.0.1
+     * @param  string $pattern URL pattern.
+     * @param  string $url     URL to test.
+     * @return array{s:string}|null Captured tail, or null when no match.
+     */
+    private static function matchPattern (string $pattern, string $url): ?array
+    {
+        $regex = self::regex ($pattern);
+
+        if ($regex === '') {return null;}
+
+        if (preg_match ($regex, $url, $m) === 1) {return ['s' => (string) ($m['s'] ?? '')];}
+
+        return null;
+    }
+
+    /**
+     * Expand a disk pattern with captured values and theme placeholders.
+     *
+     * @since  0.0.1
+     * @param  string               $disk Disk pattern.
+     * @param  array{s:string}|null $match Captured tail.
+     * @return string|null Absolute-ish path, or null when expansion fails.
+     */
+    private static function expand (string $disk, ?array $match): ?string
+    {
+        $value = (string) ($match['s'] ?? '');
+
+        if (str_contains ($value, '..')) {return null;}
+
+        $disk = str_replace (['{*}', '{face_theme_active_name}', '{bone_theme_active_name}'], [$value, self::theme ('face'), self::theme ('bone')], $disk);
+
+        if ($disk === '') {return null;}
+
+        $segments = explode ('/', ltrim ($disk, '/'));
+        $resolved = [];
+
+        foreach ($segments as $segment)
+        {
+            if ($segment === '') {continue;}
+
+            if ($segment === '..') {return null;}
+
+            if ($segment === 'public' && count ($resolved) === 0) {array_push ($resolved, realpath (publicpath)); continue;}
+            if ($segment === 'src' && count ($resolved) === 0)     {array_push ($resolved, realpath (systemf)); continue;}
+
+            $resolved[] = $segment;
+        }
+
+        if ($resolved === []) {return null;}
+
+        $path = implode (sep, $resolved);
+
+        return realpath ($path) ?: $path;
+    }
+
+    /**
+     * Rewrite a pattern: replace `{*}` with the value and theme placeholders
+     * with the active theme name.
+     *
+     * @since  0.0.1
+     * @param  string $pattern Pattern text.
+     * @param  string $value   Captured tail.
+     * @param  string $surface Surface for theme expansion.
+     * @return string Rewritten text.
+     */
+    private static function rewrite (string $pattern, string $value, string $surface): string
+    {
+        $pattern = str_replace ('{*}', $value, $pattern);
+
+        foreach (['face', 'bone'] as $s)
+        {
+            $pattern = str_replace ('{'.$s.'_theme_active_name}', self::theme ($s), $pattern);
+        }
+
+        return $pattern;
+    }
+
+    /**
+     * Resolve a config disk path (starts with `/`) to a real path.
+     *
+     * @since  0.0.1
+     * @param  string $disk Disk pattern starting with `/`.
+     * @return string Real path without placeholders.
+     */
+    private static function diskPath (string $disk): string
+    {
+        $segments = explode ('/', ltrim ($disk, '/'));
+
+        $resolved = [];
+        foreach ($segments as $segment)
+        {
+            if ($segment === '') {continue;}
+
+            if ($segment === 'public') {array_push ($resolved, 'public'); continue;}
+            if ($segment === 'src')    {array_push ($resolved, 'src'); continue;}
+
+            $resolved[] = $segment;
+        }
+
+        return realpath (implode (sep, $resolved)) ?: '';
+    }
+
+    /**
+     * Render a queue of names into tags.
+     *
+     * @since  0.0.1
+     * @param  list<string> $names  Asset names.
+     * @param  string       $surface 'face' or 'bone'.
+     * @param  string       $kind   'style' or 'script'.
+     * @return string HTML.
+     */
+    private static function render (array $names, string $surface, string $kind): string
+    {
+        $html = '';
+
+        foreach ($names as $name)
+        {
+            $url = self::url ($name, $surface);
+
+            if ($kind === 'style')
+            {
+                $html .= '<link rel="stylesheet" href="'.self::escape ($url).'">';
+            }
+
+            else
+            {
+                $html .= '<script src="'.self::escape ($url).'" defer></script>';
+            }
+        }
+
+        return $html;
+    }
+
+    /**
+     * Build the queued names for a surface (config first, then runtime),
+     * appending the extension when missing.
+     *
+     * @since  0.0.1
+     * @param  array            $config  Config list.
+     * @param  string           $surface 'face' or 'bone'.
+     * @param  string           $kind    'style' or 'script'.
+     * @param  array<string, mixed> $all     Full config.
+     * @return list<string> Names with extensions.
+     */
+    private static function names (array $config, string $surface, string $kind, array $all): array
+    {
+        $ext    = $kind === 'style' ? '.css' : '.js';
+        $merged = array_values (array_filter ([...$config, ...(self::$queue[$surface][$kind.'s'] ?? [])], 'is_string'));
+        $out    = [];
+
+        foreach ($merged as $item)
+        {
+            $item = trim ((string) $item);
+
+            if ($item === '') {continue;}
+
+            // `css/style.css` → basename keeps the extension; keep the kind
+            // folder only when there's no extension (config-style names).
+            if (str_contains ($item, '.') && str_starts_with ($item, $base.'/')) {$item = basename ($item);}
+            elseif (!str_contains (basename ($item), '.')) {$item .= $ext;}
+
+            if (!str_contains ($item, '/') && !str_contains ($item, '.')) {$item .= $ext;}
+
+            if (!in_array ($item, $out, true)) {$out[] = $item;}
+        }
+
+        return $out;
+    }
+
+    /**
+     * First readable queue file for a name (theme root, then Tokens).
+     *
+     * @since  0.0.1
+     * @param  string $item Queue entry.
+     * @param  string $ext  Extension.
+     * @param  string|null $prefix Optional folder prefix.
+     * @return string File name without directory, or '' when absent.
+     */
+    private static function candidate (string $item, string $ext, ?string $prefix = null): string
+    {
+        $name = str_contains ($item, '.') ? $item : $item.$ext;
+        $name = ltrim ($name, '/');
+
+        foreach ([self::theme ('face'), self::theme ('bone')] as $theme)
+        {
+            $root = interlace ($theme === self::theme ('bone') ? systemf : publicpath, 'Themes', $theme);
+            $path = $prefix === null ? interlace ($root, $name) : interlace ($root, $prefix, $name);
+
+            if (is_file ($path)) {return str_contains ($item, '.') ? $name : basename ($name);}
+        }
+
+        $tokens = interlace (systemf, 'Views', 'Tokens', $name);
+
+        if (is_file ($tokens)) {return $name;}
+
+        return '';
+    }
+
+    /**
+     * Cache-buster: file mtime when the file exists, else '0'.
+     *
+     * @since  0.0.1
+     * @param  string $name    Asset name.
+     * @param  string $surface 'face' or 'bone'.
+     * @return string
+     */
+    private static function version (string $name, string $surface): string
+    {
+        return (string) (int) @filemtime (self::resolve ($name)['file'] ?? '');
     }
 
     /**
@@ -260,7 +506,7 @@ final class AssetsService
      *
      * @since  0.0.1
      * @param  string $file File path.
-     * @return string MIME type, or `application/octet-stream` when unknown.
+     * @return string MIME type, or `application/octet-stream`.
      */
     private static function mime (string $file): string
     {
@@ -281,79 +527,6 @@ final class AssetsService
             'html' => 'text/html; charset=utf-8',
             default => 'application/octet-stream',
         };
-    }
-
-    /**
-     * Absolute disk path for a scope asset.
-     *
-     * @since  0.0.1
-     * @param  string                          $scope 'default' or 'admin'.
-     * @param  array{name:string, base:string} $asset Resolved asset entry.
-     * @return string Absolute file path.
-     */
-    public static function filePath (string $scope, array $asset): string
-    {
-        if ($asset['base'] === '' && is_file (interlace (systemf, 'Views', 'Tokens', $asset['name'])))
-        {
-            return interlace (systemf, 'Views', 'Tokens', $asset['name']);
-        }
-
-        return interlace (self::root ($scope), $asset['base'], $asset['name']);
-    }
-
-    /**
-     * Cache-buster for an asset: its file mtime.
-     *
-     * @since  0.0.1
-     * @param  string                          $scope 'default' or 'admin'.
-     * @param  array{name:string, base:string} $asset Resolved asset entry.
-     * @return string Unix mtime, or '0' when the file is absent.
-     */
-    private static function version (string $scope, array $asset): string
-    {
-        $scopeDir = self::root ($scope);
-
-        // Tokens live outside the theme root; fall back to the Tokens folder.
-        if (!str_starts_with (self::filePath ($scope, $asset), $scopeDir))
-        {
-            $scopeDir = interlace (systemf, 'Views', 'Tokens');
-        }
-
-        $path = $asset['base'] === '' ? $asset['name'] : $asset['base'].'/'.$asset['name'];
-
-        return (string) (int) @filemtime (interlace ($scopeDir, $path));
-    }
-
-    /**
-     * Drop duplicate entries, preserving order.
-     *
-     * @since  0.0.1
-     * @param  list<string> $items Raw list.
-     * @return list<string> Unique list.
-     */
-    private static function normalize (array $items, string $type): array
-    {
-        $ext = $type === 'script' ? '.js' : '.css';
-        $out = [];
-
-        foreach ($items as $item)
-        {
-            if (!is_string ($item) || trim ($item) === '') {continue;}
-
-            $item  = trim ($item);
-            $parts = explode ('/', $item);
-            $last  = array_pop ($parts);
-            $base  = implode ('/', $parts);
-
-            if (!str_contains ($last, '.')) {$last .= $ext;}
-
-            $key = $base === '' ? $last : $base.'/'.$last;
-
-            if (isset ($out[$key])) {continue;}
-            $out[$key] = ['name' => $last, 'base' => $base];
-        }
-
-        return array_values ($out);
     }
 
     /**

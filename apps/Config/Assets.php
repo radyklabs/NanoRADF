@@ -1,39 +1,37 @@
 <?php declare (strict_types=1);
 
 /**
- * Asset configuration — the single source for enqueued assets and URL masks.
+ * Asset configuration.
  *
- * Scope `default` serves `public/themes/default`; scope `admin` serves
- * `src/Themes/admin`. Both keys are read directly by
- * `System\Services\AssetsService`.
+ * - `theme`: active theme name per surface. `face` serves the public
+ *   frontend (`public/themes/<name>`); `bone` serves the backend
+ *   (`src/Themes/<name>`).
+ * - `enqueue_*` / `bone_enqueue_*`: asset names queued for each surface
+ *   (extension omitted; `.css`/`.js` appended by the service).
+ * - `mask_urls`: URL pattern → disk pattern. `{*}` matches a path with any
+ *   number of segments; `{face_theme_active_name}` / `{bone_theme_active_name}`
+ *   expand to the active theme name. Only listed patterns are reachable.
  *
  * @since 0.0.1
  */
 
 return [
-    // Public theme. Values are relative to the scope root; the extension is
-    // appended when omitted.
-    'enqueue_styles'  => ['css/style', 'System'],
+    'theme' => [
+        'face' => 'default',
+        'bone' => 'default',
+    ],
+
+    'enqueue_styles'  => ['css/style', 'ds/System'],
     'enqueue_scripts' => ['js/app'],
 
-    // Admin theme.
-    'admin_enqueue_styles'  => ['css/style'],
-    'admin_enqueue_scripts' => ['js/app'],
+    'bone_enqueue_styles'  => ['css/style'],
+    'bone_enqueue_scripts' => ['js/app'],
 
-    // Disk → URL mapping. `slug` is a virtual prefix; requests under it are
-    // served by the `GET /Files/...` route in apps/Config/Routes.php.
     'mask_urls' => [
-        'theme_css' => [
-            'slug' => 'Files/c',
-            'dir'  => interlace (publicpath, 'themes', 'default', 'css'),
-        ],
-        'theme_js' => [
-            'slug' => 'Files/j',
-            'dir'  => interlace (publicpath, 'themes', 'default', 'js'),
-        ],
-        'tokens' => [
-            'slug' => 'Files/t',
-            'dir'  => interlace (systemf, 'Views', 'Tokens'),
-        ],
+        '/css/{*}'        => '/public/themes/{face_theme_active_name}/css/{*}',
+        '/js/{*}'         => '/public/themes/{face_theme_active_name}/js/{*}',
+        '/ds/{*}'         => '/src/Views/Tokens/{*}',
+        '/assets/css/{*}' => '/src/Themes/{bone_theme_active_name}/css/{*}',
+        '/assets/js/{*}'  => '/src/Themes/{bone_theme_active_name}/js/{*}',
     ],
 ];

@@ -31,6 +31,15 @@ final class Views
      */
     public static function render (string $name, array $data = [], ?string $layout = null, ?string $context = null): string
     {
+        // Asset tags are a system feature: every view gets them for free.
+        // Explicit data wins, so a view can override any of these keys.
+        $data += [
+            'head'      => AssetsService::renderFaceStyles (),
+            'foot'      => AssetsService::renderFaceScripts (),
+            'bone_head' => AssetsService::renderBoneStyles (),
+            'bone_foot' => AssetsService::renderBoneScripts (),
+        ];
+
         return Drip::renderFile (
             self::path ($name, $context),
             $data,

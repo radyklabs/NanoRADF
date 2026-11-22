@@ -2,8 +2,6 @@
 
 namespace System\Services;
 
-use System\Helper\Utilities;
-
 /**
  * Drip Template Engine — compiles `.html` templates into cached PHP.
  *
@@ -172,7 +170,7 @@ final class Drip
             {
                 self::guard ($m[1], $path);
 
-                return '<?php echo '.Utilities::class.'::escape ('.$m[1].'); ?>';
+                return '<?php echo e ('.$m[1].'); ?>';
             },
             $source
         );
@@ -287,11 +285,11 @@ final class Drip
             '/@endsection\b/' => '<?php $__sections[array_pop ($__sections_stack)] = ob_get_clean (); ?>',
 
             // Helpers.
-            '/@class\s*'.$arg.'/' => '<?php echo '.Utilities::class.'::classAttr ($1); ?>',
+            '/@class\s*'.$arg.'/' => '<?php echo classlist ($1); ?>',
 
             // Assets. Same namespace, no import needed.
-            '/@enqueueStyles\b/'  => '<?php echo \\System\\Services\\AssetsService::renderStyles (\'default\'); ?>',
-            '/@enqueueScripts\b/' => '<?php echo \\System\\Services\\AssetsService::renderScripts (\'default\'); ?>',
+            '/@enqueueStyles\b/'  => '<?php echo \\System\\Services\\AssetsService::renderFaceStyles (); ?>',
+            '/@enqueueScripts\b/' => '<?php echo \\System\\Services\\AssetsService::renderFaceScripts (); ?>',
         ];
 
         foreach ($map as $pattern => $replace)

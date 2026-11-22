@@ -133,57 +133,57 @@ final class Router
         $compiled = [];
         foreach ($raw as $key => $value)
         {
-                    // Prefix group: `'/admin' => [ 'GET /dash' => ..., ... ]` — the string
-                    // key is the prefix; every inner key must be a full `METHOD /path`.
-                    if (is_string ($key) && is_array ($value) && str_starts_with ($key, '/'))
+            // Prefix group: `'/admin' => [ 'GET /dash' => ..., ... ]` — the string
+            // key is the prefix; every inner key must be a full `METHOD /path`.
+            if (is_string ($key) && is_array ($value) && str_starts_with ($key, '/'))
             {
-                        $prefix = self::normalise ($key);
+                $prefix = self::normalise ($key);
 
-                        foreach ($value as $inner => $target)
+                foreach ($value as $inner => $target)
                 {
-                            [$verb, $path] = self::splitKey ((string) $inner);
-                            $full = rtrim ($prefix, '/').'/'.ltrim ($path, '/');
-                            $full = $full === '' ? '/' : $full;
+                    [$verb, $path] = self::splitKey ((string) $inner);
+                    $full = rtrim ($prefix, '/').'/'.ltrim ($path, '/');
+                    $full = $full === '' ? '/' : $full;
 
-                            self::parseTarget ($target);
-                            $compiled[strtoupper ($verb)][] = self::compile ($verb, self::normalise ($full), $target);
+                    self::parseTarget ($target);
+                    $compiled[strtoupper ($verb)][] = self::compile ($verb, self::normalise ($full), $target);
                 }
 
                 continue;
             }
 
-                            // Flat route: 'METHOD /path' => Controller::method
-                            [$verb, $pattern] = self::splitKey ((string) $key);
-                            self::parseTarget ($value); // fail-loud for the whole table
-                            $compiled[strtoupper ($verb)][] = self::compile ($verb, $pattern, $value);
-                        }
+            // Flat route: 'METHOD /path' => Controller::method
+            [$verb, $pattern] = self::splitKey ((string) $key);
+            self::parseTarget ($value); // fail-loud for the whole table
+            $compiled[strtoupper ($verb)][] = self::compile ($verb, $pattern, $value);
+        }
 
-                        return self::$groups = $compiled;
-                    }
+        return self::$groups = $compiled;
+    }
 
-                    /**
-                     * Split a route key into `[verb, path]`; requires the `METHOD /path` form.
-                     *
-                     * @since  0.0.1
-                     * @param  string $key Route key as written in the table.
-                     * @return array{0:string, 1:string}
-                     */
-                    private static function splitKey (string $key): array
-                    {
-                        [$verb, $path] = explode (' ', $key, 2) + ['', ''];
+    /**
+     * Split a route key into `[verb, path]`; requires the `METHOD /path` form.
+     *
+     * @since  0.0.1
+     * @param  string $key Route key as written in the table.
+     * @return array{0:string, 1:string}
+     */
+    private static function splitKey (string $key): array
+    {
+        [$verb, $path] = explode (' ', $key, 2) + ['', ''];
 
-                        if (!in_array (strtoupper (trim ($verb)), ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS'], true))
-                        {
-                            throw new \InvalidArgumentException ("Route key '{$key}' must start with an HTTP verb (e.g. 'GET /').");
-                        }
+        if (!in_array (strtoupper (trim ($verb)), ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS'], true))
+        {
+            throw new \InvalidArgumentException ("Route key '{$key}' must start with an HTTP verb (e.g. 'GET /').");
+        }
 
-                        if (trim ($path) === '' || trim ($path)[0] !== '/')
-                        {
-                            throw new \InvalidArgumentException ("Route key '{$key}': path part must start with '/'.");
-                        }
+        if (trim ($path) === '' || trim ($path)[0] !== '/')
+        {
+            throw new \InvalidArgumentException ("Route key '{$key}': path part must start with '/'.");
+        }
 
-                        return [trim ($verb), trim ($path)];
-                    }
+        return [trim ($verb), trim ($path)];
+    }
 
     /**
      * Re-read the table (explicit rebuild helper).

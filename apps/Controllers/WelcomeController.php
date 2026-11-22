@@ -3,7 +3,6 @@
 namespace App\Controllers;
 
 use System\Controllers\PublicController;
-use System\Services\AssetsService;
 
 /**
  * Landing detector — demonstrates a routed SSR page.
@@ -27,8 +26,6 @@ final class WelcomeController extends PublicController
             'features' => ['dot-notation names', '@include partials', 'auto-escaping'],
             'loud'     => true,
             'unsafe'   => '<script>alert(1)</script>',
-            'head'     => AssetsService::renderStyles (),
-            'foot'     => AssetsService::renderScripts (),
         ]);
     }
 }

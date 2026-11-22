@@ -2,6 +2,8 @@
 
 namespace System\Kernel;
 
+use System\Services\AssetsService;
+
 /**
  * Request dispatcher — resolves the matched route and renders it.
  *
@@ -27,7 +29,38 @@ final class Dispatcher
         $method = strtoupper ((string) gserver ('request.method', 'GET'));
         $path   = Router::normalise ((string) gserver ('request.uri', '/'));
 
+        // Masked assets are a system concern, not a route: intercept before
+        // dispatch so no app route can shadow them.
+        if (in_array ($method, ['GET', 'HEAD'], true) && self::asset ($path, $method === 'HEAD'))
+        {
+            return;
+        }
+
         self::emit (Router::dispatch ($method, $path));
+    }
+
+    /**
+     * Serve a masked asset when the path resolves to a real file.
+     *
+     * @since  0.0.1
+     * @param  string $path Normalised request path.
+     * @param  bool   $head HEAD request: send headers, no body.
+     * @return bool True when an asset was served (caller must stop).
+     */
+    private static function asset (string $path, bool $head): bool
+    {
+        $file = AssetsService::resolve ($path);
+
+        if ($file === null) {return false;}
+
+        header ('Content-Type: '.$file['mime']);
+        header ('Cache-Control: public, max-age=3600');
+        header ('ETag: "'.md5_file ($file['file']).'"');
+        header ('Content-Length: '.filesize ($file['file']));
+
+        if (!$head) {readfile ($file['file']);}
+
+        return true;
     }
 
     /**

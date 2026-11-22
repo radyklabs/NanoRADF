@@ -12,4 +12,6 @@ use System\Kernel\Controller as BaseController;
 class PublicController extends BaseController
 {
     protected string $surface = 'public';
+
+    protected string $theme = 'default';
 }

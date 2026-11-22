@@ -13,4 +13,6 @@ use System\Kernel\Controller as BaseController;
 class PrivateController extends BaseController
 {
     protected string $surface = 'private';
+
+    protected string $theme = 'default';
 }

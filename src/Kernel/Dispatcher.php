@@ -3,6 +3,7 @@
 namespace System\Kernel;
 
 use System\Services\AssetsService;
+use System\Services\Drip;
 
 /**
  * Request dispatcher — resolves the matched route and renders it.
@@ -21,6 +22,10 @@ final class Dispatcher
      * runtime fault bubbles to the gateway's single catch-all so it renders with
      * exactly one disclosure rule.
      *
+     * When a route misses (404) or conflicts (405), the dispatcher catches the
+     * exception and delegates to errorPage() so the error response is rendered
+     * through the Drip engine with whatever styling is configured.
+     *
      * @since  0.0.1
      * @return void
      */
@@ -36,7 +41,21 @@ final class Dispatcher
             return;
         }
 
-        self::emit (Router::dispatch ($method, $path));
+        try
+        {
+            self::emit (Router::dispatch ($method, $path, $throw = true));
+        }
+        catch (\RuntimeException $th)
+        {
+            $message = (string) $th->getMessage ();
+            if (!str_contains ($message, '→ 404') && !str_contains ($message, '→ 405'))
+            {
+                throw $th;
+            }
+
+            $code = str_contains ($message, '→ 405') ? 405 : 404;
+            self::errorPage ($code, null);
+        }
     }
 
     /**
@@ -61,6 +80,46 @@ final class Dispatcher
         if (!$head) {readfile ($file['file']);}
 
         return true;
+    }
+
+    /**
+     * Render an error page from src/Views/Errors/ via Drip.
+     *
+     * Uses Drip directly (not Views::render) to avoid injecting face/bone
+     * asset tags that belong to normal pages. Falls back to static markup
+     * when the view file is missing.
+     *
+     * @since  0.0.2
+     * @param  int               $code      HTTP status code.
+     * @param  Throwable|null    $exception Optional exception for debug detail.
+     * @return void
+     */
+    public static function errorPage (int $code, ?Throwable $exception = null): void
+    {
+        $view = interlace (basepath, 'src', 'Views', 'Errors', (string) $code.'.html');
+
+        if (!is_file ($view))
+        {
+            http_response_code ($code);
+            header ('Content-Type: text/html; charset=utf-8');
+            exit ("<h1>{$code} " . statc ($code) . "</h1><p>Error page not available.</p>");
+        }
+
+        $layout = null;
+        $testLayout = interlace (basepath, 'apps', 'Views', 'layouts', 'main.html');
+        if (is_file ($testLayout)) {$layout = $testLayout;}
+
+        $data = [
+            'code'    => $code,
+            'title'   => statc ($code),
+            'message' => ($exception instanceof \Throwable && is_debug ())
+                ? htmlspecialchars ((string) $exception->getMessage (), ENT_QUOTES, 'UTF-8')
+                : null,
+        ];
+
+        http_response_code ($code);
+        header ('Content-Type: text/html; charset=utf-8');
+        echo Drip::renderFile ($view, $data, null, null);
     }
 
     /**

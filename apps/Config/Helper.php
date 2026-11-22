@@ -11,5 +11,6 @@
 
 return [
     'uri',
+    'config',
     'utilities',
 ];

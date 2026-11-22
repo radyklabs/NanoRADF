@@ -13,7 +13,7 @@
 return [
     // Public theme. Values are relative to the scope root; the extension is
     // appended when omitted.
-    'enqueue_styles'  => ['css/style'],
+    'enqueue_styles'  => ['css/style', 'System'],
     'enqueue_scripts' => ['js/app'],
 
     // Admin theme.
@@ -30,6 +30,10 @@ return [
         'theme_js' => [
             'slug' => 'Files/j',
             'dir'  => interlace (publicpath, 'themes', 'default', 'js'),
+        ],
+        'tokens' => [
+            'slug' => 'Files/t',
+            'dir'  => interlace (systemf, 'Views', 'Tokens'),
         ],
     ],
 ];

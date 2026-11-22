@@ -39,14 +39,14 @@ function check (string $label, callable $test): void
 echo "Config & enqueue\n";
 
 check ('config exposes default and admin lists', static fn (): bool => array_key_exists ('enqueue_styles', AssetsService::config ()) && array_key_exists ('admin_enqueue_scripts', AssetsService::config ()));
-check ('styles resolve to name + base', static fn (): bool => AssetsService::styles ('default') === [['name' => 'style.css', 'base' => 'css']]);
+check ('styles resolve to name + base', static fn (): bool => AssetsService::styles ('default') === [['name' => 'style.css', 'base' => 'css'], ['name' => 'System.css', 'base' => '']]);
 check ('scripts resolve to js extension', static fn (): bool => AssetsService::scripts ('default') === [['name' => 'app.js', 'base' => 'js']]);
 check ('runtime enqueue dedupes', function (): bool
 {
     AssetsService::enqueueStyle ('css/style');
     $list = AssetsService::styles ('default');
 
-    return count ($list) === 1;
+    return count ($list) === 2;
 });
 
 echo "\nURL generation\n";
@@ -55,7 +55,7 @@ $url = AssetsService::mask ('default', ['name' => 'style.css', 'base' => 'css'])
 check ('mask rewrites theme css to the slug', static fn (): bool => str_starts_with ($url, '/Files/c/style.css?') && str_contains ($url, 'v='));
 $jsUrl = AssetsService::mask ('default', ['name' => 'app.js', 'base' => 'js']);
 check ('mask rewrites theme js to the slug', static fn (): bool => str_starts_with ($jsUrl, '/Files/j/app.js?'));
-check ('renderStyles emits one link', static fn (): bool => substr_count (AssetsService::renderStyles ('default'), '<link') === 1);
+check ('renderStyles emits one link per queued style', static fn (): bool => substr_count (AssetsService::renderStyles ('default'), '<link') === 2);
 check ('renderScripts emits one deferred script', static fn (): bool => substr_count (AssetsService::renderScripts ('default'), '<script') === 1);
 
 echo "\nResolution\n";

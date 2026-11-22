@@ -151,7 +151,19 @@ final class AssetsService
         {
             if (($mask['slug'] ?? '') === '' || ($mask['dir'] ?? '') === '') {continue;}
 
-            if (realpath ((string) $mask['dir']) === realpath (interlace (self::root ($scope), $asset['base'])))
+            $dir = (string) $mask['dir'];
+
+            if ($asset['base'] !== '')
+            {
+                if (realpath ($dir) === realpath (interlace (self::root ($scope), $asset['base'])))
+                {
+                    return '/'.trim ((string) $mask['slug'], '/').'/'.ltrim ($asset['name'], '/').'?v='.$buster;
+                }
+
+                continue;
+            }
+
+            if (str_contains ($dir, interlace (systemf, 'Views', 'Tokens')))
             {
                 return '/'.trim ((string) $mask['slug'], '/').'/'.ltrim ($asset['name'], '/').'?v='.$buster;
             }
@@ -281,6 +293,11 @@ final class AssetsService
      */
     public static function filePath (string $scope, array $asset): string
     {
+        if ($asset['base'] === '' && is_file (interlace (systemf, 'Views', 'Tokens', $asset['name'])))
+        {
+            return interlace (systemf, 'Views', 'Tokens', $asset['name']);
+        }
+
         return interlace (self::root ($scope), $asset['base'], $asset['name']);
     }
 
@@ -294,9 +311,17 @@ final class AssetsService
      */
     private static function version (string $scope, array $asset): string
     {
+        $scopeDir = self::root ($scope);
+
+        // Tokens live outside the theme root; fall back to the Tokens folder.
+        if (!str_starts_with (self::filePath ($scope, $asset), $scopeDir))
+        {
+            $scopeDir = interlace (systemf, 'Views', 'Tokens');
+        }
+
         $path = $asset['base'] === '' ? $asset['name'] : $asset['base'].'/'.$asset['name'];
 
-        return (string) (int) @filemtime (interlace (self::root ($scope), $path));
+        return (string) (int) @filemtime (interlace ($scopeDir, $path));
     }
 
     /**

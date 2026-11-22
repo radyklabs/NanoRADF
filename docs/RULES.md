@@ -5,6 +5,7 @@ Read this before touching the repository. It is the normative companion to `CLAU
 ## 1. Runtime & style
 
 - PHP 8.1+, `declare (strict_types=1);` is the first statement of every PHP file.
+- **Drip Template Engine**: the view engine. `View::render()` accepts view files only in `.html` (the extension is appended to dot-notation names); directives are Blade-shaped — `@extends`, `@yield`, `@section`/`@endsection`, `@include`; `{{ }}` is auto-escaped, with a `|raw` opt-out.
 - **Zero dependencies / self-contained** (NFR-1): no Composer packages, plugins, or third-party runtime/build dependency. Class loading is only `System\Kernel\Boot::autoloader`; there is no `vendor/` and no plugin loader. Any dev-time manifest must stay optional and never be required to run the framework.
 - Formatting conventions observed across the codebase — follow them, do not reformat foreign code:
   - Space before call parentheses: `interlace (...)`, `is_readable ($path)`.

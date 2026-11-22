@@ -2,6 +2,8 @@
 
 namespace System\Kernel;
 
+use System\Services\Views;
+
 /**
  * Controller — request lifecycle and response helpers shared by every surface.
  *
@@ -54,6 +56,23 @@ class Controller
         }
 
         return ['status' => $status, 'body' => (string) $body, 'headers' => $extra['headers'] ?? []];
+    }
+
+    /**
+     * Render a Drip view for the current controller.
+     *
+     * Module controllers resolve plain names against their own `Views/` folder;
+     * app controllers resolve against `apps/Views/`.
+     *
+     * @since  0.0.1
+     * @param  string      $name   View name without extension (`file` or `folder.file`).
+     * @param  array       $data   Variables for the template scope.
+     * @param  string|null $layout Layout name overriding `@extends`.
+     * @return array{status:int, body:string, headers:list<string>}
+     */
+    protected function view (string $name, array $data = [], ?string $layout = null): array
+    {
+        return $this->respond (Views::render ($name, $data, $layout, Views::context (static::class)));
     }
 
     /**

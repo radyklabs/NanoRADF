@@ -15,8 +15,11 @@
  */
 
 return [
-    'GET /'             => App\Controllers\HomeController::class . '::index',
-    'GET /hello/{name}' => App\Controllers\HomeController::class . '::hello',
-    'GET /ping'         => App\Controllers\PingController::class . '::index',
-    'GET /status/{code:[45]\d\d}' => App\Controllers\PingController::class . '::fail',
+    'GET /'             => 'App\Controllers\WelcomeController::index',
+    'GET /home'         => 'App\Controllers\HomeController::index',
+    'GET /hello/{name}' => 'App\Controllers\HomeController::hello',
+    'GET /page/{line}'  => 'App\Controllers\HomeController::page',
+    'GET /ping'         => 'App\Controllers\PingController::index',
+    'GET /welcome'      => 'App\Controllers\WelcomeController::index',
+    'GET /status/{code:[45]\d\d}' => 'App\Controllers\PingController::fail',
 ];

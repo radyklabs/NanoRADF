@@ -98,6 +98,18 @@ Update `docs/PLAN.md` (status/track log), `docs/CHANGELOG.md` (`[Unreleased]`), 
 
 - **Always read the base code first.** Before any task, read carefully the code it touches *and* every code path related to it (bootstrap chain, helpers, autoloader, gateway, router/controller, route table, tests). Understand each line's logic and why it is written that way before deciding anything.
 - Never rush an edit, never assume, never fabricate behaviour from memory. If something is unknown, verify in the repository (grep/view/run) instead of guessing; correct earlier claims when evidence contradicts them.
+
+## 8. Drip Template Engine
+
+Drip compiles `.html` templates to PHP under `storage/cache/views/` and renders the compiled file. Names are dot-notation without extension: `file`, `folder.file`. A leading capital letter means a module (`Module.file`, `Module.folder.file`); anything else is a folder, so view folders are lowercase.
+
+- Echo: `{{$var}}` escapes via `System\Helper\Utilities::escape`; `{{!$var!}}` prints raw. Spaces are optional inside the braces.
+- Never call `htmlspecialchars()`, `htmlentities()`, or `e()` inside `{{ }}` — the engine already escapes, so the second pass corrupts output. The compiler rejects it with a `already escapes` error.
+- To build HTML by hand inside an expression, escape only the data and keep the markup in a raw block: `{{! '<b>'.htmlspecialchars($name, ENT_QUOTES, 'UTF-8').'</b>' !}}`.
+- `{{-- … --}}` is a Drip comment (dropped at compile). A directive or echo written inside an HTML comment (`<!-- @yield('content') -->`) is unwrapped and compiled, so templates stay previewable.
+- Unknown `@word` sequences are left untouched (CSS `@media`, `user@host`).
+- `@section('content')` overrides the rendered child body for that slot; `@extend` and the third `render(..., $layout)` argument override accordingly.
+- Compiled cache invalidates on the source file mtime; clear `storage/cache/views/` to force a recompile.
 - Think about the target diff before writing: prefer rehearsing/verifying the idea; apply slowly and carefully, never reckless bulk rewrites.
 - Preserve working behaviour: when simplifying/refactoring, keep a failing-before / passing-after record so an equivalent guarantee is shown, not assumed.
 - If a safe change turns out to need more than expected, stop, restore state (e.g. `git stash`/checkout), and re-plan instead of piling edits.

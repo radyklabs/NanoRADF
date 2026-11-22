@@ -1,0 +1,21 @@
+@extends('layouts.main')
+
+@section('content')
+    <h1>{{$heading}}</h1>
+    <p>Rendered by the Drip Template Engine.</p>
+
+    @include('welcome.meta', ['label' => 'Mode'])
+
+    @if($features !== [])
+        <ul>
+            @foreach($features as $feature)
+                <li>{{$feature}}</li>
+            @endforeach
+        </ul>
+    @else
+        <p>No features listed.</p>
+    @endif
+
+    <p @class(['note', 'note--loud' => $loud])>Escaping works: {{$unsafe}}</p>
+    <p>Raw works: {{!$unsafe!}}</p>
+@endsection

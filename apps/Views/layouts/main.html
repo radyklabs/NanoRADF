@@ -5,6 +5,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{{$title ?? 'NanoRADF Default'}}</title>
+{{!$head ?? ''!}}
 </head>
 <body>
     <header class="app-header">
@@ -18,5 +19,6 @@
     <footer class="app-footer">
         <p>&copy; {{ date('Y') }} NanoRADF</p>
     </footer>
+    {{!$foot ?? ''!}}
 </body>
 </html>

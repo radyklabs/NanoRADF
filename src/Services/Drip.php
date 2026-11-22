@@ -194,8 +194,7 @@ final class Drip
         // 6. Remaining directives.
         $source = self::directives ($source);
 
-        // 7. Restore opaque blocks.
-        if ($blocks !== [])
+        // 7. Restore opaque blocks.        if ($blocks !== [])
         {
             $source = strtr ($source, $blocks);
         }
@@ -242,6 +241,19 @@ final class Drip
             $source
         );
 
+        // Inline assets: content stays verbatim between the markers.
+        $source = (string) preg_replace_callback (
+            '/@style\b(.*?)@endstyle\b/s',
+            static fn (array $m): string => '<style>'.$m[1].'</style>',
+            $source
+        );
+
+        $source = (string) preg_replace_callback (
+            '/@script\b(.*?)@endscript\b/s',
+            static fn (array $m): string => '<script>'.$m[1].'</script>',
+            $source
+        );
+
         $source = (string) preg_replace_callback (
             '/@section\s*\(\s*[\'"]([^\'"]+)[\'"]\s*\)/',
             static fn (array $m): string => '<?php $__sections_stack[] = '.var_export ($m[1], true).'; ob_start (); ?>',
@@ -276,6 +288,10 @@ final class Drip
 
             // Helpers.
             '/@class\s*'.$arg.'/' => '<?php echo '.Utilities::class.'::classAttr ($1); ?>',
+
+            // Assets. Same namespace, no import needed.
+            '/@enqueueStyles\b/'  => '<?php echo \\System\\Services\\AssetsService::renderStyles (\'default\'); ?>',
+            '/@enqueueScripts\b/' => '<?php echo \\System\\Services\\AssetsService::renderScripts (\'default\'); ?>',
         ];
 
         foreach ($map as $pattern => $replace)

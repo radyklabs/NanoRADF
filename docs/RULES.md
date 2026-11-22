@@ -74,7 +74,8 @@ Follow `CLAUDE.md` → Secure Coding Rules without exception. Extra operational 
 
 ## 8. Edit discipline (read-before-touch)
 
-- Never rush an edit. Read the whole file first and understand its flow line by line; map what "works today" before deciding what to change.
+- **Always read the base code first.** Before any task, read carefully the code it touches *and* every code path related to it (bootstrap chain, helpers, autoloader, gateway, router/controller, route table, tests). Understand each line's logic and why it is written that way before deciding anything.
+- Never rush an edit, never assume, never fabricate behaviour from memory. If something is unknown, verify in the repository (grep/view/run) instead of guessing; correct earlier claims when evidence contradicts them.
 - Think about the target diff before writing: prefer rehearsing/verifying the idea; apply slowly and carefully, never reckless bulk rewrites.
 - Preserve working behaviour: when simplifying/refactoring, keep a failing-before / passing-after record so an equivalent guarantee is shown, not assumed.
 - If a safe change turns out to need more than expected, stop, restore state (e.g. `git stash`/checkout), and re-plan instead of piling edits.

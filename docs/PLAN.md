@@ -61,7 +61,7 @@ Definition of done (v1): all PRD acceptance criteria pass; smoke checks recorded
 ### Phase 2 — View system & assets ⚠️
 - **Depends on:** Phase 1. **Owner:** main thread.
 - Blade-shaped renderer: compose `Layouts/` ← `Patterns/` ← `Components/`/`Elements/`, module `Views/*.php`, escaping helper in `src/Helper/Utilities.php`.
-- Dot-notation view names (no extension): `file` → own scope (in a module: its **own** view, requires `app.modules=true` else file-not-found); `folder.file`; cross-module only: `Module.file` / `Module.folder.file`. Layout is the third argument of `View::render(...)` — no `@layout` in view files; `@extends/@yield/@section/@endsection/@include` inside templates.
+- Dot-notation view names (**no extension in the parameter**): `file` → own scope (in a module: its **own** view, requires `app.modules=true` else file-not-found); `folder.file`; cross-module only: `Module.file` / `Module.folder.file`. `.html` is applied by the View/Drip layer as a rule — never written manually. When a view cannot be found, the error must state the resolved location and tell the user to "pastikan file ada" and "pastikan menggunakan file html". Layout is the third argument of `View::render(...)` — no `@layout` in view files; `@extends/@yield/@section/@endsection/@include` inside templates.
 - `{{ }}` auto-escaped, `|raw` opt-out.
 - `src/Services/AssetsService.php` + theme registration (`public/themes/default`, `src/Themes/admin`), design tokens from `src/Views/Tokens/System.css`; disk→URL mapping via mask_url configured in `apps/Config/Assets.php`.
 - Verification: rendered page with layout+pattern composition; escaping test (malformed input stays inert HTML).

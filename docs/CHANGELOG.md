@@ -6,7 +6,7 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning: [S
 ## [Unreleased]
 
 ### Added
-- Phase 2 kickoff: view-system contract (dot-notation names, layout as `View::render(..., $layout)` arg, `@extends/@yield/@section/@include`, auto-escaped `{{ }}` with `|raw`), asset mask_url in `apps/Config/Assets.php`, modular token files; PRD acceptance criterion #8; SOP in `docs/RULES.md` §9. The engine is named the **Drip Template Engine**; `View::render()` accepts `.html` only.
+- Phase 2 kickoff: view-system contract (dot-notation names, layout as `View::render(..., $layout)` arg, `@extends/@yield/@section/@include`, auto-escaped `{{ }}` with `|raw`), asset mask_url in `apps/Config/Assets.php`, modular token files; PRD acceptance criterion #8; SOP in `docs/RULES.md` §9. The engine is named the **Drip Template Engine**; `View::render()` accepts `.html` only, appends it automatically, and reports missing views with "pastikan file ada" + "pastikan menggunakan file html".
 - Resolution correction: inside a module, its own view is plain `file` (requires `app.modules=true`, else file-not-found); `Module.file`/`Module.folder.file` is only for **cross-module** access.
 
 ### Changed

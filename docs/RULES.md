@@ -72,7 +72,28 @@ Follow `CLAUDE.md` → Secure Coding Rules without exception. Extra operational 
 - Documentation-only changes need no runtime validation.
 - Web check: `http://nanoradfw.local` must render without a 500 after bootstrap-touching changes.
 
-## 8. Edit discipline (read-before-touch)
+- Verify with the project's real checks (§3/§7) and web probes after each incremental step, not only at the end.
+
+## 9. SOP — phase kickoff & change loop
+
+Use this before starting any phase or sizable task. Keep it short: align first, touch code second.
+
+### 9.1 Read before asking
+1. Re-read the target phase in `docs/PLAN.md`, its FR/NFR lines in `docs/PRD.md`, and any related decisions in the PLAN decision log.
+2. Read the **actual base code** that the task touches and every path related to it (entry chain, gateway, router/controller, view/theme scaffolding, tests). Map who calls whom.
+3. Record what "works today" and why each relevant line exists — no assumptions, no hallucinated behaviour.
+
+### 9.2 Align with the requester (interactive)
+Ask a multiple-choice question set when the approach would change the shape of the work: one sentence per question, a default recommendation with reasons, and an explicit free-form slot. Cover: data shape/API, extension/language, location/naming, config vs code, security policy, verification artefacts, and where the SOP lives. Wait for answers before coding.
+
+### 9.3 Execute in small verified steps
+- One focused change per commit; keep diffs surgical (one task = one change set).
+- After each step run the smallest check that covers it (`tests/*`, lint, web probe `http://nanoradfw.local`).
+- If a step needs more than expected, stop: restore state (`git stash`/checkout), re-plan, re-run after fixing cause — never pile edits.
+
+### 9.4 Sync docs in the same change set
+Update `docs/PLAN.md` (status/track log), `docs/CHANGELOG.md` (`[Unreleased]`), `docs/REPORT.md` when a defect is found/fixed, `docs/PRD.md` when requirements/acceptance actually change. Commit and push immediately.
+
 
 - **Always read the base code first.** Before any task, read carefully the code it touches *and* every code path related to it (bootstrap chain, helpers, autoloader, gateway, router/controller, route table, tests). Understand each line's logic and why it is written that way before deciding anything.
 - Never rush an edit, never assume, never fabricate behaviour from memory. If something is unknown, verify in the repository (grep/view/run) instead of guessing; correct earlier claims when evidence contradicts them.

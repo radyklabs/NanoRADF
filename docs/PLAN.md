@@ -2,7 +2,7 @@
 
 Goal: deliver the v1 framework defined in `docs/PRD.md` — two-mode (SSR frontend / headless backend), zero-dependency PHP, module-based, server-to-server communication.
 
-Constraints: PHP 8.1+, zero runtime deps, English docs, dev URL `http://nanoradfw.local`, no new top-level dirs without a recorded decision.
+Constraints: PHP 8.1+, zero-dependency independent framework (no Composer/packages, no plugins; PSR-4 via `System\Kernel\Boot::autoloader`), SSR frontend / headless backend two-mode, module-based, server-to-server communication.
 
 Definition of done (v1): all PRD acceptance criteria pass; smoke checks recorded in `docs/REPORT.md`; docs in sync; release only via `>release`.
 
@@ -19,7 +19,8 @@ Definition of done (v1): all PRD acceptance criteria pass; smoke checks recorded
 | D7 | 2026-11-20 | **All test files live in `/tests`** (new tracked top-level dir); smoke checks never in `public/` or `src/`. Bootstrap smoke check: `tests/smoke_check.php` (self-contained, any CWD). | User directive; keeps the web root clean. Recorded per the no-new-top-directory rule. |
 | D8 | 2026-11-20 | `app.mode` env toggle: `bone` (headless API backend only), `face` (SSR frontend → headless backend, server-to-server), `full` (both; default). Selectable before app development. Pair of FR-12 and Phase 4; `.env` carries the key with a docblock. | PRD §1 already defines the two selectable modes; this makes the selection an explicit env key instead of an implicit convention. |
 | D9 | 2026-11-20 | Modular HMVC lives at **project root `modules/`** (sibling of `apps/`), set via `$modules_folder` in `public/index.php`. `apps/` is always the main MVC. `modulesf` path constant always registered. | User: modules are optional and must not pollute `apps/`; keeps `apps/` a clean, default MVC. Replaces the Phase 0b intermediate where the module tree lived in `apps/Modules/`. |
-| D10 | 2026-11-20 | Two-root autoload: `App\…`→`apps/` and `Modules\…`→`modules/` **always active**. `app.modules` gates only the per-module folder/namespace templates (`controllersfmod` etc.), not root resolution. Debug disclosure via `$debug` in `public/index.php` (master switch; `app.debug` dropped). Gateway renamed `public/nanoradf.php` → `public/nanoradf`. | Audit of user refactor found mixed constant contracts (`nsappmod`/`appmodf` undefined) + `echo` leak; unified to two roots + removed debug gated `app.env`. |
+| D10 | 2026-11-20 | Two-root autoload: `App\…`→`apps/` and `Modules\…`→`modules/` **always active**. `app.modules` gates only the per-module folder/namespace templates (`controllersfmod` etc.), not root resolution. Gateway renamed `public/nanoradf.php` → `nanoradf`. | Audit of user refactor found mixed constant contracts (`nsappmod`/`appmodf` undefined) + `echo` leak; unified to two roots. Debug disclosure settled later (D11). |
+| D11 | 2026-11-21 | One debug switch: `APP_DEBUG` derived from `app.debug` (in `.starter`) drives error disclosure and reporting; the entry-level `$debug` master is removed so config can't silently flip it off. Route table: flat `'GET /path'` + prefix groups (group key = prefix, inner keys full `METHOD /path`). | Two independent switches ($debug vs APP_DEBUG) contradicted each other; prefix spelling was redundant. |
 
 ## Status legend
 
@@ -29,9 +30,9 @@ Definition of done (v1): all PRD acceptance criteria pass; smoke checks recorded
 
 ### Phase 0 — Bootstrap & kernel ✅
 - Entry chain `public/index.php` → `nanoradf` → `.config` → `.supports` → `.structures` → `Boot::initiate()`.
-- Global helpers (`is`, `interlace`, `pathify`, `namespacify`, `urlify`, `genv`, `gserver`, `enval`, `read_directories`).
+- Global helpers (`is`, `interlace`, `pathify`, `namespacify`, `urlify`, `genv`, `gserver`, `enval`).
 - Path/namespace constants, `is_dir` guarded; PSR-4 autoloader.
-- **2026-11-20 fixes (D3):** undeclared `self::$nssys`/`self::$nsmod` → global constants; undefined `modulesf` → `modulesfapp`. Fail-before/pass-after recorded in `docs/REPORT.md`.
+- **2026-11-20 fixes (D3):** undeclared `self::$nssys`/`self::$nsmod` → global constants; undefined `modulesf` → resolved via the `Modules\…` branch. Fail-before/pass-after recorded in `docs/REPORT.md`.
 - **D10 (2026-11-20, post-audit):** two-root autoload contract — `App\…`→`apps/`, `Modules\…`→`modules/` always active; `nsapp`/`nsmod` replace `nsappmod`/`appmodf`.
 - **D9:** root-modules relocation (see Phase 0b) — `modulesf` replaces the old combined constant; `modulesfapp` removed.
 - Verification: boot smoke check + autoload resolution of `System\Helper\Utilities` and `App\Modules\Welcome\Controllers\WelcomeController` → PASS (exit 0).
@@ -45,13 +46,17 @@ Definition of done (v1): all PRD acceptance criteria pass; smoke checks recorded
 - Current `.env` carries `app.modules=false` (working default); the key itself stays gitignored — semantics documented here and in PRD FR-11.
 - Verification: `tests/layout_check.php` boots **both** ways asserting `nsapp`/`nsmod` + both roots resolve + template gate; `tests/smoke_check.php` exit 0; `http://nanoradfw.local` → 200. Fail-before/pass-after in `docs/REPORT.md`.
 
-### Phase 1 — Routing & controllers ⚠️
+### Phase 1 — Routing & controllers ✅
 - **Depends on:** Phase 0, Phase 0b (controller/model/view locations are defined there).
 - **Owner:** main thread.
 - Implement `src/Kernel/Router.php` (method + path matching, params, 404 fallthrough) and `src/Kernel/Controller.php` (request lifecycle, response helpers, render hook).
 - Wire `apps/Config/Routes.php` as the route table consumed by the router.
 - Base controllers `PublicController` / `PrivateController` / `ApiController` (surface-specific auth/response rules).
 - Verification: CLI route-match checks (match/miss/param cases) + `http://nanoradfw.local` returns a controller response, unknown path → 404 handler.
+- **2026-11-21:** Router (exact-first, `{name}`/`{name:regex}`, 405/404, normalise, prefix groups), Controller base + `authorize()`/`respond()`, three base controllers with distinct surfaces; gateway dispatches only on web SAPIs. `tests/route_check.php` covers match/miss/param/regex/normalise/group/malformed; smoke + layout stay green.
+- **2026-11-22 (gateway relief):** dispatch moved to `src/Kernel/Dispatcher.php`; the gateway now has a **single catch-all** (runtime faults collapsed into it) instead of nested try/catch; bootstrap sentinels still report via `$error`; disclosure gated by `APP_DEBUG`. Fail-before/pass-after: before = runtime fail printed guts in two places, after = one renderer (detail only when APP_DEBUG).
+- **2026-11-22 (finish pass):** api error envelope end to end (`/status/{code:[45]\d\d}` → `{"ok":false,"error":"…"}` JSON); disclosure unified on `is_debug()`; namespace experiment cancelled; route capture-group canonicalization (`9371800`).
+- **2026-11-21 follow-up (format + priority batch):** route table keys are flat `'GET /path'` with prefix groups (`'/admin' => [ 'GET /dash' => ... ]`; group key = prefix, inner keys full `METHOD /path`); `Allow:` derives from the table; HEAD served from GET (empty body); API responses carry `application/json`. Browser-verified: `/`, `/hello/{name}`, `/ping`, `POST /` → 405.
 
 ### Phase 2 — View system & assets ⚠️
 - **Depends on:** Phase 1. **Owner:** main thread.
@@ -106,5 +111,5 @@ Definition of done (v1): all PRD acceptance criteria pass; smoke checks recorded
 ## Open risks
 
 - `apps/Services` / `apps/Config` classes have no namespace mapping today — closed **by design** in Phase 0b (single `App\` → `apps/` root); confirm with the both-mode verification there.
-- `read_directories()` is currently uncalled (entry no longer declares `$directories`) — decide keep-or-remove in Phase 1, record in REPORT/CHANGELOG.
+- `read_directories()` removed in Phase 1 (no caller; entry no longer declares `$directories`).
 - No test framework: smoke checks are manual until a test runner is agreed (candidate: plain-PHP assert scripts, zero deps).

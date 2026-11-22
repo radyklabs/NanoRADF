@@ -5,7 +5,7 @@ Read this before touching the repository. It is the normative companion to `CLAU
 ## 1. Runtime & style
 
 - PHP 8.1+, `declare (strict_types=1);` is the first statement of every PHP file.
-- Zero runtime dependencies: no Composer autoload at runtime. The custom PSR-4 autoloader is `System\Kernel\Boot::autoloader`.
+- **Zero dependencies / self-contained** (NFR-1): no Composer packages, plugins, or third-party runtime/build dependency. Class loading is only `System\Kernel\Boot::autoloader`; there is no `vendor/` and no plugin loader. Any dev-time manifest must stay optional and never be required to run the framework.
 - Formatting conventions observed across the codebase — follow them, do not reformat foreign code:
   - Space before call parentheses: `interlace (...)`, `is_readable ($path)`.
   - Space after control keywords: `if (…)`, `foreach (…)`, `while (…)`.
@@ -15,7 +15,7 @@ Read this before touching the repository. It is the normative companion to `CLAU
 - Naming:
   - Classes: PascalCase, one class per file, `final` where extension is not designed.
   - Methods/properties: camelCase.
-  - Global helper functions: snake_case or short lowercase (`namespacify`, `read_directories`, `genv`, `gserver`, `enval`, `statc`, `fl`).
+  - Global helper functions: snake_case or short lowercase (`namespacify`, `genv`, `gserver`, `enval`, `statc`, `fl`).
   - Global constants: lowercase (`basepath`, `sep`, `systemf`, `nssys`).
 - Prefer the existing helpers in `.supports` (`interlace`, `pathify`, `is`, `genv`) over ad-hoc path/string logic.
 
@@ -71,3 +71,11 @@ Follow `CLAUDE.md` → Secure Coding Rules without exception. Extra operational 
 - Trivial one-liners need no test.
 - Documentation-only changes need no runtime validation.
 - Web check: `http://nanoradfw.local` must render without a 500 after bootstrap-touching changes.
+
+## 8. Edit discipline (read-before-touch)
+
+- Never rush an edit. Read the whole file first and understand its flow line by line; map what "works today" before deciding what to change.
+- Think about the target diff before writing: prefer rehearsing/verifying the idea; apply slowly and carefully, never reckless bulk rewrites.
+- Preserve working behaviour: when simplifying/refactoring, keep a failing-before / passing-after record so an equivalent guarantee is shown, not assumed.
+- If a safe change turns out to need more than expected, stop, restore state (e.g. `git stash`/checkout), and re-plan instead of piling edits.
+- Verify with the project's real checks (§3/§7) and web probes after each incremental step, not only at the end.

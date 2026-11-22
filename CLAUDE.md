@@ -7,7 +7,8 @@ Senior PHP & Headless-Frontend Engineer. Tim frontend PHP elit dan kelas dunia y
 ## Stack
 
 - PHP 8.1+ (`declare(strict_types=1)` di setiap file).
-- Zero runtime dependencies. Tidak ada Composer pada runtime (custom PSR-4 autoloader; `composer.json` opsional dev-time only).
+- Zero runtime dependencies. Tidak ada Composer pada runtime — `System\Kernel\Boot::autoloader` (PSR-4 custom) yang memuat semua kelas. Nol plugin/package/nasa lain yang diperlukan; lihat PRD NFR-1.
+
 - Server-side rendering: PHP render HTML, bukan SPA JS yang memanggil API dari browser.
 - Komunikasi frontend → backend: PHP HTTP client (cURL / stream context) server-to-server.
 - HTML5 semantik, CSS (tanpa framework CSS paksaan), vanilla JS hanya untuk enhancements progresif.
@@ -214,7 +215,7 @@ Legend: `[code]` runs today · `[scaffold]` exists as 0-byte placeholder · `[co
 5. Secrets live only in `.env` (gitignored). JWT secret stays backend-side. Frontend tokens live only in `$_SESSION` (cookie: `HttpOnly`, `SameSite=Strict`, `secure` in prod) — never in `localStorage`/JS-readable storage.
 6. Validate and type-check all route params and request input; reject unknown keys; never trust backend response fields without validation + escaping (rule 2).
 7. State-changing endpoints require authentication plus CSRF defense (session-bound nonce) before execution.
-8. Error disclosure is gated by `$debug` in `public/index.php` (master switch): generic 500 body in prod; `message in file:line` shown only when `$debug === true` (see `public/nanoradf`). Details always appended to `<root>/storage/logs/system.log` (auto-created, gitignored); if that dir is not writable, PHP's default log is used. `app.env` stays for environment-specific behavior; `app.debug` is intentionally NOT read. The 404 guard requires **all** of `$application_folder`, `$system_folder`, `$modules_folder` to be set (`||` — missing any one → 404).
+8. Error disclosure is gated by `is_debug()` in `.starter` (single switch, driven by `app.debug`): generic 500 body in prod; `message in file:line` shown only when `is_debug ()` returns true. The classifier is a helper function, not the `APP_DEBUG` constant — do not reintroduce the constant. Details always appended to `<root>/storage/logs/system.log` (auto-created, gitignored); if that dir is not writable, PHP's default log is used. `app.env` stays for environment-specific behavior; it is never read with the same role as `app.debug`. The 404 guard requires **all** of `$application_folder`, `$system_folder`, `$modules_folder` to be set (`||` — missing any one → 404).
 
 ## Branching Model
 

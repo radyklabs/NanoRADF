@@ -135,66 +135,6 @@ function interlace (...$segments)
 }
 
 /**
- * Extract the `$directories` map from an entry file.
- *
- * Tokenizes the source, locates the `$directories = [ … ]` literal,
- * and returns its top-level `key => value` string pairs. Empty array
- * when the file is missing or holds no such array.
- *
- * @since  0.0.1
- * @param  string $file Absolute path to the entry file.
- * @return array<string, string> name => directory.
- */
-function read_directories (string $file): array
-{
-	if (!is_file ($file)) { return []; }
-
-	$tokens = token_get_all ((string) file_get_contents ($file));
-	$count  = count ($tokens);
-
-	for ($i = 0; $i < $count; $i++)
-	{
-		$token = $tokens[$i];
-		if (!is_array ($token) || $token[0] !== T_VARIABLE || $token[1] !== '$directories')
-		{
-			continue;
-		}
-
-		// Skip trivia: expect '=' then the opening '['.
-		$i++;
-		while ($i < $count && is_array ($tokens[$i]) && in_array ($tokens[$i][0], [T_WHITESPACE, T_COMMENT, T_DOC_COMMENT], true)) { $i++; }
-		if ($i >= $count || $tokens[$i] !== '=') { continue; }
-
-		$i++;
-		while ($i < $count && is_array ($tokens[$i]) && in_array ($tokens[$i][0], [T_WHITESPACE, T_COMMENT, T_DOC_COMMENT], true)) { $i++; }
-		if ($i >= $count || $tokens[$i] !== '[') { continue; }
-
-		// Collect the literal body up to the matching ']' (nested-safe).
-		$depth = 0;
-		$body  = '';
-		for (; $i < $count; $i++)
-		{
-			$chunk = is_array ($tokens[$i]) ? $tokens[$i][1] : $tokens[$i];
-
-			if ($chunk === '[') { $depth++; }
-			elseif ($chunk === ']') { $depth--; if ($depth === 0) { break; } }
-
-			if ($depth > 0) { $body .= $chunk; }
-		}
-
-		// Flat string pairs only: 'system' => 'src'.
-		preg_match_all ("/['\"]?([A-Za-z_][A-Za-z0-9_]*)['\"]?\s*=>\s*['\"]([^'\"]*)['\"]/", $body, $pairs, PREG_SET_ORDER);
-
-		$map = [];
-		foreach ($pairs as $pair) { $map[$pair[1]] = $pair[2]; }
-
-		return $map;
-	}
-
-	return [];
-}
-
-/**
  * Read a value from the $_SERVER superglobal.
  *
  * Entry point for request path/uri reads (Router::tryAliases).

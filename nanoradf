@@ -23,16 +23,6 @@ if (!isset ($application_folder)
     exit ("<h1>404 Not Found</h1><p>The requested page (or file) could not be found.</p>");
 }
 
-/**
- * System brain: core logic
- * --
- * Bootstrap below is fragile — edits here can break the whole system.
- * Treat every change here as fragile.
- */
-
-// $heading = 'Internal System Error';
-// $message = 'An unexpected error occurred. Please contact the Administrator.';
-
 define ('basepath', realpath (__DIR__).DIRECTORY_SEPARATOR);
 
 $starter_key = call_user_func ('implode', '.', [basepath, 'starter']);
@@ -41,45 +31,28 @@ else {require_once $starter_key;}
 
 try
 {
-    if (isset ($error)) {throw new Exception ($error, 500);}    
+    if (isset ($error)) {throw new Exception ($error, 500);}
     unset ($error);
     call_user_func ([$kernel, 'initiate']);
+
+    // Dispatch on web SAPIs; CLI stays a plain loader so tests/smoke_check.php
+    // loads without resolving routes.
+    if (php_sapi_name () !== 'cli')
+    {
+        System\Kernel\Dispatcher::handle ();
+    }
 }
 
-// Catch-all: map the code to a heading, log file:line, emit the body.
+// Catch-all: friendly text for bootstrap sentinels, generic/gated text otherwise,
+// plus the storage/logs/system.log entry.
 catch (Throwable $th)
 {
-    $heading = [
-		404	=> 'Not Found',
-		500	=> 'Internal Server Error',
-    ][$th->getCode()] ?? 'Internal System Error';
-
-    $message = [
-        'starter'   => 'The starter file could not be found. Please reinstall the framework.',
-        'phpmin'    => 'This version of PHP is not supported. Please upgrade to a newer release.',
-        'common'    => 'The helper library could not be loaded. Please check the installation.',
-        'config'    => 'The configuration file could not be found. Please check the installation.',
-        'structure' => 'The framework directories could not be registered. Please check the installation.',
-        'boot'      => 'The kernel could not be started. Please check the installation.',
-        'kernel'    => 'The application could not be started. Please try again later.',
-    ][$th->getMessage ()] ?? 'An unexpected error occurred. Please contact the Administrator.';
-
-    $code = $th->getCode() ?: 500;
-    if (defined ('APP_DEBUG') && APP_DEBUG===true)
+    if (function_exists ('blackwall')) {blackwall ($th);}
+    
+    else
     {
-        $message = "{$message} in {$th->getFile ()}:{$th->getLine ()}";
+        header ('Content-Type: text/html; charset=utf-8', true, 500);
+        echo "<link rel=\"stylesheet\" href=\"/themes/default/css/error.css\"/>";
+        exit ("<notice><h1>500 Internal System Error</h1><p>An unexpected error occurred.</p></notice>");
     }
-
-    $log_dir = dirname (basepath . '/storage/logs/system.log');
-    if (!is_dir ($log_dir)) {@mkdir ($log_dir, 0775, true);}
-
-    if (is_dir ($log_dir) && is_writable ($log_dir))
-    {
-        error_log ("[{$code}] {$message}", 3, "{$log_dir}/system.log");
-    }
-    else {error_log ("[{$code}] {$message}");}
-
-    // http_response_code ($code);
-    header ('Content-Type: text/html; charset=utf-8', true, $code);
-    exit ("<h1>{$code} {$heading}</h1><p>{$message}</p>");
 }

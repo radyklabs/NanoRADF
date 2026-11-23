@@ -5,11 +5,38 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning: [S
 
 ## [Unreleased]
 
+### Added
+- Config file rename for naming consistency: `apps/Config/Assets.php` → `AppsConfig/AssetsConfig.php`, `apps/Config/Routes.php` → `apps/Config/RoutesConfig.php`, `apps/Config/Helper.php` → `apps/Config/HelperConfig.php` (aligns with `gconf()` stem-to-config resolution pattern used by `ConfigHelper.php`).
+- Asset enqueue via symbolic ids (`id_registry` in AssetsConfig): config now uses human-readable ids (`style`, `design-system`, `app`) that resolve to masked URLs via the id registry; render output includes `<link ... id="design-system">` and `<script ... id="app">` attributes.
+- Helper autoload moved to `Boot::autoloadHelper()`: called from `initiate()` after PSR-4 registration, using `configfapp` constant to locate `apps/Config/HelperConfig.php` stem list — fixes missing `e()` and `baseurl()` on some load paths.
+- `Dispatcher` split: `dispatchAssets()` resolves masked assets against `mask_urls` config and returns absolute file path or null; `serveAsset()` serves the resolved file with headers; `dispatchRoute()` handles MVC route matching. Entrypoint `handle()` orchestrates both stages cleanly separated.
+- Token CSS split scaffold: `System.css` now contains only `@import url('base.css');` as first line; modular token files (`color.css`, `space.css`, etc.) move into `src/Views/Tokens/` directory; mask pattern `/system/css/{*}` resolves tokens correctly.
+
+### Changed
+- `tests/assets_check.php`: updated expectations to match id-based enqueue (`design-system` → `/system/css/System.css`), added `id=` attribute assertions.
+- `tests/smoke_check.php`: corrected helper filename probe (`UtilitiesHelper.php`) and config path (`RoutesConfig.php`).
+- `tests/bootstrap_probe.php`: updated config path reference to `RoutesConfig.php`.
+
+### Added
+- Phase 2 batch 3 — Pattern-based mask URL engine: `mask_urls` config uses flexible regex patterns with `{*}` path capture and `{face_theme_active_name}` / `{bone_theme_active_name}` placeholders; pattern matching in AssetsService::resolve() supersedes static slug map. Theme-aware asset serving: face routes resolve under public/themes/{theme}/, bone routes under src/Themes/{theme}/ with separate queue dedup via `$queuedFaceAssets` / `$queuedBoneAssets`.
+- Helper auto-autoload registry: new `apps/Config/Helper.php` stem list (`['uri', 'utilities']`) loaded by `.starter` after config, before kernel init, ensuring helpers are available when classes start loading. File naming convention aligned to `*Helper.php` suffix (UriHelper, UtilitiesHelper).
+- Auto head/foot injection: `Views::render()` now merges default asset tags (`head`, `foot`, `bone_head`, `bone_foot`) into template scope from AssetsService; controller no longer needs manual assignment. WelcomeController cleaned of redundant $head/$foot lines.
+- Drip directive engine extension: `@enqueueStyles` → `AssetsService::renderFaceStyles()`, `@enqueueScripts` → `AssetsService::renderFaceScripts()`, `@style` / `@script` for inline blocks (fully qualified namespace in compiled PHP).
+- Dispatcher-level asset interception: `Dispatcher::handle()` intercepts masked assets BEFORE Router dispatch; private static `asset()` method serves with proper headers (Content-Type, ETag, Cache-Control, Content-Length); no route entries needed for assets.
+- Error pages from `src/Views/Errors/`: 404.html and 500.html created as standalone HTML templates with error.css styling; `Dispatcher::errorPage()` renders them via Drip (no layout wrapping) using hardcoded paths; router throws RuntimeException on 404/405, dispatcher catches and delegates to themed error rendering.
+- CSS token design system collapsed: 8 modular partial files (color, space, type, elevation, motion, media, form, nav) merged into single `System.css` (~11.5KB) containing all design tokens; theme folder renamed from admin → default.
+- Theme default configuration: `src/Config/Theme.php` defines active theme names per surface (face/bone), defaults to 'default'.
+- Config helper and Theme helper: `ConfigHelper.php` (gconf()), `ThemeHelper.php` (activeTheme()) providing typed accessors for app and theme settings.
+
+### Changed
+- Echo syntax finalised as `{{$var}}` (escaped) / `{{!$var!}}` (raw); the earlier `|raw` filter idea was dropped — no filter machinery, no `e()` helper. Manual escape functions inside `{{ }}` now throw at compile time instead of silently double-escaping.
+- View folders under `apps/Views` are lowercase: a leading capital letter always means a module, so `Layouts.main` would be read as module `Layouts`. `src/Views` keeps its capitalised taxonomy, reached through constants rather than dot-notation.
+
 ### Changed
 - NFR-1 strengthened: the framework is fully self-contained — no Composer packages, plugins, or third-party runtime/build dependency is required to run, route, dispatch, or render; PSR-4 via `System\Kernel\Boot::autoloader`, no `vendor/`. Dev-time tooling (if any) is optional and never a runtime requirement. Background: every `require`/`use` in the codebase resolves to the app's own namespaces, so no package registry or plugin loader exists.
 
 ### Added
-- Phase 1 — routing & controllers: `src/Kernel/Router.php` and `src/Kernel/Controller.php`, base controllers `PublicController`, `PrivateController`, `ApiController`, route table `apps/Config/Routes.php` wired through the gateway. Route keys are flat `'GET /path'` => `Ctrl::class.'::action'`, with prefix groups (`'/admin' => [ 'GET /dash' => ... ]`; inner keys must be full `METHOD /path`); exact-before-parameterised; browser-probed `/`, `/hello/{name}`, `/ping`, `/status/{code}`, `POST /` (405).
+- Phase 1 — routing & controllers: `src/Kernel/Router.php` and `src/Kernel/Controller.php`, base controllers `PublicController`, `PrivateController`, `ApiController`, route table `apps/Config/RoutesConfig.php` wired through the gateway. Route keys are flat `'GET /path'` => `Ctrl::class.'::action'`, with prefix groups (`'/admin' => [ 'GET /dash' => ... ]`; inner keys must be full `METHOD /path`); exact-before-parameterised; browser-probed `/`, `/hello/{name}`, `/ping`, `/status/{code}`, `POST /` (405).
 - API envelope contract: api-surface `respond()` always emits JSON and sets `Content-Type: application/json; charset=utf-8`. `/status/{code:[45]\d\d}` returns the error envelope `{"ok":false,"error":"scoped failure"}` for a real API error path.
 - Gateway simplicity (2026-11-22): dispatch moved to `src/Kernel/Dispatcher.php`; one catch-all in `nanoradf` delegates to `blackwall()` from `.starter`; new error page asset `public/themes/default/css/error.css`.
 

@@ -21,6 +21,6 @@ printf ("modulesf=%s\n", str_replace ('\\', '/', $const ('modulesf')));
 printf ("controllersfmod=%s\n", $const ('controllersfmod'));
 
 // Both roots must resolve, regardless of app.modules (D6 two-root model).
-printf ("app_resolve=%s\n", is_file (appf . '/Config/Routes.php') ? 'YES' : 'NO');
+printf ("app_resolve=%s\n", is_file (appf . '/Config/RoutesConfig.php') ? 'YES' : 'NO');
 printf ("mod_resolve=%s\n", is_file (modulesf . '/Welcome/Controllers/WelcomeController.php') ? 'YES' : 'NO');
 printf ("mod_templates=%s\n", defined ('controllersfmod') ? 'REGISTERED' : 'IGNORED');

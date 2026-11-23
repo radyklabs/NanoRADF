@@ -35,15 +35,20 @@ final class Router
 
     /**
      * Resolve a request. `['status', 'body']` for the first match; an unrouted
-     * path yields 404, and a routed path under another verb yields 405 with the
-     * real `Allow:` set from the table.
+     * path yields 404 (or throws when $throw is true), and a routed path under
+     * another verb yields 405 (or throws when $throw is true) with the real
+     * `Allow:` set from the table.
+     *
+     * When $throw is true, unhandled 404/405 are raised as RuntimeException so
+     * the caller (Dispatcher) can render a themed error page.
      *
      * @since  0.0.1
-     * @param  string $method HTTP method (upper-cased here).
-     * @param  string $path   Request path without query string.
+     * @param  string $method  HTTP method (upper-cased here).
+     * @param  string $path    Request path without query string.
+     * @param  bool   $throw   Throw on 404/405 instead of returning?
      * @return array{status:int, body:string}
      */
-    public static function dispatch (string $method, string $path): array
+    public static function dispatch (string $method, string $path, bool $throw = false): array
     {
         $method = strtoupper ($method);
         $hit    = self::match ($method, $path);
@@ -54,12 +59,12 @@ final class Router
         // the gateway trims it for HEAD, so treat it as a GET candidate.
         if ($method === 'HEAD')
         {
-                    // HEAD is served as a GET candidate; the gateway drops the body.
+            // HEAD is served as a GET candidate; the gateway drops the body.
             $head = self::match ('GET', $path);
             if ($head !== null)
             {
-                        if (!headers_sent ()) {header ('Content-Length: '.strlen ($head['body']));}
-                        return ['status' => $head['status'], 'body' => '', 'headers' => $head['headers']];
+                if (!headers_sent ()) {header ('Content-Length: '.strlen ($head['body']));}
+                return ['status' => $head['status'], 'body' => '', 'headers' => $head['headers']];
             }
         }
 
@@ -69,9 +74,11 @@ final class Router
         if ($allowed !== [])
         {
             if (!headers_sent ()) {header ('Allow: '.implode (', ', $allowed));}
+            if ($throw) {throw new \RuntimeException ("{$method} {$path} → 405");}
             return ['status' => 405, 'body' => '<h1>405 '.statc (405).'</h1><p>The request method is not allowed for this route.</p>'];
         }
 
+        if ($throw) {throw new \RuntimeException ("{$method} {$path} → 404");}
         return ['status' => 404, 'body' => '<h1>404 '.statc (404).'</h1><p>The requested page could not be found.</p>'];
     }
 
@@ -133,57 +140,57 @@ final class Router
         $compiled = [];
         foreach ($raw as $key => $value)
         {
-                    // Prefix group: `'/admin' => [ 'GET /dash' => ..., ... ]` — the string
-                    // key is the prefix; every inner key must be a full `METHOD /path`.
-                    if (is_string ($key) && is_array ($value) && str_starts_with ($key, '/'))
+            // Prefix group: `'/admin' => [ 'GET /dash' => ..., ... ]` — the string
+            // key is the prefix; every inner key must be a full `METHOD /path`.
+            if (is_string ($key) && is_array ($value) && str_starts_with ($key, '/'))
             {
-                        $prefix = self::normalise ($key);
+                $prefix = self::normalise ($key);
 
-                        foreach ($value as $inner => $target)
+                foreach ($value as $inner => $target)
                 {
-                            [$verb, $path] = self::splitKey ((string) $inner);
-                            $full = rtrim ($prefix, '/').'/'.ltrim ($path, '/');
-                            $full = $full === '' ? '/' : $full;
+                    [$verb, $path] = self::splitKey ((string) $inner);
+                    $full = rtrim ($prefix, '/').'/'.ltrim ($path, '/');
+                    $full = $full === '' ? '/' : $full;
 
-                            self::parseTarget ($target);
-                            $compiled[strtoupper ($verb)][] = self::compile ($verb, self::normalise ($full), $target);
+                    self::parseTarget ($target);
+                    $compiled[strtoupper ($verb)][] = self::compile ($verb, self::normalise ($full), $target);
                 }
 
                 continue;
             }
 
-                            // Flat route: 'METHOD /path' => Controller::method
-                            [$verb, $pattern] = self::splitKey ((string) $key);
-                            self::parseTarget ($value); // fail-loud for the whole table
-                            $compiled[strtoupper ($verb)][] = self::compile ($verb, $pattern, $value);
-                        }
+            // Flat route: 'METHOD /path' => Controller::method
+            [$verb, $pattern] = self::splitKey ((string) $key);
+            self::parseTarget ($value); // fail-loud for the whole table
+            $compiled[strtoupper ($verb)][] = self::compile ($verb, $pattern, $value);
+        }
 
-                        return self::$groups = $compiled;
-                    }
+        return self::$groups = $compiled;
+    }
 
-                    /**
-                     * Split a route key into `[verb, path]`; requires the `METHOD /path` form.
-                     *
-                     * @since  0.0.1
-                     * @param  string $key Route key as written in the table.
-                     * @return array{0:string, 1:string}
-                     */
-                    private static function splitKey (string $key): array
-                    {
-                        [$verb, $path] = explode (' ', $key, 2) + ['', ''];
+    /**
+     * Split a route key into `[verb, path]`; requires the `METHOD /path` form.
+     *
+     * @since  0.0.1
+     * @param  string $key Route key as written in the table.
+     * @return array{0:string, 1:string}
+     */
+    private static function splitKey (string $key): array
+    {
+        [$verb, $path] = explode (' ', $key, 2) + ['', ''];
 
-                        if (!in_array (strtoupper (trim ($verb)), ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS'], true))
-                        {
-                            throw new \InvalidArgumentException ("Route key '{$key}' must start with an HTTP verb (e.g. 'GET /').");
-                        }
+        if (!in_array (strtoupper (trim ($verb)), ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS'], true))
+        {
+            throw new \InvalidArgumentException ("Route key '{$key}' must start with an HTTP verb (e.g. 'GET /').");
+        }
 
-                        if (trim ($path) === '' || trim ($path)[0] !== '/')
-                        {
-                            throw new \InvalidArgumentException ("Route key '{$key}': path part must start with '/'.");
-                        }
+        if (trim ($path) === '' || trim ($path)[0] !== '/')
+        {
+            throw new \InvalidArgumentException ("Route key '{$key}': path part must start with '/'.");
+        }
 
-                        return [trim ($verb), trim ($path)];
-                    }
+        return [trim ($verb), trim ($path)];
+    }
 
     /**
      * Re-read the table (explicit rebuild helper).

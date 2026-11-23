@@ -2,6 +2,8 @@
 
 namespace System\Kernel;
 
+use Exception;
+
 if (!defined ('basepath'))
 {
     http_response_code (404);
@@ -27,6 +29,8 @@ final class Boot
         static $registered = false;
         if ($registered) {return;}
         $registered = true;
+
+        self::autoloadHelper ();
 
         spl_autoload_register ([self::class, 'autoloader']);
     }
@@ -79,6 +83,21 @@ final class Boot
             }
 
             return;
+        }
+    }
+
+    private static function autoloadHelper (): void
+    {
+        $stems       = [];
+
+        $helper_config = interlace (configfapp, fl ('HelperConfig'));
+        if (is_readable ($helper_config)) {$stems = (array) require $helper_config;}
+
+        foreach ($stems as $stem)
+        {
+            $file = interlace (helperf, fl ("{$stem}Helper"));
+            if (!is_readable ($file)) {throw new Exception ('helper', 500);}
+            require_once $file;
         }
     }
 }

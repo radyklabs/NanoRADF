@@ -2,6 +2,9 @@
 
 namespace System\Kernel;
 
+use System\Services\AssetsService;
+use System\Services\Drip;
+
 /**
  * Request dispatcher — resolves the matched route and renders it.
  *
@@ -19,6 +22,10 @@ final class Dispatcher
      * runtime fault bubbles to the gateway's single catch-all so it renders with
      * exactly one disclosure rule.
      *
+     * When a route misses (404) or conflicts (405), the dispatcher catches the
+     * exception and delegates to errorPage() so the error response is rendered
+     * through the Drip engine with whatever styling is configured.
+     *
      * @since  0.0.1
      * @return void
      */
@@ -27,7 +34,110 @@ final class Dispatcher
         $method = strtoupper ((string) gserver ('request.method', 'GET'));
         $path   = Router::normalise ((string) gserver ('request.uri', '/'));
 
-        self::emit (Router::dispatch ($method, $path));
+        // Masked assets are a system concern, not a route: intercept before
+        // dispatch so no app route can shadow them.
+        if (in_array ($method, ['GET', 'HEAD'], true))
+        {
+            $file = self::dispatchAssets ($path);
+            if ($file !== null)
+            {
+                self::serveAsset ($file, $method === 'HEAD');
+                return;
+            }
+        }
+
+        try
+        {
+            self::emit (Router::dispatch ($method, $path, $throw = true));
+        }
+        catch (\RuntimeException $th)
+        {
+            $message = (string) $th->getMessage ();
+            if (!str_contains ($message, '→ 404') && !str_contains ($message, '→ 405'))
+            {
+                throw $th;
+            }
+
+            $code = str_contains ($message, '→ 405') ? 405 : 404;
+            self::errorPage ($code, null);
+        }
+    }
+
+    /**
+     * Resolve a masked asset path to an absolute file path.
+     *
+     * Takes normalised request path, matches against mask_urls config patterns,
+     * and returns the absolute disk path when found. Returns null when no match
+     * or file does not exist.
+     *
+     * @since  0.0.1
+     * @param  string $path Normalised request path.
+     * @return string|null Absolute file path, or null when not a masked asset.
+     */
+    public static function dispatchAssets (string $path): ?string
+    {
+        $result = AssetsService::resolve ($path);
+        return $result ? $result['file'] : null;
+    }
+
+    /**
+     * Serve a resolved asset file with proper HTTP headers.
+     *
+     * @since  0.0.1
+     * @param  string $file Absolute file path.
+     * @param  bool   $head HEAD request: send headers, no body.
+     * @return void
+     */
+    private static function serveAsset (string $file, bool $head): void
+    {
+        $mime = mime_content_type ($file) ?: 'application/octet-stream';
+
+        header ("Content-Type: {$mime}");
+        header ('Cache-Control: public, max-age=3600');
+        header ('ETag: "'.md5_file ($file).'"');
+        header ('Content-Length: '.filesize ($file));
+
+        if (!$head) {readfile ($file);}
+    }
+
+    /**
+     * Render an error page from src/Views/Errors/ via Drip.
+     *
+     * Uses Drip directly (not Views::render) to avoid injecting face/bone
+     * asset tags that belong to normal pages. Falls back to static markup
+     * when the view file is missing.
+     *
+     * @since  0.0.2
+     * @param  int               $code      HTTP status code.
+     * @param  Throwable|null    $exception Optional exception for debug detail.
+     * @return void
+     */
+    public static function errorPage (int $code, ?Throwable $exception = null): void
+    {
+        $view = interlace (basepath, 'src', 'Views', 'Errors', (string) $code.'.html');
+
+        if (!is_file ($view))
+        {
+            http_response_code ($code);
+            header ('Content-Type: text/html; charset=utf-8');
+            exit ("<h1>{$code} " . statc ($code) . "</h1><p>Error page not available.</p>");
+        }
+
+        $layout = null;
+        $testLayout = interlace (basepath, 'apps', 'Views', 'layouts', 'main.html');
+        if (is_file ($testLayout)) {$layout = $testLayout;}
+
+        $data = [
+            'code'    => $code,
+            'title'   => statc ($code),
+            'message' => ($exception instanceof \Throwable && is_debug ())
+                ? htmlspecialchars ((string) $exception->getMessage (), ENT_QUOTES, 'UTF-8')
+                : null,
+        ];
+
+        http_response_code ($code);
+        header ('Content-Type: text/html; charset=utf-8');
+        echo Drip::renderFile ($view, $data, null, null);
     }
 
     /**

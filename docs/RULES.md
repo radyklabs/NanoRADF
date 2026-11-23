@@ -5,6 +5,7 @@ Read this before touching the repository. It is the normative companion to `CLAU
 ## 1. Runtime & style
 
 - PHP 8.1+, `declare (strict_types=1);` is the first statement of every PHP file.
+- **Drip Template Engine**: the view engine. `View::render()` accepts view files only in `.html` (the extension is appended to dot-notation names); directives are Blade-shaped — `@extends`, `@yield`, `@section`/`@endsection`, `@include`; `{{ }}` is auto-escaped, with a `|raw` opt-out.
 - **Zero dependencies / self-contained** (NFR-1): no Composer packages, plugins, or third-party runtime/build dependency. Class loading is only `System\Kernel\Boot::autoloader`; there is no `vendor/` and no plugin loader. Any dev-time manifest must stay optional and never be required to run the framework.
 - Formatting conventions observed across the codebase — follow them, do not reformat foreign code:
   - Space before call parentheses: `interlace (...)`, `is_readable ($path)`.
@@ -72,10 +73,43 @@ Follow `CLAUDE.md` → Secure Coding Rules without exception. Extra operational 
 - Documentation-only changes need no runtime validation.
 - Web check: `http://nanoradfw.local` must render without a 500 after bootstrap-touching changes.
 
-## 8. Edit discipline (read-before-touch)
+- Verify with the project's real checks (§3/§7) and web probes after each incremental step, not only at the end.
+
+## 9. SOP — phase kickoff & change loop
+
+Use this before starting any phase or sizable task. Keep it short: align first, touch code second.
+
+### 9.1 Read before asking
+1. Re-read the target phase in `docs/PLAN.md`, its FR/NFR lines in `docs/PRD.md`, and any related decisions in the PLAN decision log.
+2. Read the **actual base code** that the task touches and every path related to it (entry chain, gateway, router/controller, view/theme scaffolding, tests). Map who calls whom.
+3. Record what "works today" and why each relevant line exists — no assumptions, no hallucinated behaviour.
+
+### 9.2 Align with the requester (interactive)
+Ask a multiple-choice question set when the approach would change the shape of the work: one sentence per question, a default recommendation with reasons, and an explicit free-form slot. Cover: data shape/API, extension/language, location/naming, config vs code, security policy, verification artefacts, and where the SOP lives. Wait for answers before coding.
+
+### 9.3 Execute in small verified steps
+- One focused change per commit; keep diffs surgical (one task = one change set).
+- After each step run the smallest check that covers it (`tests/*`, lint, web probe `http://nanoradfw.local`).
+- If a step needs more than expected, stop: restore state (`git stash`/checkout), re-plan, re-run after fixing cause — never pile edits.
+
+### 9.4 Sync docs in the same change set
+Update `docs/PLAN.md` (status/track log), `docs/CHANGELOG.md` (`[Unreleased]`), `docs/REPORT.md` when a defect is found/fixed, `docs/PRD.md` when requirements/acceptance actually change. Commit and push immediately.
+
 
 - **Always read the base code first.** Before any task, read carefully the code it touches *and* every code path related to it (bootstrap chain, helpers, autoloader, gateway, router/controller, route table, tests). Understand each line's logic and why it is written that way before deciding anything.
 - Never rush an edit, never assume, never fabricate behaviour from memory. If something is unknown, verify in the repository (grep/view/run) instead of guessing; correct earlier claims when evidence contradicts them.
+
+## 8. Drip Template Engine
+
+Drip compiles `.html` templates to PHP under `storage/cache/views/` and renders the compiled file. Names are dot-notation without extension: `file`, `folder.file`. A leading capital letter means a module (`Module.file`, `Module.folder.file`); anything else is a folder, so view folders are lowercase.
+
+- Echo: `{{$var}}` escapes via `System\Helper\Utilities::escape`; `{{!$var!}}` prints raw. Spaces are optional inside the braces.
+- Never call `htmlspecialchars()`, `htmlentities()`, or `e()` inside `{{ }}` — the engine already escapes, so the second pass corrupts output. The compiler rejects it with a `already escapes` error.
+- To build HTML by hand inside an expression, escape only the data and keep the markup in a raw block: `{{! '<b>'.htmlspecialchars($name, ENT_QUOTES, 'UTF-8').'</b>' !}}`.
+- `{{-- … --}}` is a Drip comment (dropped at compile). A directive or echo written inside an HTML comment (`<!-- @yield('content') -->`) is unwrapped and compiled, so templates stay previewable.
+- Unknown `@word` sequences are left untouched (CSS `@media`, `user@host`).
+- `@section('content')` overrides the rendered child body for that slot; `@extend` and the third `render(..., $layout)` argument override accordingly.
+- Compiled cache invalidates on the source file mtime; clear `storage/cache/views/` to force a recompile.
 - Think about the target diff before writing: prefer rehearsing/verifying the idea; apply slowly and carefully, never reckless bulk rewrites.
 - Preserve working behaviour: when simplifying/refactoring, keep a failing-before / passing-after record so an equivalent guarantee is shown, not assumed.
 - If a safe change turns out to need more than expected, stop, restore state (e.g. `git stash`/checkout), and re-plan instead of piling edits.

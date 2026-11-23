@@ -25,9 +25,9 @@ foreach ($consts as $c)
 
 // Autoload probe: both roots (D6) — App\… → apps/, Modules\… → modules/.
 printf ("autoload sys=%s app=%s mod=%s\n",
-    is_readable (interlace (basepath, 'src/Helper/Utilities.php')) ? 'YES' : 'NO',
-    is_readable (interlace (appf, 'Config/Routes.php')) ? 'YES' : 'NO',
+    is_readable (interlace (basepath, 'src/Helper/UtilitiesHelper.php')) ? 'YES' : 'NO',
+    is_readable (interlace (appf, 'Config/RoutesConfig.php')) ? 'YES' : 'NO',
     is_readable (interlace (modulesf, 'Welcome/Controllers/WelcomeController.php')) ? 'YES' : 'NO');
-exit ((is_readable (interlace (basepath, 'src/Helper/Utilities.php'))
-    && is_readable (interlace (appf, 'Config/Routes.php'))
+exit ((is_readable (interlace (basepath, 'src/Helper/UtilitiesHelper.php'))
+    && is_readable (interlace (appf, 'Config/RoutesConfig.php'))
     && is_readable (interlace (modulesf, 'Welcome/Controllers/WelcomeController.php'))) ? 0 : 1);

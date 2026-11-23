@@ -73,6 +73,7 @@ if (genv ('app.modules') === true && defined ('nsmod') && is_dir (modulesf))
 
 // Framework core map (src/): folder path + System\ namespace per role.
 $systemfs = [
+    'configf'       => false, 
     'contractsf'    => 'nscont', 
     'controllersf'  => 'nsctrl', 
     'helperf'       => false, 

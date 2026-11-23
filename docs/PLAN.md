@@ -50,7 +50,7 @@ Definition of done (v1): all PRD acceptance criteria pass; smoke checks recorded
 - **Depends on:** Phase 0, Phase 0b (controller/model/view locations are defined there).
 - **Owner:** main thread.
 - Implement `src/Kernel/Router.php` (method + path matching, params, 404 fallthrough) and `src/Kernel/Controller.php` (request lifecycle, response helpers, render hook).
-- Wire `apps/Config/Routes.php` as the route table consumed by the router.
+- Wire `apps/Config/RoutesConfig.php` as the route table consumed by the router.
 - Base controllers `PublicController` / `PrivateController` / `ApiController` (surface-specific auth/response rules).
 - Verification: CLI route-match checks (match/miss/param cases) + `http://nanoradfw.local` returns a controller response, unknown path → 404 handler.
 - **2026-11-21:** Router (exact-first, `{name}`/`{name:regex}`, 405/404, normalise, prefix groups), Controller base + `authorize()`/`respond()`, three base controllers with distinct surfaces; gateway dispatches only on web SAPIs. `tests/route_check.php` covers match/miss/param/regex/normalise/group/malformed; smoke + layout stay green.
@@ -61,8 +61,15 @@ Definition of done (v1): all PRD acceptance criteria pass; smoke checks recorded
 ### Phase 2 — View system & assets ⚠️
 - **Depends on:** Phase 1. **Owner:** main thread.
 - Blade-shaped renderer: compose `Layouts/` ← `Patterns/` ← `Components/`/`Elements/`, module `Views/*.php`, escaping helper in `src/Helper/Utilities.php`.
-- `src/Services/AssetsService.php` + theme registration (`public/themes/default`, `src/Themes/admin`), design tokens from `src/Views/Tokens/System.css`.
+- Dot-notation view names (**no extension in the parameter**): `file` → own scope (in a module: its **own** view, requires `app.modules=true` else file-not-found); `folder.file`; cross-module only: `Module.file` / `Module.folder.file`. `.html` is applied by the View/Drip layer as a rule — never written manually. When a view cannot be found, the error must state the resolved location and tell the user to "pastikan file ada" and "pastikan menggunakan file html". Layout is the third argument of `View::render(...)` — no `@layout` in view files; `@extends/@yield/@section/@endsection/@include` inside templates.
+- `{{$var}}` auto-escaped (spaces optional), `{{!$var!}}` raw opt-out. Manual escape functions inside `{{ }}` are rejected at compile time (double-escape guard). `{{-- … --}}` is dropped; a directive/echo wrapped in an HTML comment is unwrapped and compiled so templates stay previewable.
+- `src/Services/AssetsService.php` + theme registration (`public/themes/default`, `src/Themes/admin`), design tokens from `src/Views/Tokens/System.css`; disk→URL mapping via mask_url configured in `apps/Config/AssetsConfig.php`.
 - Verification: rendered page with layout+pattern composition; escaping test (malformed input stays inert HTML).
+- **2026-11-22 kickoff decisions:** dot-notation (`file`, `folder.file`, `Module.file`, `Module.folder.file`); layout is the third arg of `View::render()` (no `@layout` in view files); `{{ }}` auto-escape; AssetsService mask_url config in `apps/Config/AssetsConfig.php`; PRD acceptance #8 added. Execution in small verified steps per `docs/RULES.md` §9.
+- **2026-11-22 batch 1 delivered (D12):** `System\Helper\Utilities` (`escape`, `classAttr`), `System\Services\Views` (dot-notation → `apps/Views` only, lowercase folders; leading capital = module, gated by `app.modules`; module context derived from the controller FQCN; `.html` appended; not-found error names both causes), `System\Services\Drip` (compile-to-PHP cache in `storage/cache/views/`, mtime invalidation, echo/raw/comment/guard, `@extends/@section/@endsection/@yield/@include/@if/@elseif/@else/@endif/@foreach/@for/@php/@class`), `Controller::view()`, demo `/welcome`. `tests/view_check.php` → 16/16 pass; `route_check.php` + boot smoke unchanged.
+- **Deferred (design-system directives):** `@slot/@endslot`, `@stack/@push/@prepend`, `@once`, `@atomic` — 0 production uses in the reference design system; add when the component partials need them.
+- **Rule consequence (D13):** a leading capital always means a module, so view folders are lowercase (`apps/Views/layouts/main.html`). `src/Views` keeps its capitalised taxonomy and is reached through constants, not dot-notation.
+- **2026-11-22 batch 3 delivered:** Pattern-based `mask_urls` with `{*}` regex capture and theme placeholders (`{face_theme_active_name}`, `{bone_theme_active_name}`); separate face/bone queues in `AssetsService`; helper auto-autoload via `apps/Config/Helper.php` stem registry loaded by `.starter`; `Views::render()` auto-injects `head`/`foot`/`bone_head`/`bone_foot` from `AssetsService`; Drip directives `@enqueueStyles`/`@enqueueScripts`/`@style`/`@script` added; asset interception moved to `Dispatcher::asset()` (before Router dispatch, no route entries); error pages from `src/Views/Errors/` rendered via Drip without layout wrapping; router throws on 404/405, dispatcher catches and delegates to `errorPage()`; CSS token design system collapsed into single `System.css`; theme folder renamed admin→default with `src/Config/Theme.php`; config/theme helpers added. `tests/assets_check.php` → 24/24 pass; `view_check.php` → 16/16; `route_check.php` PASS. Browser verified: `/notfound` → themed 404 page, `/welcome` → full SSR page with auto-injected assets.
 
 ### Phase 3 — Welcome module end-to-end ⚠️
 - **Depends on:** Phase 2. **Owner:** main thread.
@@ -106,7 +113,7 @@ Definition of done (v1): all PRD acceptance criteria pass; smoke checks recorded
 
 | Date | Result | Evidence |
 |------|--------|----------|
-| 2026-11-20 15:11 | **Plan == code, no drift.** Phase 0 re-verified (boot smoke + autoload: `BOOT-LOADED`, `autoload sys=YES mod=YES`, exit 0). Phases 1–6: every target file still a 0-byte scaffold (`Kernel/Router.php`, `Kernel/Controller.php`, Api/Private/Public controllers, `apps/Config/Routes.php`, `Helper/Utilities.php`, `AssetsService.php`, all `src/Views/*`, Welcome module, themes) → ⚠️ statuses correct, no phase advanced. Open risks #1–#3 unchanged. Working tree clean at `24404fa`; no `origin` remote → push skipped. | `git status`, per-file size inventory, `boot_check.php` |
+| 2026-11-20 15:11 | **Plan == code, no drift.** Phase 0 re-verified (boot smoke + autoload: `BOOT-LOADED`, `autoload sys=YES mod=YES`, exit 0). Phases 1–6: every target file still a 0-byte scaffold (`Kernel/Router.php`, `Kernel/Controller.php`, Api/Private/Public controllers, `apps/Config/RoutesConfig.php`, `Helper/UtilitiesHelper.php`, `AssetsService.php`, all `src/Views/*`, Welcome module, themes) → ⚠️ statuses correct, no phase advanced. Open risks #1–#3 unchanged. Working tree clean at `24404fa`; no `origin` remote → push skipped. | `git status`, per-file size inventory, `boot_check.php` |
 
 ## Open risks
 

@@ -6,7 +6,7 @@ namespace System\Kernel;
  * Router — matches a request against the central route table and resolves it
  * to a controller action.
  *
- * Table shape lives in `apps/Config/Routes.php`:
+ * Table shape lives in `apps/Config/RoutesConfig.php`:
  *   - flat: `'GET /hello/{name}' => Controller::class . '::hello'`
  *   - prefix group (the string key IS the prefix; inner keys must be full
  *     `METHOD /path` entries — a bare `/stats` is rejected):
@@ -128,12 +128,12 @@ final class Router
     {
         if (self::$groups !== null) {return self::$groups;}
 
-        $file = interlace (appf, 'Config', 'Routes.php');
+        $file = interlace (appf, 'Config', 'RoutesConfig.php');
         $raw  = is_readable ($file) ? require $file : [];
 
         if (!is_array ($raw))
         {
-            @trigger_error ('apps/Config/Routes.php must return an array.', E_USER_WARNING);
+            @trigger_error ('apps/Config/RoutesConfig.php must return an array.', E_USER_WARNING);
             $raw = [];
         }
 

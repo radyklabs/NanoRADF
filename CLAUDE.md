@@ -231,3 +231,53 @@ Legend: `[code]` runs today · `[scaffold]` exists as 0-byte placeholder · `[co
 ## Precedence
 
 Project file ini mengatur pekerjaan frontend di repo ini. Global `CLAUDE.md` (no hallucination, surgical changes, docs sync) tetap berlaku. Saat konflik, file ini menang untuk keputusan spesifik frontend; global rules selalu menang untuk disiplin universal.
+
+## Session Learning & Memory
+
+Kamu WAJIB belajar dari setiap session dan mencatat pengetahuan yang relevan agar tidak lupa di session berikutnya. Berikut aturan mainnya:
+
+### Apa yang harus dicatat?
+
+Setiap kali kamu menemukan sesuatu yang **penting, baru, atau berisiko lupa**, catat ke file `.claude/learnings.json` (atau file sejenis jika lebih sesuai). Contoh hal yang layak dicatat:
+
+1. **Aturan / Konvensi** — pola penamaan, struktur file, naming convention yang belum tertulis di docs.
+2. **Gaya koding** — cara menulis function/class yang dianggap best practice oleh user.
+3. **Logic / Arsitektur** — keputusan desain yang dibuat, mengapa dipilih begitu, trade-off yang dipertimbangkan.
+4. **Disiplin kerja** — hal-hal seperti "selalu jalankan test sebelum commit", "jangan push tanpa verify", dll.
+5. **Error / Bug yang ditemukan** — beserta root cause dan cara perbaiki, agar tidak terulang.
+6. **Feedback user** — kritik atau permintaan khusus yang diberikan user selama session berjalan.
+
+### Format pencatatan
+
+Gunakan format JSON sederhana agar mudah dibaca dan di-parse otomatis oleh Claude di session berikutnya:
+
+```json
+{
+  "last_updated": "2026-11-23T14:00:00+07:00",
+  "learnings": [
+    {
+      "id": "lesson-001",
+      "category": "rule",
+      "title": "Penamaan Config File",
+      "description": "Semua config di apps/Config harus pakai pola *Config.php (AssetsConfig.php, RoutesConfig.php, HelperConfig.php)",
+      "evidence": "apps/Config/*.php",
+      "created_at": "2026-11-23T13:50:00+07:00"
+    }
+  ]
+}
+```
+
+### Lokasi penyimpanan
+
+Simpan di `.claude/learnings.json` di root project. File ini akan dimuat otomatis di setiap session baru. Jika direktori `.claude/` belum ada, buat terlebih dahulu.
+
+### Kapan harus menulis ke learnings?
+
+- Setelah menyelesaikan task besar (feature, fix, refactor).
+- Ketika user memberikan feedback atau koreksi.
+- Ketika menemukan pola baru yang berulang.
+- Sebelum menutup session jika ada hal penting yang perlu diingat.
+
+### Kapan harus membaca learnings?
+
+**Wajib dibaca di awal setiap session**, sebelum mulai bekerja apa pun. Ini bagian dari SOP.

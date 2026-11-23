@@ -1,5 +1,5 @@
 {
-  "last_updated": "2026-11-23T13:55:00+07:00",
+  "last_updated": "2026-11-23T14:00:00+07:00",
   "learnings": [
     {
       "id": "lesson-001",
@@ -19,7 +19,7 @@
     },
     {
       "id": "lesson-003",
-      "category": "asset_enque",
+      "category": "asset_enqueue",
       "title": "Enqueue by ID dengan Registry",
       "description": "Config enqueue_styles/enqueue_scripts hanya berisi ID symbolic (style, design-system, app). Framework resolve via id_registry → mask_urls → generate URL dengan id attribute di <link>/<script> tag.",
       "evidence": "apps/Config/AssetsConfig.php",
@@ -56,6 +56,22 @@
       "description": "Helper registry dimuat oleh Boot::autoloadHelper() yang dipanggil dari initiate(), bukan lagi oleh .starter. Ini memastikan helpers tersedia untuk semua class loading.",
       "evidence": "src/Kernel/Boot.php",
       "created_at": "2026-11-23T13:10:00+07:00"
+    },
+    {
+      "id": "lesson-008",
+      "category": "bugfix",
+      "title": "JANGAN gunakan git reset --hard sembarangan",
+      "description": "git reset --hard akan MENGHAPUS SEMUA perubahan working tree termasuk perubahan VALID user. Sebelum menggunakan reset, SELALU cek dulu: 1) git status, 2) git diff, 3) apakah ada file penting yang perlu dipertahankan. Jika ragu, gunakan git stash atau buat branch baru.",
+      "evidence": ".starter - user menghapus var_dump(gconf('theme')) dan helper loading block dari .starter, tapi aku accidentally restore ke versi lama saat reset",
+      "created_at": "2026-11-23T13:55:00+07:00"
+    },
+    {
+      "id": "lesson-009",
+      "category": "workflow",
+      "title": "Baca File Actual Sebelum Edit",
+      "description": "RULES.md §9.1: 'Always read the base code first.' Selalu baca file actual yang akan diedit, bukan asumsi dari memory atau commit history. User bisa saja sudah edit file tersebut di session lain atau parallel editing.",
+      "evidence": "CLAUDE.md docs/RULES.md",
+      "created_at": "2026-11-23T14:00:00+07:00"
     }
   ]
 }

@@ -3,7 +3,7 @@
 namespace System\Kernel;
 
 use System\Services\AssetsService;
-use System\Services\Drip;
+use System\Services\DripService;
 
 /**
  * Request dispatcher — resolves the matched route and renders it.
@@ -153,7 +153,7 @@ final class Dispatcher
 
         http_response_code ($code);
         header ('Content-Type: text/html; charset=utf-8');
-        echo Drip::renderFile ($view, $data, null, null);
+        echo DripService::renderFile ($view, $data, null, null);
     }
 
     /**

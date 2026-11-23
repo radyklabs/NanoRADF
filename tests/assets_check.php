@@ -14,7 +14,7 @@ require dirname (__DIR__).'/public/index.php';
 
 use System\Kernel\Router;
 use System\Services\AssetsService;
-use System\Services\Drip;
+use System\Services\DripService;
 
 $pass = 0;
 $fail = 0;
@@ -92,7 +92,7 @@ $dir = basepath.'storage'.sep.'cache'.sep.'views';
 $probe = $dir.'assets.html';
 file_put_contents ($probe, "@enqueueStyles\n@enqueueScripts\n@style\n.x{color:red}\n@endstyle\n@script\nconsole.log(1);\n@endscript");
 
-$html = Drip::renderFile ($probe, []);
+$html = DripService::renderFile ($probe, []);
 check ('@enqueue* directives emit asset tags', static fn (): bool => str_contains ($html, '<link') && str_contains ($html, '<script'));
 check ('@style emits a style block', static fn (): bool => str_contains ($html, '<style>') && str_contains ($html, '.x{color:red}'));
 check ('@script emits a script block', static fn (): bool => str_contains ($html, '<script>') && str_contains ($html, 'console.log(1);'));

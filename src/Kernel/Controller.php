@@ -2,7 +2,7 @@
 
 namespace System\Kernel;
 
-use System\Services\Views;
+use System\Services\ViewsService;
 
 /**
  * Controller — request lifecycle and response helpers shared by every surface.
@@ -72,7 +72,7 @@ class Controller
      */
     protected function view (string $name, array $data = [], ?string $layout = null): array
     {
-        return $this->respond (Views::render ($name, $data, $layout, Views::context (static::class)));
+        return $this->respond (ViewsService::render ($name, $data, $layout, ViewsService::context (static::class)));
     }
 
     /**

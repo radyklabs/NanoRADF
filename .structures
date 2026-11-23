@@ -24,6 +24,7 @@ $appfs = [
     'modelfapp'         => 'nsmodelapp',
     'servicesfapp'      => 'nsservapp',
     'viewsfapp'         => false,
+    'themesfapp'        => false,
 ];
 foreach ($appfs as $f => $d)
 {
@@ -73,13 +74,12 @@ if (genv ('app.modules') === true && defined ('nsmod') && is_dir (modulesf))
 
 // Framework core map (src/): folder path + System\ namespace per role.
 $systemfs = [
-    'configf'       => false, 
-    'contractsf'    => 'nscont', 
-    'controllersf'  => 'nsctrl', 
-    'helperf'       => false, 
-    'kernelf'       => 'nskernel', 
-    'servicesf'     => 'nsserv', 
-    'themesf'       => false, 
+    'configf'       => false,
+    'contractsf'    => 'nscont',
+    'controllersf'  => 'nsctrl',
+    'helperf'       => false,
+    'kernelf'       => 'nskernel',
+    'servicesf'     => 'nsserv',
     'viewsf'        => false,
     ];
 

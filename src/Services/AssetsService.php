@@ -264,6 +264,11 @@ final class AssetsService
                 return interlace (systemf, substr ($path, strlen ('/src/')));
             }
 
+                    if (str_starts_with ($path, '/apps/'))
+                    {
+                        return interlace (appf, substr ($path, strlen ('/apps/')));
+                    }
+
             return $path;
         }
 

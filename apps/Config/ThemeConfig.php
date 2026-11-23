@@ -5,7 +5,7 @@
  *
  * - `default`: theme names per surface.
  *   - `public`: public frontend theme (served from `public/themes/<name>`)
- *   - `private`: backend theme (served from `src/Themes/<name>`)
+ *   - `private`: backend theme (served from `apps/Themes/<name>`)
  *
  * @since 0.0.1
  */

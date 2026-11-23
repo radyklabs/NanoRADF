@@ -30,8 +30,8 @@ return [
     'mask_urls' => [
         '/css/{*}'        => '/public/themes/{face_theme_active_name}/css/{*}',
         '/js/{*}'         => '/public/themes/{face_theme_active_name}/js/{*}',
-        '/assets/css/{*}' => '/src/Themes/{bone_theme_active_name}/css/{*}',
-        '/assets/js/{*}'  => '/src/Themes/{bone_theme_active_name}/js/{*}',
+            '/assets/css/{*}' => '/apps/Themes/{bone_theme_active_name}/css/{*}',
+            '/assets/js/{*}'  => '/apps/Themes/{bone_theme_active_name}/js/{*}',
         '/system/css/{*}' => '/src/Views/Tokens/{*}',
         '/system/js/{*}' => '/src/Views/Scripts/{*}',
     ],

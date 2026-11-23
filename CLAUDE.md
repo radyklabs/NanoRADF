@@ -189,7 +189,7 @@ Views are plain HTML composed server-side (include/parameter composition), shape
 - `Scripts/` — progressive-enhancement JS bound to views (e.g. `Dropdown.js`).
 - `Tokens/` — design tokens as CSS (e.g. `System.css`).
 
-Module views live in `modules/<Name>/Views/` as PHP view classes (e.g. `WelcomeView.php`). Public theme assets live in `public/themes/<theme>/`, admin assets in `src/Themes/admin/`.
+Module views live in `modules/<Name>/Views/` as PHP view classes (e.g. `WelcomeView.php`). Public theme assets live in `public/themes/<theme>/`, admin assets in `apps/Themes/admin/`.
 
 **Status:** taxonomy folders exist; the renderer/composer is planned, not implemented (`docs/PLAN.md` Phase 2). Never describe pending behavior as done.
 

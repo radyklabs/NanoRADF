@@ -10,7 +10,13 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning: [S
 - Phase 2b — Security hardening: Security headers (CSP, HSTS, X-Frame-Options, X-Content-Type-Options, Referrer-Policy) applied in `Dispatcher::emit()` via new `securityHeaders()` method; CSP differentiated for JSON vs HTML responses; HSTS only on HTTPS.
 - Phase 2c — Code quality & cleanup: Dead code removed from `AssetsService` (`candidate()`, `diskPath()`, `rewrite()`); `ThemeHelper` implemented with global `theme($surface)` function reading from `gconfig('theme')`; Theme config separated from AssetsConfig into dedicated `ThemeConfig.php` (src/Config + apps/Config); `AssetsService::theme()` updated to read from ThemeConfig with backwards-compat aliases (`face`/`bone` → `public`/`private`).
 - AssetsService simplification: `url()` and `resolve()` rewritten with segment prefix matching (O(n) string ops) replacing per-request PCRE regex; pre-compiled pattern map cached per surface; `anchor()` helper for config disk path resolution; `allPatterns()` for surface-agnostic resolution.
-- Admin theme scaffold: `src/Themes/admin/css/style.css` and `src/Themes/admin/js/app.js` created for bone surface asset serving.
+- Admin theme scaffold: `apps/Themes/admin/css/style.css` and `apps/Themes/admin/js/app.js` created for bone surface asset serving.
+- Theme migration: `src/Themes/` → `apps/Themes/` (backend theme assets moved to application layer).
+- `.structures`: Added `themesfapp` constant; removed `themesf` from system map.
+- `src/Config/AssetsConfig.php`: Updated `mask_urls` bone patterns from `/src/Themes/` to `/apps/Themes/`.
+- `src/Services/AssetsService.php`: `anchor()` now handles `/apps/` prefix for theme asset resolution.
+- `src/Config/ThemeConfig.php` & `apps/Config/ThemeConfig.php`: Updated docblocks to reference `apps/Themes/`.
+- `CLAUDE.md`: Updated directory layout reference.
 
 ### Changed
 - `apps/Config/AssetsConfig.php`: Restored full override with `enqueue_styles` (style, design-system), `enqueue_scripts` (app), `bone_enqueue_styles` (style), `bone_enqueue_scripts` (app); `id_registry` and `mask_urls` commented (defaults in src/Config).

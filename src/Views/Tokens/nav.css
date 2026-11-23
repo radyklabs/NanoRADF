@@ -1,0 +1,28 @@
+/* ============================================================================
+ * 8. Navigation — wayfinding affordances.
+ *
+ * Tokens only: no markup. Header/nav components compose these.
+ * ========================================================================== */
+
+:root {
+    --nav-height:      3.5rem;
+    --nav-bg:          var(--bg-surface);
+    --nav-border:      var(--line-soft);
+    --nav-ink:         var(--text-primary);
+    --nav-ink-muted:   var(--text-muted);
+    --nav-link-pad-x:  var(--space-3);
+    --nav-link-radius: var(--radius-sm);
+    --nav-active-ink:  var(--action);
+    --nav-active-bg:   var(--signal-50);
+    --nav-shadow:      var(--shadow-1);
+    --nav-layer:       100;
+
+    --breadcrumb-ink: var(--text-muted);
+    --breadcrumb-sep: "/";
+}
+
+@media (prefers-color-scheme: dark) {
+    :root {
+        --nav-active-bg: var(--signal-900);
+    }
+}

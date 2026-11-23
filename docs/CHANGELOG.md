@@ -6,6 +6,9 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning: [S
 ## [Unreleased]
 
 ### Added
+- urlprettify() function in .supports: builds full URLs from paths with auto-detected or configured base URL, normalizes slashes with urlify(), and handles server/protocol detection
+
+### Added
 - Config file rename for naming consistency: `apps/Config/Assets.php` → `AppsConfig/AssetsConfig.php`, `apps/Config/Routes.php` → `apps/Config/RoutesConfig.php`, `apps/Config/Helper.php` → `apps/Config/HelperConfig.php` (aligns with `gconf()` stem-to-config resolution pattern used by `ConfigHelper.php`).
 - Phase 2b — Security hardening: Security headers (CSP, HSTS, X-Frame-Options, X-Content-Type-Options, Referrer-Policy) applied in `Dispatcher::emit()` via new `securityHeaders()` method; CSP differentiated for JSON vs HTML responses; HSTS only on HTTPS.
 - Phase 2c — Code quality & cleanup: Dead code removed from `AssetsService` (`candidate()`, `diskPath()`, `rewrite()`); `ThemeHelper` implemented with global `theme($surface)` function reading from `gconfig('theme')`; Theme config separated from AssetsConfig into dedicated `ThemeConfig.php` (src/Config + apps/Config); `AssetsService::theme()` updated to read from ThemeConfig with backwards-compat aliases (`face`/`bone` → `public`/`private`).

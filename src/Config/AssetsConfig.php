@@ -27,12 +27,20 @@ return [
         'app'           => 'js/app',
     ],
 
+    // Face (public frontend) asset queues
+    'enqueue_styles'  => [],
+    'enqueue_scripts' => [],
+
+    // Bone (backend) asset queues
+    'bone_enqueue_styles'  => [],
+    'bone_enqueue_scripts' => [],
+
     'mask_urls' => [
         '/css/{*}'        => '/public/themes/{face_theme_active_name}/css/{*}',
         '/js/{*}'         => '/public/themes/{face_theme_active_name}/js/{*}',
-            '/assets/css/{*}' => '/apps/Themes/{bone_theme_active_name}/css/{*}',
-            '/assets/js/{*}'  => '/apps/Themes/{bone_theme_active_name}/js/{*}',
+        '/assets/css/{*}' => '/apps/Themes/{bone_theme_active_name}/css/{*}',
+        '/assets/js/{*}'  => '/apps/Themes/{bone_theme_active_name}/js/{*}',
         '/system/css/{*}' => '/src/Views/Tokens/{*}',
-        '/system/js/{*}' => '/src/Views/Scripts/{*}',
+        '/system/js/{*}'  => '/src/Views/Scripts/{*}',
     ],
 ];

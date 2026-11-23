@@ -18,37 +18,14 @@
  */
 
 return [
-    // Theme config moved to ThemeConfig.php
-    // 'theme' => [
-    //     'face' => 'default',
-    //     'bone' => 'default',
-    // ],
-
-    // Symbolic ids that become the `<link ... id="...">` / `<script ... id="...">`.
-    // Values are the path relative to the matching mask-url domain (without leading '/').
-    // The mask engine finds the owning pattern and rewrites accordingly.
-    // Defaults in src/Config/AssetsConfig.php; override here if needed.
-    // 'id_registry' => [
-    //     'style'         => 'css/style',
-    //     'design-system' => 'system/css/System',
-    //     'app'           => 'js/app',
-    // ],
-
     // Face (public frontend) asset queues
-    'enqueue_styles'  => ['style', 'design-system'],
-    'enqueue_scripts' => ['app'],
+    'enqueue_styles'  => ['style'],
+    'enqueue_scripts' => [],
 
     // Bone (backend) asset queues
-    'bone_enqueue_styles'  => ['style'],
-    'bone_enqueue_scripts' => ['app'],
+    'bone_enqueue_styles'  => [],
+    'bone_enqueue_scripts' => [],
 
-    // Mask URL patterns — defaults in src/Config/AssetsConfig.php; override here if needed.
-    // 'mask_urls' => [
-    //     '/css/{*}'        => '/public/themes/{face_theme_active_name}/css/{*}',
-    //     '/js/{*}'         => '/public/themes/{face_theme_active_name}/js/{*}',
-    //     '/assets/css/{*}' => '/src/Themes/{bone_theme_active_name}/css/{*}',
-    //     '/assets/js/{*}'  => '/src/Themes/{bone_theme_active_name}/js/{*}',
-    //     '/system/css/{*}' => '/src/Views/Tokens/{*}',
-    //     '/system/js/{*}' => '/src/Views/Scripts/{*}',
-    // ],
+    // Assets mask URL patterns.
+    'mask_urls' => [],
 ];

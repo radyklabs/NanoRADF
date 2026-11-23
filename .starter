@@ -232,5 +232,3 @@ if (!isset ($error))
         require_once $file;
     }
 }
-
-var_dump (gconf('theme'));

@@ -61,17 +61,33 @@
       "id": "lesson-008",
       "category": "bugfix",
       "title": "JANGAN gunakan git reset --hard sembarangan",
-      "description": "git reset --hard akan MENGHAPUS SEMUA perubahan working tree termasuk perubahan VALID user. Sebelum menggunakan reset, SELALU cek dulu: 1) git status, 2) git diff, 3) apakah ada file penting yang perlu dipertahankan. Jika ragu, gunakan git stash atau buat branch baru.",
-      "evidence": ".starter - user menghapus var_dump(gconf('theme')) dan helper loading block dari .starter, tapi aku accidentally restore ke versi lama saat reset",
-      "created_at": "2026-11-23T13:55:00+07:00"
+      "description": "git reset --hard akan MENGHAPUS SEMUA perubahan working tree termasuk perubahan VALID user. Sebelum menggunakan reset, SELALU cek dulu: 1) git status, 2) git diff, 3) apakah ada file penting yang perlu dipertahankan. Jika ragu, gunakan git stash atau buat branch baru. JANGAN pernah hard reset tanpa verifikasi bahwa working tree memang dirty/tidak diinginkan.",
+      "evidence": ".starter - user menghapus var_dump(gconf('theme')) dan helper loading block dari .starter, tapi aku accidentally restore ke versi lama saat hard reset karena tidak membaca file actual terlebih dahulu",
+      "created_at": "2026-11-23T14:05:00+07:00"
     },
     {
       "id": "lesson-009",
       "category": "workflow",
-      "title": "Baca File Actual Sebelum Edit",
-      "description": "RULES.md §9.1: 'Always read the base code first.' Selalu baca file actual yang akan diedit, bukan asumsi dari memory atau commit history. User bisa saja sudah edit file tersebut di session lain atau parallel editing.",
+      "title": "Baca File Actual Sebelum Edit/Simpan",
+      "description": "RULES.md §9.1: 'Always read the base code first.' Selalu baca file actual yang akan diedit/dicommit, bukan asumsi dari memory atau commit history. User bisa saja sudah edit file tersebut di session lain atau parallel editing. Cross-reference antara committed vs working copy sebelum menyimpan.",
       "evidence": "CLAUDE.md docs/RULES.md",
-      "created_at": "2026-11-23T14:00:00+07:00"
+      "created_at": "2026-11-23T14:05:00+07:00"
+    },
+    {
+      "id": "lesson-010",
+      "category": "security",
+      "title": "MIME Type Detection - Cross-Platform Compatibility",
+      "description": "mime_content_type() function TIDAK TERSEDIA di Windows PHP default (extension mbstring mungkin tidak terinstall). Gunakan extension-based lookup array sebagai pengganti yang reliable dan cross-platform.",
+      "evidence": "src/Kernel/Dispatcher.php serveAsset()",
+      "created_at": "2026-11-23T13:45:00+07:00"
+    },
+    {
+      "id": "lesson-011",
+      "category": "rule",
+      "title": "PHP Version Backward Compatibility",
+      "description": "Project target PHP 8.1+. Jangan gunakan syntax PHP 8.4+ seperti 'default' sebagai fallback dalam match expression (match default case). Gunakan null coalescing operator ?? atau ternary untuk compatibility.",
+      "evidence": "src/Kernel/Dispatcher.php MIME lookup",
+      "created_at": "2026-11-23T13:50:00+07:00"
     }
   ]
 }

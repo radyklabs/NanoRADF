@@ -112,6 +112,30 @@
       "description": "Setiap kesalahan yang dibuat harus dicatat di .claude/learnings.json agar tidak terulang. Ini bukan opsional - ini WAJIB. Kesalahan yang sama tidak boleh terjadi dua kali. Jika terjadi, berarti learning system gagal.",
       "evidence": "User feedback: 'SIMPA KESALAHANMU SEBAGAI PENGINGAT! JANGAN ULANGI KESALAHAN YANG SAMA!'",
       "created_at": "2026-11-23T15:35:00+07:00"
+        },
+        {
+          "id": "lesson-016",
+          "category": "security",
+          "title": "Security Hardening Wajib di Early Phase",
+          "description": "CSRF protection, rate limiting, dan security headers (CSP, HSTS, X-Frame-Options) HARUS diimplementasikan di early phase (Phase 2b), bukan ditunda ke phase akhir. Security gaps di early phase berbahaya karena semua layer atas bergantung pada foundation yang aman.",
+          "evidence": "Review findings: CSRF missing, rate limiting missing, security headers missing — all P0 critical",
+          "created_at": "2026-11-23T17:00:00+07:00"
+        },
+        {
+          "id": "lesson-017",
+          "category": "code_quality",
+          "title": "Dead Code Cleanup di Early Phase",
+          "description": "Dead code (unused methods, empty helpers, orphan files) HARUS dibersihkan di early phase (Phase 2c), bukan ditunda. Dead code menambah cognitive load, memperlambat review, dan berpotensi jadi security hole.",
+          "evidence": "Review findings: AssetsService::candidate(), diskPath(), rewrite() unused; ThemeHelper empty; src/Config/Theme.php orphan",
+          "created_at": "2026-11-23T17:00:00+07:00"
+        },
+        {
+          "id": "lesson-018",
+          "category": "architecture",
+          "title": "Simplifikasi Over-Engineered Code Early",
+          "description": "Code yang over-engineered (AssetsService::url() terlalu kompleks) HARUS disederhanakan segera (Phase 4b), bukan dibiarkan. Over-complexity menambah bug surface, sulit di-maintain, dan memperlambat onboarding.",
+          "evidence": "Review findings: AssetsService::url() 60+ lines, legacy ds/ fast-path, double loop, complex servesSurface()",
+          "created_at": "2026-11-23T17:00:00+07:00"
     }
   ]
 }

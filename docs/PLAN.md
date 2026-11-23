@@ -21,6 +21,11 @@ Definition of done (v1): all PRD acceptance criteria pass; smoke checks recorded
 | D9 | 2026-11-20 | Modular HMVC lives at **project root `modules/`** (sibling of `apps/`), set via `$modules_folder` in `public/index.php`. `apps/` is always the main MVC. `modulesf` path constant always registered. | User: modules are optional and must not pollute `apps/`; keeps `apps/` a clean, default MVC. Replaces the Phase 0b intermediate where the module tree lived in `apps/Modules/`. |
 | D10 | 2026-11-20 | Two-root autoload: `App\…`→`apps/` and `Modules\…`→`modules/` **always active**. `app.modules` gates only the per-module folder/namespace templates (`controllersfmod` etc.), not root resolution. Gateway renamed `public/nanoradf.php` → `nanoradf`. | Audit of user refactor found mixed constant contracts (`nsappmod`/`appmodf` undefined) + `echo` leak; unified to two roots. Debug disclosure settled later (D11). |
 | D11 | 2026-11-21 | One debug switch: `APP_DEBUG` derived from `app.debug` (in `.starter`) drives error disclosure and reporting; the entry-level `$debug` master is removed so config can't silently flip it off. Route table: flat `'GET /path'` + prefix groups (group key = prefix, inner keys full `METHOD /path`). | Two independent switches ($debug vs APP_DEBUG) contradicted each other; prefix spelling was redundant. |
+| D12 | 2026-11-22 | View system: dot-notation (`file`, `folder.file`, `Module.file`, `Module.folder.file`); layout is third arg of `View::render()`; `{{ }}` auto-escape; AssetsService mask_url config in `apps/Config/AssetsConfig.php`. | Phase 2 kickoff. |
+| D13 | 2026-11-22 | Leading capital = module → view folders lowercase (`apps/Views/layouts/main.html`). `src/Views` keeps capitalised taxonomy, reached via constants. | View taxonomy convention. |
+| D14 | 2026-11-23 | Security hardening phase added: CSRF, Rate Limiting, Security Headers (CSP, HSTS, X-Frame-Options) as Phase 2b before Phase 3. | Review findings: critical security gaps. |
+| D15 | 2026-11-23 | Code quality phase added: dead code cleanup, ThemeHelper implementation, orphan file removal as Phase 2c. | Review findings: dead code, empty ThemeHelper, orphan Theme.php. |
+| D16 | 2026-11-23 | AssetsService simplification as Phase 4b after headless client. | Review finding: over-complex url() method. |
 
 ## Status legend
 
@@ -71,8 +76,37 @@ Definition of done (v1): all PRD acceptance criteria pass; smoke checks recorded
 - **Rule consequence (D13):** a leading capital always means a module, so view folders are lowercase (`apps/Views/layouts/main.html`). `src/Views` keeps its capitalised taxonomy and is reached through constants, not dot-notation.
 - **2026-11-22 batch 3 delivered:** Pattern-based `mask_urls` with `{*}` regex capture and theme placeholders (`{face_theme_active_name}`, `{bone_theme_active_name}`); separate face/bone queues in `AssetsService`; helper auto-autoload via `apps/Config/HelperConfig.php` stem registry loaded by `.starter`; `Views::render()` auto-injects `head`/`foot`/`bone_head`/`bone_foot` from `AssetsService`; Drip directives `@enqueueStyles`/`@enqueueScripts`/`@style`/`@script` added; asset interception moved to `Dispatcher::dispatchAssets()` (before Router dispatch, no route entries); error pages from `src/Views/Errors/` rendered via Drip without layout wrapping; router throws on 404/405, dispatcher catches and delegates to `errorPage()`; CSS token design system collapsed into single `System.css`; theme folder renamed admin→default with `src/Config/ThemeConfig.php`; config/theme helpers added. `tests/assets_check.php` → 24/24 pass; `view_check.php` → 16/16; `route_check.php` PASS. Browser verified: `/notfound` → themed 404 page, `/welcome` → full SSR page with auto-injected assets.
 
+### Phase 2 — View system & assets ⚠️
+- **Depends on:** Phase 1. **Owner:** main thread.
+- Blade-shaped renderer: compose `Layouts/` ← `Patterns/` ← `Components/`/`Elements/`, module `Views/*.php`, escaping helper in `src/Helper/Utilities.php`.
+- Dot-notation view names (**no extension in the parameter**): `file` → own scope (in a module: its **own** view, requires `app.modules=true` else file-not-found); `folder.file`; cross-module only: `Module.file` / `Module.folder.file`. `.html` is applied by the View/Drip layer as a rule — never written manually. When a view cannot be found, the error must state the resolved location and tell the user to "pastikan file ada" and "pastikan menggunakan file html". Layout is the third argument of `View::render(...)` — no `@layout` in view files; `@extends/@yield/@section/@endsection/@include` inside templates.
+- `{{$var}}` auto-escaped (spaces optional), `{{!$var!}}` raw opt-out. Manual escape functions inside `{{ }}` are rejected at compile time (double-escape guard). `{{-- … --}}` is dropped; a directive/echo wrapped in an HTML comment is unwrapped and compiled so templates stay previewable.
+- `src/Services/AssetsService.php` + theme registration (`public/themes/default`, `src/Themes/admin`), design tokens from `src/Views/Tokens/System.css`; disk→URL mapping via mask_url configured in `apps/Config/AssetsConfig.php`.
+- Verification: rendered page with layout+pattern composition; escaping test (malformed input stays inert HTML).
+- **2026-11-22 kickoff decisions:** dot-notation (`file`, `folder.file`, `Module.file`, `Module.folder.file`); layout is the third arg of `View::render()` (no `@layout` in view files); `{{ }}` auto-escape; AssetsService mask_url config in `apps/Config/AssetsConfig.php`; PRD acceptance #8 added. Execution in small verified steps per `docs/RULES.md` §9.
+- **2026-11-22 batch 1 delivered (D12):** `System\Helper\Utilities` (`escape`, `classAttr`), `System\Services\Views` (dot-notation → `apps/Views` only, lowercase folders; leading capital = module, gated by `app.modules`; module context derived from the controller FQCN; `.html` appended; not-found error names both causes), `System\Services\Drip` (compile-to-PHP cache in `storage/cache/views/`, mtime invalidation, echo/raw/comment/guard, `@extends/@section/@endsection/@yield/@include/@if/@elseif/@else/@endif/@foreach/@for/@php/@class`), `Controller::view()`, demo `/welcome`. `tests/view_check.php` → 16/16 pass; `route_check.php` + boot smoke unchanged.
+- **Deferred (design-system directives):** `@slot/@endslot`, `@stack/@push/@prepend`, `@once`, `@atomic` — 0 production uses in the reference design system; add when the component partials need them.
+- **Rule consequence (D13):** a leading capital always means a module, so view folders are lowercase (`apps/Views/layouts/main.html`). `src/Views` keeps its capitalised taxonomy and is reached through constants, not dot-notation.
+- **2026-11-22 batch 3 delivered:** Pattern-based `mask_urls` with `{*}` regex capture and theme placeholders (`{face_theme_active_name}`, `{bone_theme_active_name}`); separate face/bone queues in `AssetsService`; helper auto-autoload via `apps/Config/HelperConfig.php` stem registry loaded by `.starter`; `Views::render()` auto-injects `head`/`foot`/`bone_head`/`bone_foot` from `AssetsService`; Drip directives `@enqueueStyles`/`@enqueueScripts`/`@style`/`@script` added; asset interception moved to `Dispatcher::dispatchAssets()` (before Router dispatch, no route entries); error pages from `src/Views/Errors/` rendered via Drip without layout wrapping; router throws on 404/405, dispatcher catches and delegates to `errorPage()`; CSS token design system collapsed into single `System.css`; theme folder renamed admin→default with `src/Config/ThemeConfig.php`; config/theme helpers added. `tests/assets_check.php` → 24/24 pass; `view_check.php` → 16/16; `route_check.php` PASS. Browser verified: `/notfound` → themed 404 page, `/welcome` → full SSR page with auto-injected assets.
+
+### Phase 2b — Security hardening (NEW) ⚠️
+- **Depends on:** Phase 2. **Owner:** main thread. **Priority:** P0 (Critical).
+- **CSRF Protection:** Implement CSRF token generation/validation for all state-changing endpoints (POST/PUT/PATCH/DELETE). Token stored in `$_SESSION`, validated in `Router::run()` or `Controller::respond()` before action execution.
+- **Rate Limiting:** Implement token bucket / sliding window rate limiter in `Dispatcher::handle()` for auth endpoints (login, token refresh) and global fallback.
+- **Security Headers:** Add CSP, HSTS, X-Frame-Options, X-Content-Type-Options, Referrer-Policy in `Dispatcher::emit()`.
+- **Verification:** CSRF blocks forged POST; rate limiter blocks brute force; headers present in all responses.
+
+### Phase 2c — Code quality & cleanup (NEW) ⚠️
+- **Depends on:** Phase 2. **Owner:** main thread. **Priority:** P1 (High).
+- **Dead Code Removal:** Delete `AssetsService::candidate()`, `AssetsService::diskPath()`, `AssetsService::rewrite()` (unused).
+- **ThemeHelper Implementation:** Implement `activeTheme()` in `src/Helper/ThemeHelper.php` (currently empty but registered).
+- **Orphan File Removal:** Delete `src/Config/Theme.php` (orphan, not tracked by git).
+- **Theme Config Separation:** Move theme config from `AssetsConfig.php` to dedicated `apps/Config/ThemeConfig.php` (aligns with `gconf()` pattern).
+- **ThemeHelper Registry:** Ensure `'theme'` stem in `HelperConfig.php` works with implemented `ThemeHelper.php`.
+- **Verification:** All tests pass; no dead code; ThemeHelper functional; config structure consistent.
+
 ### Phase 3 — Welcome module end-to-end ⚠️
-- **Depends on:** Phase 2. **Owner:** main thread.
+- **Depends on:** Phase 2, 2b, 2c. **Owner:** main thread.
 - Fill `apps/Modules/Welcome/` (Manifest, Config, Controller, Model, Service, Views) and register its route.
 - Verification: `/welcome` over HTTP renders through the view composer; removing the module route yields 404.
 
@@ -81,6 +115,12 @@ Definition of done (v1): all PRD acceptance criteria pass; smoke checks recorded
 - `ApiController` conventions (JSON envelope, status codes, error shape), backend route group.
 - Frontend→backend PHP HTTP client (cURL/stream) with status + schema validation before rendering.
 - Verification: SSR page renders data fetched server-side; no browser `fetch` for data (grep evidence).
+
+### Phase 4b — AssetsService simplification (NEW) ⚠️
+- **Depends on:** Phase 4. **Owner:** main thread. **Priority:** P2 (Medium).
+- **Simplify `AssetsService::url()`:** Single-pass lookup with pre-compiled pattern map per surface; remove legacy `ds/` fast-path; simplify `servesSurface()` logic.
+- **Remove Dead Methods:** Delete `candidate()`, `diskPath()`, `rewrite()` (unused).
+- **Verification:** All asset tests pass; code simpler and more maintainable.
 
 ### Phase 5 — Session & auth token storage ⚠️
 - **Depends on:** Phase 4. **Owner:** main thread.
@@ -104,19 +144,26 @@ Definition of done (v1): all PRD acceptance criteria pass; smoke checks recorded
 | 1 | 0 | — (complete) |
 | 2 | 0b | Phase 0 done |
 | 3 | 1 | Phase 0b done |
-| 4 | 2, 4 | Phase 1 done (2 and 4 are independent) |
-| 5 | 3, 5 | Phase 2 / Phase 4 done |
-| 6 | 6 | Phases 3 + 4 done |
-| 7 | 7 | everything above done, user invokes `>audit`/`>release` |
+| 4 | 2 | Phase 1 done |
+| 5 | 2b, 2c | Phase 2 done (parallel: security + cleanup) |
+| 6 | 3, 4 | Phase 2b / 2c done (parallel: module + headless) |
+| 7 | 4b | Phase 4 done |
+| 8 | 5 | Phase 4b done |
+| 9 | 6 | Phases 3 + 4 done |
+| 10 | 7 | everything above done, user invokes `>audit`/`>release` |
 
 ## Track log
 
 | Date | Result | Evidence |
 |------|--------|----------|
 | 2026-11-20 15:11 | **Plan == code, no drift.** Phase 0 re-verified (boot smoke + autoload: `BOOT-LOADED`, `autoload sys=YES mod=YES`, exit 0). Phases 1–6: every target file still a 0-byte scaffold (`Kernel/Router.php`, `Kernel/Controller.php`, Api/Private/Public controllers, `apps/Config/RoutesConfig.php`, `Helper/UtilitiesHelper.php`, `AssetsService.php`, all `src/Views/*`, Welcome module, themes) → ⚠️ statuses correct, no phase advanced. Open risks #1–#3 unchanged. Working tree clean at `24404fa`; no `origin` remote → push skipped. | `git status`, per-file size inventory, `boot_check.php` |
+| 2026-11-23 15:30 | **Phase 0–2 complete.** Bootstrap, routing, view system, assets all functional. All test suites PASS (smoke, assets, view, route). Security hardening (Phase 2b), code quality (Phase 2c), and AssetsService simplification (Phase 4b) added to plan based on review findings. | `tests/*.php` all PASS; `git status` clean; PR #3 MERGED |
 
 ## Open risks
 
 - `apps/Services` / `apps/Config` classes have no namespace mapping today — closed **by design** in Phase 0b (single `App\` → `apps/` root); confirm with the both-mode verification there.
 - `read_directories()` removed in Phase 1 (no caller; entry no longer declares `$directories`).
 - No test framework: smoke checks are manual until a test runner is agreed (candidate: plain-PHP assert scripts, zero deps).
+- **NEW:** Security hardening (Phase 2b) not yet implemented — CSRF, rate limiting, security headers pending.
+- **NEW:** Code quality cleanup (Phase 2c) not yet implemented — dead code, ThemeHelper, orphan files pending.
+- **NEW:** AssetsService simplification (Phase 4b) pending — over-complex url() method.

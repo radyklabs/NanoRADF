@@ -68,9 +68,9 @@
     {
       "id": "lesson-009",
       "category": "workflow",
-      "title": "Baca File Actual Sebelum Edit/Simpan",
-      "description": "RULES.md §9.1: 'Always read the base code first.' Selalu baca file actual yang akan diedit/dicommit, bukan asumsi dari memory atau commit history. User bisa saja sudah edit file tersebut di session lain atau parallel editing. Cross-reference antara committed vs working copy sebelum menyimpan.",
-      "evidence": "CLAUDE.md docs/RULES.md",
+      "title": "Baca dan Pahami Dampak Sebelum Edit/Simpan",
+      "description": "RULES.md §9.1: 'Always read the base code first.' Tapi lebih dari itu — SELALU lakukan analysis mendalam: 1) Baca file actual, 2) Bandingkan dengan committed version (git diff), 3) Identifikasi perbedaan apa yang ada, 4) Pahami WHY kode berbeda (user edit? bugfix? refactor?), 5) Tentukan mana terbaru/valid vs lama/outdated, 6) Pertahankan yang valid, hapus yang tidak relevan. JANGAN tanya sebelum benar-benar paham konteks. Baru tanya jika ada ambiguity spesifik setelah analisis lengkap.",
+      "evidence": "CLAUDE.md docs/RULES.md — banyak kasus di mana saya bertanya padahal seharusnya sudah bisa simpulkan dari membaca code",
       "created_at": "2026-11-23T14:05:00+07:00"
     },
     {

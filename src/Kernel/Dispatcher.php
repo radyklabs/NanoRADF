@@ -90,7 +90,24 @@ final class Dispatcher
      */
     private static function serveAsset (string $file, bool $head): void
     {
-        $mime = mime_content_type ($file) ?: 'application/octet-stream';
+        // Determine MIME type from file extension (mime_content_type may not be available on Windows).
+        $ext      = strtolower (pathinfo ($file, PATHINFO_EXTENSION));
+        $mimes    = [
+            'css'  => 'text/css; charset=utf-8',
+            'js'   => 'text/javascript; charset=utf-8',
+            'json' => 'application/json; charset=utf-8',
+            'svg'  => 'image/svg+xml',
+            'png'  => 'image/png',
+            'jpg'  => 'image/jpeg',
+            'jpeg' => 'image/jpeg',
+            'webp' => 'image/webp',
+            'woff' => 'font/woff',
+            'woff2'=> 'font/woff2',
+            'ttf'  => 'font/ttf',
+            'ico'  => 'image/x-icon',
+            default=> 'application/octet-stream',
+        ];
+        $mime     = $mimes[$ext] ?? $mimes['default'];
 
         header ("Content-Type: {$mime}");
         header ('Cache-Control: public, max-age=3600');

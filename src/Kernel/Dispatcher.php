@@ -105,9 +105,8 @@ final class Dispatcher
             'woff2'=> 'font/woff2',
             'ttf'  => 'font/ttf',
             'ico'  => 'image/x-icon',
-            default=> 'application/octet-stream',
         ];
-        $mime     = $mimes[$ext] ?? $mimes['default'];
+        $mime     = $mimes[$ext] ?? 'application/octet-stream';
 
         header ("Content-Type: {$mime}");
         header ('Cache-Control: public, max-age=3600');

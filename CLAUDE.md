@@ -93,7 +93,7 @@ Release workflow (`>release`) prepares, merges, and tags in one invocation; neve
 |---------|--------|
 | `>branch <description>` | Branching model: pick the type prefix from the task (`feat` new capability, `fix` defect, `hotfix` urgent prod defect, `patch` small adjustment), turn `<description>` into a concise kebab-case slug, and build `<type>/<slug>` (e.g. `feat/router-matcher`, following the Branching Model section). Verify the name is unused locally and on `origin`; create it from the current `dev` tip and switch to it. |
 | `>release` | One invocation prepares changelog/version, opens and merges a `chore(release): X.Y.Z` PR to `main` when rules permit, then waits for `release-tag.yml` to validate and create/push the tag. |
-| `>push` | Inspect status and diff, add a per-file summary under `[Unreleased]` in the changelog, then stage, commit, and push the current branch. |
+| `>push` | Inspect status and diff, add a per-file summary under `[Unreleased]` in the changelog, then stage **all changes on the current branch** (`git add -A`), commit, and push. No file separation by task — the branch represents one logical change set. |
 | `>sync` | Run `>push`, update against `dev`, create and merge a PR into `dev`, then delete the merged branch. |
 | `>track` | Compare the plan against the code, update statuses and related docs, then commit and push. |
 | `>audit` | Deep audit: manual file-by-file, line-by-line review of logic, cross-file consistency/correlation, dead/junk code, security gaps, and anomalies; tools are evidence only; record findings in `docs/REPORT.md` and related docs. |

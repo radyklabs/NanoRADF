@@ -215,20 +215,3 @@ if (!isset ($error))
     if (!is_readable ($configuration_key)) {$error = 'config';}
     else {require_once $configuration_key;}
 }
-
-// Registered helpers (function-only files); failure → $error='helper'.
-if (!isset ($error))
-{
-    $helper_root = basepath.'src'.sep.'Helper';
-    $stems       = [];
-
-    $helper_config = basepath.'apps'.sep.'Config'.sep.'HelperConfig.php';
-    if (is_readable ($helper_config)) {$stems = (array) require $helper_config;}
-
-    foreach ($stems as $stem)
-    {
-        $file = interlace ($helper_root, $stem.'Helper.php');
-        if (!is_readable ($file)) {$error = 'helper'; break;}
-        require_once $file;
-    }
-}

@@ -6,6 +6,18 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning: [S
 ## [Unreleased]
 
 ### Added
+- Config file rename for naming consistency: `apps/Config/Assets.php` → `AppsConfig/AssetsConfig.php`, `apps/Config/Routes.php` → `apps/Config/RoutesConfig.php` (aligns with `gconf()` stem-to-config resolution pattern used by `ConfigHelper.php`).
+- Asset enqueue via symbolic ids (`id_registry` in AssetsConfig): config now uses human-readable ids (`style`, `design-system`, `app`) that resolve to masked URLs via the id registry; render output includes `<link ... id="design-system">` and `<script ... id="app">` attributes.
+- Helper autoload moved to `Boot::autoloadHelper()`: called from `initiate()` after PSR-4 registration, using `configfapp` constant to locate `apps/Config/Helper.php` stem list — fixes missing `e()` and `baseurl()` on some load paths.
+- `dispatcher/dispatchRoute()` split: `Dispatcher::handle()` now delegates asset interception to private `asset()` method before entering route dispatch, cleanly separating asset serving from MVC routing.
+- Token CSS split scaffold: `System.css` now contains only `@import url('base.css');` as first line; modular token files (`color.css`, `space.css`, etc.) move into `src/Views/Tokens/` directory; mask pattern `/system/css/{*}` resolves tokens correctly.
+
+### Changed
+- `tests/assets_check.php`: updated expectations to match id-based enqueue (`design-system` → `/system/css/System.css`), added `id=` attribute assertions.
+- `tests/smoke_check.php`: corrected helper filename probe (`UtilitiesHelper.php`) and config path (`RoutesConfig.php`).
+- `tests/bootstrap_probe.php`: updated config path reference to `RoutesConfig.php`.
+
+### Added
 - Phase 2 batch 3 — Pattern-based mask URL engine: `mask_urls` config uses flexible regex patterns with `{*}` path capture and `{face_theme_active_name}` / `{bone_theme_active_name}` placeholders; pattern matching in AssetsService::resolve() supersedes static slug map. Theme-aware asset serving: face routes resolve under public/themes/{theme}/, bone routes under src/Themes/{theme}/ with separate queue dedup via `$queuedFaceAssets` / `$queuedBoneAssets`.
 - Helper auto-autoload registry: new `apps/Config/Helper.php` stem list (`['uri', 'utilities']`) loaded by `.starter` after config, before kernel init, ensuring helpers are available when classes start loading. File naming convention aligned to `*Helper.php` suffix (UriHelper, UtilitiesHelper).
 - Auto head/foot injection: `Views::render()` now merges default asset tags (`head`, `foot`, `bone_head`, `bone_foot`) into template scope from AssetsService; controller no longer needs manual assignment. WelcomeController cleaned of redundant $head/$foot lines.
@@ -24,7 +36,7 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning: [S
 - NFR-1 strengthened: the framework is fully self-contained — no Composer packages, plugins, or third-party runtime/build dependency is required to run, route, dispatch, or render; PSR-4 via `System\Kernel\Boot::autoloader`, no `vendor/`. Dev-time tooling (if any) is optional and never a runtime requirement. Background: every `require`/`use` in the codebase resolves to the app's own namespaces, so no package registry or plugin loader exists.
 
 ### Added
-- Phase 1 — routing & controllers: `src/Kernel/Router.php` and `src/Kernel/Controller.php`, base controllers `PublicController`, `PrivateController`, `ApiController`, route table `apps/Config/Routes.php` wired through the gateway. Route keys are flat `'GET /path'` => `Ctrl::class.'::action'`, with prefix groups (`'/admin' => [ 'GET /dash' => ... ]`; inner keys must be full `METHOD /path`); exact-before-parameterised; browser-probed `/`, `/hello/{name}`, `/ping`, `/status/{code}`, `POST /` (405).
+- Phase 1 — routing & controllers: `src/Kernel/Router.php` and `src/Kernel/Controller.php`, base controllers `PublicController`, `PrivateController`, `ApiController`, route table `apps/Config/RoutesConfig.php` wired through the gateway. Route keys are flat `'GET /path'` => `Ctrl::class.'::action'`, with prefix groups (`'/admin' => [ 'GET /dash' => ... ]`; inner keys must be full `METHOD /path`); exact-before-parameterised; browser-probed `/`, `/hello/{name}`, `/ping`, `/status/{code}`, `POST /` (405).
 - API envelope contract: api-surface `respond()` always emits JSON and sets `Content-Type: application/json; charset=utf-8`. `/status/{code:[45]\d\d}` returns the error envelope `{"ok":false,"error":"scoped failure"}` for a real API error path.
 - Gateway simplicity (2026-11-22): dispatch moved to `src/Kernel/Dispatcher.php`; one catch-all in `nanoradf` delegates to `blackwall()` from `.starter`; new error page asset `public/themes/default/css/error.css`.
 

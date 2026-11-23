@@ -31,7 +31,7 @@ public/index.php          entry: folder names ($application_folder, $modules_fol
 ```text
 public/   web root — only entry point (.htaccess front controller, themes/)
 src/      framework core (System\...) — Kernel, base controllers, services, views taxonomy
-apps/     application layer (App\...) — Config/Routes.php, Services/, Controllers/, Model/, Views/
+apps/     application layer (App\...) — Config/RoutesConfig.php, Config/AssetsConfig.php, Services/, Controllers/, Model/, Views/
 modules/  optional HMVC (Modules\...) — <Name>/ with Manifest.json + Config/Controllers/Model/Services/Views
 docs/     RULES · PLAN · PRD · REPORT · CHANGELOG
 ```

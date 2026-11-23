@@ -39,13 +39,13 @@ function check (string $label, callable $test): void
 echo "Config & enqueue\n";
 
 check ('config exposes every enqueue list', static fn (): bool => array_key_exists ('enqueue_styles', AssetsService::config ()) && array_key_exists ('bone_enqueue_scripts', AssetsService::config ()));
-check ('face styles queue style.css and System.css', static fn (): bool => AssetsService::styles ('face') === ['css/style.css', 'ds/System.css']);
+check ('face styles queue style.css and System.css', static fn (): bool => AssetsService::styles ('face') === ['css/style.css', 'system/css/System.css']);
 check ('face scripts queue app.js', static fn (): bool => AssetsService::scripts ('face') === ['js/app.js']);
 check ('bone styles queue style.css', static fn (): bool => AssetsService::styles ('bone') === ['css/style.css']);
 check ('runtime enqueue is deduped', function (): bool
 {
     AssetsService::enqueueStyle ('css/style');
-    return AssetsService::styles ('face') === ['css/style.css', 'ds/System.css'];
+    return AssetsService::styles ('face') === ['css/style.css', 'system/css/System.css'];
 });
 
 echo "\nActive themes\n";
@@ -57,8 +57,8 @@ echo "\nRendering\n";
 
 check ('face styles link the masked css and tokens', static fn (): bool => substr_count (AssetsService::renderFaceStyles (), '<link') === 2
     && str_contains (AssetsService::renderFaceStyles (), '/css/style.css')
-    && str_contains (AssetsService::renderFaceStyles (), '/ds/System.css'));
-check ('face scripts defer-load the masked js', static fn (): bool => str_contains (AssetsService::renderFaceScripts (), '<script src="/js/app.js" defer>'));
+    && str_contains (AssetsService::renderFaceStyles (), '/system/css/System.css'));
+check ('face scripts defer-load the masked js', static fn (): bool => str_contains (AssetsService::renderFaceScripts (), '<script src="/js/app.js" defer') && str_contains (AssetsService::renderFaceScripts (), 'id="app"'));
 check ('bone styles link the bone css', static fn (): bool => str_contains (AssetsService::renderBoneStyles (), '/assets/css/style.css'));
 check ('bone scripts link the bone js', static fn (): bool => str_contains (AssetsService::renderBoneScripts (), '/assets/js/app.js'));
 
@@ -66,7 +66,7 @@ echo "\nResolution\n";
 
 check ('masked face css resolves', static fn (): bool => AssetsService::resolve ('/css/style.css')['mime'] === 'text/css; charset=utf-8');
 check ('masked face js resolves', static fn (): bool => AssetsService::resolve ('/js/app.js')['mime'] === 'text/javascript; charset=utf-8');
-check ('masked tokens resolve', static fn (): bool => AssetsService::resolve ('/ds/System.css')['mime'] === 'text/css; charset=utf-8');
+check ('masked tokens resolve', static fn (): bool => AssetsService::resolve ('/system/css/System.css')['mime'] === 'text/css; charset=utf-8');
 check ('masked bone css resolves', static fn (): bool => AssetsService::resolve ('/assets/css/style.css')['mime'] === 'text/css; charset=utf-8');
 check ('unknown pattern returns null', static fn (): bool => AssetsService::resolve ('/nope/style.css') === null);
 check ('traversal is rejected', static fn (): bool => AssetsService::resolve ('/css/../../../nanoradf') === null);

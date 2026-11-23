@@ -31,7 +31,7 @@ final class AssetsService
     public static function config (): array
     {
         /** @var array<string, mixed> $config */
-        $config = require interlace (appf, 'Config', 'Assets.php');
+        $config = require interlace (appf, 'Config', 'AssetsConfig.php');
 
         return $config;
     }
@@ -187,17 +187,30 @@ final class AssetsService
     /**
      * URL for a queued asset name, masked through the configured patterns.
      *
+     * Accepts either symbolic ids (looked up in `id_registry`) or raw paths.
+     * For ids the service resolves to the correct stem, then runs the same
+     * mask-pattern engine as before.
+     *
      * @since  0.0.1
-     * @param  string $name    Asset name, e.g. `style.css` or `css/style.css`.
+     * @param  string $name    Asset id or path, e.g. `style`, `design-system`, `css/style.css`.
      * @param  string $surface 'face' or 'bone'.
      * @return string URL with a cache buster.
      */
     public static function url (string $name, string $surface = 'face'): string
     {
-        // Fast paths for known surfaces before scanning the entire pattern list.
+        $config = self::config ();
+        $registry = (array) ($config['id_registry'] ?? []);
+
+        // Resolve symbolic id → full mask-relative path from registry.
+        if (isset ($registry[$name]))
+        {
+            $name = (string) $registry[$name];
+        }
+
+        // Fast-path for legacy ds/ tokens prefix.
         if (str_starts_with ($name, 'ds/'))
         {
-            foreach (self::config ()['mask_urls'] ?? [] as $pattern => $disk)
+            foreach ($config['mask_urls'] ?? [] as $pattern => $disk)
             {
                 if (!is_string ($pattern) || !is_string ($disk)) {continue;}
                 if (str_contains ($disk, 'Views/Tokens') && preg_match (self::regex ($pattern), '/'.$name, $m) === 1)
@@ -214,7 +227,7 @@ final class AssetsService
         $prefix = $surface === 'bone' ? 'assets/' : '';
         $tail   = ltrim ($prefix.$name, '/');
 
-        foreach (self::config ()['mask_urls'] ?? [] as $pattern => $disk)
+        foreach ($config['mask_urls'] ?? [] as $pattern => $disk)
         {
             if (!is_string ($pattern) || !is_string ($disk)) {continue;}
 
@@ -222,9 +235,7 @@ final class AssetsService
             if (preg_match (self::regex ($pattern), '/'.$tail, $m) !== 1) {continue;}
 
             $value = (string) ($m['s'] ?? '');
-
-            // Rewrite only the tokens placeholder to prevent leaking it into URLs.
-            $rewritten = str_replace ($pattern, str_replace ('{*}', $value, $pattern), $pattern);
+            $rewritten = str_replace ('{*}', $value, $pattern);
             $seen[] = $rewritten;
         }
 
@@ -403,20 +414,33 @@ final class AssetsService
      */
     private static function render (array $names, string $surface, string $kind): string
     {
-        $html = '';
+        $html      = '';
+        $registry  = (array) (self::config ()['id_registry'] ?? []);
 
         foreach ($names as $name)
         {
             $url = self::url ($name, $surface);
 
+            // Look up original id from registry to use as tag id attribute.
+            $tagId = '';
+            foreach ($registry as $id => $stem)
+            {
+                $expected = str_contains ((string) $stem, '.') ? (string) $stem : ((string) $stem).($kind === 'style' ? '.css' : '.js');
+                if ($expected === $name) {$tagId = $id; break;}
+            }
+
             if ($kind === 'style')
             {
-                $html .= '<link rel="stylesheet" href="'.self::escape ($url).'">';
+                $html .= '<link rel="stylesheet" href="'.self::escape ($url).'"';
+                if ($tagId !== '') {$html .= ' id="'.self::escape ($tagId).'"';}
+                $html .= '>';
             }
 
             else
             {
-                $html .= '<script src="'.self::escape ($url).'" defer></script>';
+                $html .= '<script src="'.self::escape ($url).'" defer';
+                if ($tagId !== '') {$html .= ' id="'.self::escape ($tagId).'"';}
+                $html .= '></script>';
             }
         }
 
@@ -427,33 +451,46 @@ final class AssetsService
      * Build the queued names for a surface (config first, then runtime),
      * appending the extension when missing.
      *
+     * Config entries may be either symbolic ids (looked up in `id_registry`)
+     * or raw paths. A raw path already containing a dot is kept as-is; an id
+     * is expanded to `<registry_entry>.<ext>`.
+     *
      * @since  0.0.1
-     * @param  array            $config  Config list.
+     * @param  array            $config  Config list (mixed ids / paths).
      * @param  string           $surface 'face' or 'bone'.
      * @param  string           $kind    'style' or 'script'.
-     * @param  array<string, mixed> $all     Full config.
+     * @param  array<string, mixed> $all     Full config (for id_registry lookup).
      * @return list<string> Names with extensions.
      */
     private static function names (array $config, string $surface, string $kind, array $all): array
     {
-        $ext    = $kind === 'style' ? '.css' : '.js';
-        $merged = array_values (array_filter ([...$config, ...(self::$queue[$surface][$kind.'s'] ?? [])], 'is_string'));
-        $out    = [];
+        $ext      = $kind === 'style' ? '.css' : '.js';
+        $registry = (array) ($all['id_registry'] ?? []);
+        $merged   = array_values (array_filter ([...$config, ...(self::$queue[$surface][$kind.'s'] ?? [])], 'is_string'));
+        $out      = [];
 
         foreach ($merged as $item)
         {
             $item = trim ((string) $item);
-
             if ($item === '') {continue;}
 
-            // `css/style.css` → basename keeps the extension; keep the kind
-            // folder only when there's no extension (config-style names).
-            if (str_contains ($item, '.') && str_starts_with ($item, $base.'/')) {$item = basename ($item);}
-            elseif (!str_contains (basename ($item), '.')) {$item .= $ext;}
+            // Registry entries carry mask-relative stem without extension; append ext directly.
+            if (isset ($registry[$item]))
+            {
+                $resolved = (string) $registry[$item] . $ext;
+            }
 
-            if (!str_contains ($item, '/') && !str_contains ($item, '.')) {$item .= $ext;}
+            elseif (str_contains ($item, '.'))
+            {
+                $resolved = ltrim ($item, '/');
+            }
 
-            if (!in_array ($item, $out, true)) {$out[] = $item;}
+            else
+            {
+                $resolved = ltrim ($item, '/').$ext;
+            }
+
+            if (!in_array ($resolved, $out, true)) {$out[] = $resolved;}
         }
 
         return $out;

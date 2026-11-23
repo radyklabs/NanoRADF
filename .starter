@@ -222,7 +222,7 @@ if (!isset ($error))
     $helper_root = basepath.'src'.sep.'Helper';
     $stems       = [];
 
-    $helper_config = basepath.'apps'.sep.'Config'.sep.'Helper.php';
+    $helper_config = basepath.'apps'.sep.'Config'.sep.'HelperConfig.php';
     if (is_readable ($helper_config)) {$stems = (array) require $helper_config;}
 
     foreach ($stems as $stem)

@@ -7,6 +7,18 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning: [S
 
 ### Added
 - Config file rename for naming consistency: `apps/Config/Assets.php` → `AppsConfig/AssetsConfig.php`, `apps/Config/Routes.php` → `apps/Config/RoutesConfig.php`, `apps/Config/Helper.php` → `apps/Config/HelperConfig.php` (aligns with `gconf()` stem-to-config resolution pattern used by `ConfigHelper.php`).
+- Phase 2b — Security hardening: Security headers (CSP, HSTS, X-Frame-Options, X-Content-Type-Options, Referrer-Policy) applied in `Dispatcher::emit()` via new `securityHeaders()` method; CSP differentiated for JSON vs HTML responses; HSTS only on HTTPS.
+- Phase 2c — Code quality & cleanup: Dead code removed from `AssetsService` (`candidate()`, `diskPath()`, `rewrite()`); `ThemeHelper` implemented with global `theme($surface)` function reading from `gconfig('theme')`; Theme config separated from AssetsConfig into dedicated `ThemeConfig.php` (src/Config + apps/Config); `AssetsService::theme()` updated to read from ThemeConfig with backwards-compat aliases (`face`/`bone` → `public`/`private`).
+- AssetsService simplification: `url()` and `resolve()` rewritten with segment prefix matching (O(n) string ops) replacing per-request PCRE regex; pre-compiled pattern map cached per surface; `anchor()` helper for config disk path resolution; `allPatterns()` for surface-agnostic resolution.
+- Admin theme scaffold: `src/Themes/admin/css/style.css` and `src/Themes/admin/js/app.js` created for bone surface asset serving.
+
+### Changed
+- `apps/Config/AssetsConfig.php`: Restored full override with `enqueue_styles` (style, design-system), `enqueue_scripts` (app), `bone_enqueue_styles` (style), `bone_enqueue_scripts` (app); `id_registry` and `mask_urls` commented (defaults in src/Config).
+- `src/Config/ThemeConfig.php` & `apps/Config/ThemeConfig.php`: Structure aligned to `['default' => ['public' => 'default', 'private' => 'default']]` with override `['default' => ['private' => 'admin']]`.
+- `src/Helper/ThemeHelper.php`: Implemented global `theme($surface)` function with alias support.
+- `src/Services/AssetsService.php`: Removed dead methods; `theme()` reads from ThemeConfig; `url()` and `resolve()` use segment prefix matching; added `patternMap()`, `allPatterns()`, `anchor()`.
+- `src/Kernel/Dispatcher.php`: Added `securityHeaders()` called from `emit()`; security headers applied to all responses.
+- `tests/assets_check.php`: Updated bone theme expectation to 'admin'; face scripts check updated for cache-buster query string.
 - Asset enqueue via symbolic ids (`id_registry` in AssetsConfig): config now uses human-readable ids (`style`, `design-system`, `app`) that resolve to masked URLs via the id registry; render output includes `<link ... id="design-system">` and `<script ... id="app">` attributes.
 - Helper autoload moved to `Boot::autoloadHelper()`: called from `initiate()` after PSR-4 registration, using `configfapp` constant to locate `apps/Config/HelperConfig.php` stem list — fixes missing `e()` and `baseurl()` on some load paths.
 - `Dispatcher` split: `dispatchAssets()` resolves masked assets against `mask_urls` config and returns absolute file path or null; `serveAsset()` serves the resolved file with headers; `dispatchRoute()` handles MVC route matching. Entrypoint `handle()` orchestrates both stages cleanly separated.

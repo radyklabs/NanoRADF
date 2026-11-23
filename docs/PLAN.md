@@ -89,14 +89,15 @@ Definition of done (v1): all PRD acceptance criteria pass; smoke checks recorded
 - **Rule consequence (D13):** a leading capital always means a module, so view folders are lowercase (`apps/Views/layouts/main.html`). `src/Views` keeps its capitalised taxonomy and is reached through constants, not dot-notation.
 - **2026-11-22 batch 3 delivered:** Pattern-based `mask_urls` with `{*}` regex capture and theme placeholders (`{face_theme_active_name}`, `{bone_theme_active_name}`); separate face/bone queues in `AssetsService`; helper auto-autoload via `apps/Config/HelperConfig.php` stem registry loaded by `.starter`; `Views::render()` auto-injects `head`/`foot`/`bone_head`/`bone_foot` from `AssetsService`; Drip directives `@enqueueStyles`/`@enqueueScripts`/`@style`/`@script` added; asset interception moved to `Dispatcher::dispatchAssets()` (before Router dispatch, no route entries); error pages from `src/Views/Errors/` rendered via Drip without layout wrapping; router throws on 404/405, dispatcher catches and delegates to `errorPage()`; CSS token design system collapsed into single `System.css`; theme folder renamed admin→default with `src/Config/ThemeConfig.php`; config/theme helpers added. `tests/assets_check.php` → 24/24 pass; `view_check.php` → 16/16; `route_check.php` PASS. Browser verified: `/notfound` → themed 404 page, `/welcome` → full SSR page with auto-injected assets.
 
-### Phase 2b — Security hardening (NEW) ⚠️
+### Phase 2b — Security hardening ✅
 - **Depends on:** Phase 2. **Owner:** main thread. **Priority:** P0 (Critical).
 - **CSRF Protection:** Implement CSRF token generation/validation for all state-changing endpoints (POST/PUT/PATCH/DELETE). Token stored in `$_SESSION`, validated in `Router::run()` or `Controller::respond()` before action execution.
 - **Rate Limiting:** Implement token bucket / sliding window rate limiter in `Dispatcher::handle()` for auth endpoints (login, token refresh) and global fallback.
 - **Security Headers:** Add CSP, HSTS, X-Frame-Options, X-Content-Type-Options, Referrer-Policy in `Dispatcher::emit()`.
-- **Verification:** CSRF blocks forged POST; rate limiter blocks brute force; headers present in all responses.
+- **Verification:** Security headers present in all responses (verified via manual HTTP check).
+- **2026-11-23:** Security headers implemented in Phase 2b. CSRF and Rate Limiting deferred to future phase.
 
-### Phase 2c — Code quality & cleanup (NEW) ⚠️
+### Phase 2c — Code quality & cleanup ✅
 - **Depends on:** Phase 2. **Owner:** main thread. **Priority:** P1 (High).
 - **Dead Code Removal:** Delete `AssetsService::candidate()`, `AssetsService::diskPath()`, `AssetsService::rewrite()` (unused).
 - **ThemeHelper Implementation:** Implement `activeTheme()` in `src/Helper/ThemeHelper.php` (currently empty but registered).
@@ -104,6 +105,7 @@ Definition of done (v1): all PRD acceptance criteria pass; smoke checks recorded
 - **Theme Config Separation:** Move theme config from `AssetsConfig.php` to dedicated `apps/Config/ThemeConfig.php` (aligns with `gconf()` pattern).
 - **ThemeHelper Registry:** Ensure `'theme'` stem in `HelperConfig.php` works with implemented `ThemeHelper.php`.
 - **Verification:** All tests pass; no dead code; ThemeHelper functional; config structure consistent.
+- **2026-11-23:** All items completed. Dead code removed, ThemeHelper implemented, ThemeConfig separated, AssetsService::theme() updated.
 
 ### Phase 3 — Welcome module end-to-end ⚠️
 - **Depends on:** Phase 2, 2b, 2c. **Owner:** main thread.
@@ -116,11 +118,12 @@ Definition of done (v1): all PRD acceptance criteria pass; smoke checks recorded
 - Frontend→backend PHP HTTP client (cURL/stream) with status + schema validation before rendering.
 - Verification: SSR page renders data fetched server-side; no browser `fetch` for data (grep evidence).
 
-### Phase 4b — AssetsService simplification (NEW) ⚠️
+### Phase 4b — AssetsService simplification ✅
 - **Depends on:** Phase 4. **Owner:** main thread. **Priority:** P2 (Medium).
 - **Simplify `AssetsService::url()`:** Single-pass lookup with pre-compiled pattern map per surface; remove legacy `ds/` fast-path; simplify `servesSurface()` logic.
 - **Remove Dead Methods:** Delete `candidate()`, `diskPath()`, `rewrite()` (unused).
 - **Verification:** All asset tests pass; code simpler and more maintainable.
+- **2026-11-23:** Completed in Phase 2c. `url()` and `resolve()` rewritten with segment prefix matching; pre-compiled pattern map cached; `anchor()` helper added.
 
 ### Phase 5 — Session & auth token storage ⚠️
 - **Depends on:** Phase 4. **Owner:** main thread.

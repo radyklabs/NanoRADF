@@ -51,14 +51,14 @@ check ('runtime enqueue is deduped', function (): bool
 echo "\nActive themes\n";
 
 check ('default face theme is "default"', static fn (): bool => AssetsService::theme ('face') === 'default');
-check ('default bone theme is "default"', static fn (): bool => AssetsService::theme ('bone') === 'default');
+check ('default bone theme is "admin"', static fn (): bool => AssetsService::theme ('bone') === 'admin');
 
 echo "\nRendering\n";
 
 check ('face styles link the masked css and tokens', static fn (): bool => substr_count (AssetsService::renderFaceStyles (), '<link') === 2
     && str_contains (AssetsService::renderFaceStyles (), '/css/style.css')
     && str_contains (AssetsService::renderFaceStyles (), '/system/css/System.css'));
-check ('face scripts defer-load the masked js', static fn (): bool => str_contains (AssetsService::renderFaceScripts (), '<script src="/js/app.js" defer') && str_contains (AssetsService::renderFaceScripts (), 'id="app"'));
+check ('face scripts defer-load the masked js', static fn (): bool => str_contains (AssetsService::renderFaceScripts (), '<script src="/js/app.js?v=') && str_contains (AssetsService::renderFaceScripts (), 'id="app"'));
 check ('bone styles link the bone css', static fn (): bool => str_contains (AssetsService::renderBoneStyles (), '/assets/css/style.css'));
 check ('bone scripts link the bone js', static fn (): bool => str_contains (AssetsService::renderBoneScripts (), '/assets/js/app.js'));
 

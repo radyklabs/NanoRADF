@@ -44,16 +44,25 @@ final class AssetsService
     /**
      * Active theme name for a surface (config value, override in controllers).
      *
+         * Reads from gconfig('theme')['default']['public'|'private'].
+         * Accepts 'public', 'private', 'face', or 'bone' (backwards compat alias).
+         *
      * @since  0.0.1
-     * @param  string $surface 'face' or 'bone'.
+         * @param  string $surface 'public'/'face' (frontend) or 'private'/'bone' (backend).
      * @return string Theme name.
      */
-    public static function theme (string $surface = 'face'): string
+        public static function theme (string $surface = 'public'): string
     {
-        /** @var array{face?:string, bone?:string} $themes */
-        $themes = (array) (self::config ()['theme'] ?? []);
+            $surface = match ($surface)
+            {
+                'face', 'public' => 'public',
+                'bone', 'private' => 'private',
+                default => 'public',
+            };
 
-        return (string) ($themes[$surface] ?? 'default');
+            $config = gconfig ('theme');
+            $default = (array) ($config['default'] ?? []);
+            return (string) ($default[$surface] ?? 'default');
     }
 
     /**
@@ -159,6 +168,8 @@ final class AssetsService
     /**
      * Resolve a URL to a file and MIME type.
      *
+         * Uses segment prefix matching (O(n) string ops) instead of regex per request.
+         *
      * @since  0.0.1
      * @param  string $url URL path (no leading slash required).
      * @return array{file:string, mime:string}|null Null when unknown, missing, or escaping the root.
@@ -167,38 +178,104 @@ final class AssetsService
     {
         $url = $url === '' ? '/' : '/'.ltrim ($url, '/');
 
-        foreach (self::config ()['mask_urls'] ?? [] as $pattern => $disk)
+            $allPatterns = self::allPatterns ();
+
+            foreach ($allPatterns as $urlPrefix => $cfg)
         {
-            if (!is_string ($pattern) || !is_string ($disk)) {continue;}
+                if (str_starts_with ($url, $urlPrefix))
+                {
+                    $value = substr ($url, strlen ($urlPrefix));
+                    if (str_contains ($value, '..')) {return null;}
 
-            $match = self::matchPattern ($pattern, $url);
+                    $diskPath = self::anchor ($cfg['disk_prefix'].$value);
+                    $real = realpath ($diskPath);
 
-            if ($match === null) {continue;}
-
-            $file = self::expand ($disk, $match);
-
-            if ($file === null) {continue;}
-
-            $real = realpath ($file);
-
-            if ($real === false || !is_file ($real)) {continue;}
-
-            return ['file' => $real, 'mime' => self::mime ($real)];
+                    if ($real !== false && is_file ($real))
+                    {
+                        return ['file' => $real, 'mime' => self::mime ($real)];
+                    }
+                }
         }
 
         return null;
     }
 
+        /**
+         * Get all mask patterns without surface filtering (for resolve).
+         *
+         * @since  0.0.1
+         * @return array<string, array{url_prefix:string, disk_prefix:string}>
+         */
+        private static function allPatterns (): array
+        {
+            static $cache = null;
+
+            if ($cache !== null) {return $cache;}
+
+            $config = self::config ();
+            $faceTheme = self::theme ('face');
+            $boneTheme = self::theme ('bone');
+            $map = [];
+
+            foreach ($config['mask_urls'] ?? [] as $urlPattern => $diskPattern)
+            {
+                if (!is_string ($urlPattern) || !is_string ($diskPattern)) {continue;}
+
+                $starPos = strpos ($urlPattern, '{*}');
+                if ($starPos === false) {continue;}
+
+                $urlPrefix = substr ($urlPattern, 0, $starPos);
+                $diskPrefix = substr ($diskPattern, 0, strpos ($diskPattern, '{*}'));
+
+                $diskPrefix = str_replace (
+                    ['{face_theme_active_name}', '{bone_theme_active_name}'],
+                    [$faceTheme, $boneTheme],
+                    $diskPrefix
+                );
+
+                $map[$urlPrefix] = [
+                    'url_prefix' => $urlPrefix,
+                    'disk_prefix' => $diskPrefix,
+                ];
+            }
+
+            $cache = $map;
+            return $map;
+        }
+
+        /**
+         * Anchor a config disk path (leading `/public` or `/src`) to its real root.
+         *
+         * Config disk patterns are rooted at the project base, e.g. `/public/themes/...`.
+         *
+         * @since  0.0.1
+         * @param  string $path Disk path starting with `/`.
+         * @return string Absolute path.
+         */
+        private static function anchor (string $path): string
+        {
+            if (str_starts_with ($path, '/public/'))
+            {
+                return interlace (basepath, 'public', substr ($path, strlen ('/public/')));
+            }
+
+            if (str_starts_with ($path, '/src/'))
+            {
+                return interlace (systemf, substr ($path, strlen ('/src/')));
+            }
+
+            return $path;
+        }
+
     /**
      * URL for a queued asset name, masked through the configured patterns.
      *
      * Accepts either symbolic ids (looked up in `id_registry`) or raw paths.
-     * For ids the service resolves to the correct stem, then runs the same
-     * mask-pattern engine as before.
+         * Uses segment prefix matching (O(n) string ops) instead of regex per request.
      *
      * @since  0.0.1
      * @param  string $name    Asset id or path, e.g. `style`, `design-system`, `css/style.css`.
-     * @param  string $surface 'face' or 'bone'.
+         * @param  string $surface 'face' (public frontend) or 'bone' (backend).
      * @return string URL with a cache buster.
      */
     public static function url (string $name, string $surface = 'face'): string
@@ -215,41 +292,84 @@ final class AssetsService
         // Fast-path for legacy ds/ tokens prefix.
         if (str_starts_with ($name, 'ds/'))
         {
-            foreach ($config['mask_urls'] ?? [] as $pattern => $disk)
+                $patternMap = self::patternMap ($surface);
+                foreach ($patternMap as $prefix => $cfg)
             {
-                if (!is_string ($pattern) || !is_string ($disk)) {continue;}
-                if (str_contains ($disk, 'Views/Tokens') && preg_match (self::regex ($pattern), '/'.$name, $m) === 1)
+                    if (str_starts_with ($name, $prefix))
                 {
-                    $value = (string) ($m['s'] ?? '');
-                    return str_replace ('{*}', $value, $pattern).'?v='.self::version ($name, $surface);
+                        $tail = substr ($name, strlen ($prefix));
+                        $url = $cfg['url_prefix'].$tail;
+                        return $url.'?v='.self::version ($name, $surface);
+                }
+            }
+            return '/'.$name;
+        }
+
+            $patternMap = self::patternMap ($surface);
+        $prefix = $surface === 'bone' ? 'assets/' : '';
+            $tail = '/'.ltrim ($prefix.$name, '/');
+
+            foreach ($patternMap as $urlPrefix => $cfg)
+            {
+                if (str_starts_with ($tail, $urlPrefix))
+                {
+                    $value = substr ($tail, strlen ($urlPrefix));
+                    $url = $cfg['url_prefix'].$value;
+                    return $url.'?v='.self::version ($name, $surface);
                 }
             }
 
             return '/'.$name;
         }
 
-        $seen   = [];
-        $prefix = $surface === 'bone' ? 'assets/' : '';
-        $tail   = ltrim ($prefix.$name, '/');
-
-        foreach ($config['mask_urls'] ?? [] as $pattern => $disk)
+        /**
+         * Build pre-compiled pattern map for a surface.
+         * Returns [url_prefix => [url_prefix, disk_prefix, theme_placeholder]].
+         *
+         * @since  0.0.1
+         * @param  string $surface 'face' or 'bone'.
+         * @return array<string, array{url_prefix:string, disk_prefix:string, theme:string}>
+         */
+        private static function patternMap (string $surface): array
         {
-            if (!is_string ($pattern) || !is_string ($disk)) {continue;}
+            static $cache = [];
 
-            if (!self::servesSurface ((string) $disk, $surface)) {continue;}
-            if (preg_match (self::regex ($pattern), '/'.$tail, $m) !== 1) {continue;}
+            if (isset ($cache[$surface])) {return $cache[$surface];}
 
-            $value = (string) ($m['s'] ?? '');
-            $rewritten = str_replace ('{*}', $value, $pattern);
-            $seen[] = $rewritten;
+            $config = self::config ();
+            $faceTheme = self::theme ('face');
+            $boneTheme = self::theme ('bone');
+            $map = [];
+
+            foreach ($config['mask_urls'] ?? [] as $urlPattern => $diskPattern)
+        {
+                if (!is_string ($urlPattern) || !is_string ($diskPattern)) {continue;}
+
+                // Only include patterns for this surface
+                if (!self::servesSurface ($diskPattern, $surface)) {continue;}
+
+                // Extract prefix before {*}
+                $starPos = strpos ($urlPattern, '{*}');
+                if ($starPos === false) {continue;}
+
+                $urlPrefix = substr ($urlPattern, 0, $starPos);
+                $diskPrefix = substr ($diskPattern, 0, strpos ($diskPattern, '{*}'));
+
+                // Expand theme placeholders in disk prefix
+                $diskPrefix = str_replace (
+                    ['{face_theme_active_name}', '{bone_theme_active_name}'],
+                    [$faceTheme, $boneTheme],
+                    $diskPrefix
+                );
+
+                $map[$urlPrefix] = [
+                    'url_prefix' => $urlPrefix,
+                    'disk_prefix' => $diskPrefix,
+                ];
         }
 
-        return match (true)
-        {
-            $seen === []        => '/'.$name,
-            count ($seen) === 1 => $seen[0],
-            default             => reset ($seen),
-        };
+            $cache[$surface] = $map;
+            return $map;
     }
 
     /**
@@ -257,7 +377,7 @@ final class AssetsService
      *
      * @since  0.0.1
      * @param  string $preview Resolved disk path.
-     * @param  string $surface 'face' or 'bone'.
+         * @param  string $surface 'face' (public frontend) or 'bone' (backend).
      * @return bool
      */
     private static function servesSurface (string $disk, string $surface): bool
@@ -361,52 +481,6 @@ final class AssetsService
         return realpath ($path) ?: $path;
     }
 
-    /**
-     * Rewrite a pattern: replace `{*}` with the value and theme placeholders
-     * with the active theme name.
-     *
-     * @since  0.0.1
-     * @param  string $pattern Pattern text.
-     * @param  string $value   Captured tail.
-     * @param  string $surface Surface for theme expansion.
-     * @return string Rewritten text.
-     */
-    private static function rewrite (string $pattern, string $value, string $surface): string
-    {
-        $pattern = str_replace ('{*}', $value, $pattern);
-
-        foreach (['face', 'bone'] as $s)
-        {
-            $pattern = str_replace ('{'.$s.'_theme_active_name}', self::theme ($s), $pattern);
-        }
-
-        return $pattern;
-    }
-
-    /**
-     * Resolve a config disk path (starts with `/`) to a real path.
-     *
-     * @since  0.0.1
-     * @param  string $disk Disk pattern starting with `/`.
-     * @return string Real path without placeholders.
-     */
-    private static function diskPath (string $disk): string
-    {
-        $segments = explode ('/', ltrim ($disk, '/'));
-
-        $resolved = [];
-        foreach ($segments as $segment)
-        {
-            if ($segment === '') {continue;}
-
-            if ($segment === 'public') {array_push ($resolved, 'public'); continue;}
-            if ($segment === 'src')    {array_push ($resolved, 'src'); continue;}
-
-            $resolved[] = $segment;
-        }
-
-        return realpath (implode (sep, $resolved)) ?: '';
-    }
 
     /**
      * Render a queue of names into tags.
@@ -501,34 +575,6 @@ final class AssetsService
         return $out;
     }
 
-    /**
-     * First readable queue file for a name (theme root, then Tokens).
-     *
-     * @since  0.0.1
-     * @param  string $item Queue entry.
-     * @param  string $ext  Extension.
-     * @param  string|null $prefix Optional folder prefix.
-     * @return string File name without directory, or '' when absent.
-     */
-    private static function candidate (string $item, string $ext, ?string $prefix = null): string
-    {
-        $name = str_contains ($item, '.') ? $item : $item.$ext;
-        $name = ltrim ($name, '/');
-
-        foreach ([self::theme ('face'), self::theme ('bone')] as $theme)
-        {
-            $root = interlace ($theme === self::theme ('bone') ? systemf : publicpath, 'Themes', $theme);
-            $path = $prefix === null ? interlace ($root, $name) : interlace ($root, $prefix, $name);
-
-            if (is_file ($path)) {return str_contains ($item, '.') ? $name : basename ($name);}
-        }
-
-        $tokens = interlace (systemf, 'Views', 'Tokens', $name);
-
-        if (is_file ($tokens)) {return $name;}
-
-        return '';
-    }
 
     /**
      * Cache-buster: file mtime when the file exists, else '0'.

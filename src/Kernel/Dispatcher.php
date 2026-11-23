@@ -157,8 +157,8 @@ final class Dispatcher
     }
 
     /**
-     * Send the response to the client: extra headers, then status + media type,
-     * then the body.
+         * Send the response to the client: security headers, extra headers, then
+         * status + media type, then the body.
      *
      * @since  0.0.1
      * @param  array{status:int, body:string, headers?:list<string>} $response
@@ -169,6 +169,9 @@ final class Dispatcher
         $status  = (int) ($response['status'] ?? 200);
         $headers = (array) ($response['headers'] ?? []);
         $isJson  = in_array ('Content-Type: application/json; charset=utf-8', $headers, true);
+
+            // Security headers (applied to all responses)
+            self::securityHeaders ($isJson);
 
         if ($isJson)
         {
@@ -182,4 +185,39 @@ final class Dispatcher
 
         echo (string) ($response['body'] ?? '');
     }
+
+        /**
+         * Apply security headers to the response.
+         *
+         * @since  0.0.1
+         * @param  bool $isJson Whether response is JSON (affects CSP).
+         * @return void
+         */
+        private static function securityHeaders (bool $isJson): void
+        {
+            // Prevent MIME type sniffing
+            header ('X-Content-Type-Options: nosniff');
+
+            // Prevent clickjacking
+            header ('X-Frame-Options: DENY');
+
+            // Referrer policy
+            header ('Referrer-Policy: strict-origin-when-cross-origin');
+
+            // HSTS (only in production with HTTPS)
+            if (isset ($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
+            {
+                header ('Strict-Transport-Security: max-age=31536000; includeSubDomains; preload');
+            }
+
+            // Content Security Policy
+            if ($isJson)
+            {
+                header ("Content-Security-Policy: default-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'");
+            }
+            else
+            {
+                header ("Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'");
+            }
+        }
 }

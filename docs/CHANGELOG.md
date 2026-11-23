@@ -6,10 +6,10 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning: [S
 ## [Unreleased]
 
 ### Added
-- Config file rename for naming consistency: `apps/Config/Assets.php` → `AppsConfig/AssetsConfig.php`, `apps/Config/Routes.php` → `apps/Config/RoutesConfig.php` (aligns with `gconf()` stem-to-config resolution pattern used by `ConfigHelper.php`).
+- Config file rename for naming consistency: `apps/Config/Assets.php` → `AppsConfig/AssetsConfig.php`, `apps/Config/Routes.php` → `apps/Config/RoutesConfig.php`, `apps/Config/Helper.php` → `apps/Config/HelperConfig.php` (aligns with `gconf()` stem-to-config resolution pattern used by `ConfigHelper.php`).
 - Asset enqueue via symbolic ids (`id_registry` in AssetsConfig): config now uses human-readable ids (`style`, `design-system`, `app`) that resolve to masked URLs via the id registry; render output includes `<link ... id="design-system">` and `<script ... id="app">` attributes.
-- Helper autoload moved to `Boot::autoloadHelper()`: called from `initiate()` after PSR-4 registration, using `configfapp` constant to locate `apps/Config/Helper.php` stem list — fixes missing `e()` and `baseurl()` on some load paths.
-- `dispatcher/dispatchRoute()` split: `Dispatcher::handle()` now delegates asset interception to private `asset()` method before entering route dispatch, cleanly separating asset serving from MVC routing.
+- Helper autoload moved to `Boot::autoloadHelper()`: called from `initiate()` after PSR-4 registration, using `configfapp` constant to locate `apps/Config/HelperConfig.php` stem list — fixes missing `e()` and `baseurl()` on some load paths.
+- `Dispatcher` split: `dispatchAssets()` resolves masked assets against `mask_urls` config and returns absolute file path or null; `serveAsset()` serves the resolved file with headers; `dispatchRoute()` handles MVC route matching. Entrypoint `handle()` orchestrates both stages cleanly separated.
 - Token CSS split scaffold: `System.css` now contains only `@import url('base.css');` as first line; modular token files (`color.css`, `space.css`, etc.) move into `src/Views/Tokens/` directory; mask pattern `/system/css/{*}` resolves tokens correctly.
 
 ### Changed

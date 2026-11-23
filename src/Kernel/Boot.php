@@ -90,7 +90,7 @@ final class Boot
     {
         $stems       = [];
 
-        $helper_config = interlace (configfapp, fl ('Helper'));
+        $helper_config = interlace (configfapp, fl ('HelperConfig'));
         if (is_readable ($helper_config)) {$stems = (array) require $helper_config;}
 
         foreach ($stems as $stem)

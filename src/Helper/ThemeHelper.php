@@ -3,7 +3,7 @@
 /**
  * Theme helpers — global, loaded from the helper registry.
  *
- * Function-only by contract (see apps/Config/Helper.php).
+ * Function-only by contract (see apps/Config/HelperConfig.php).
  *
  * @since 0.0.1
  */

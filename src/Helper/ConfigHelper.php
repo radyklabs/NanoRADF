@@ -3,7 +3,7 @@
 /**
  * Config helpers — global, loaded from the helper registry.
  *
- * Function-only by contract (see apps/Config/Helper.php).
+ * Function-only by contract (see apps/Config/HelperConfig.php).
  *
  * @since 0.0.1
  */
@@ -30,5 +30,5 @@ function gconf (string $config): array
         return array_replace_recursive ($confexists, $confappexists);
     }
 
-    return [$confpath];//$confexists ?? $confappexists ?? [];
+    return $confexists ?? $confappexists ?? [];
 }

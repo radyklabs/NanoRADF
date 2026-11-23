@@ -82,12 +82,36 @@
       "created_at": "2026-11-23T13:45:00+07:00"
     },
     {
-      "id": "lesson-011",
-      "category": "rule",
-      "title": "PHP Version Backward Compatibility",
-      "description": "Project target PHP 8.1+. Jangan gunakan syntax PHP 8.4+ seperti 'default' sebagai fallback dalam match expression (match default case). Gunakan null coalescing operator ?? atau ternary untuk compatibility.",
-      "evidence": "src/Kernel/Dispatcher.php MIME lookup",
-      "created_at": "2026-11-23T13:50:00+07:00"
+      "id": "lesson-012",
+      "category": "workflow",
+      "title": "Baca CLAUDE.md dan docs/RULES.md Sebelum Bekerja",
+      "description": "WAJIB baca CLAUDE.md dan docs/RULES.md di awal setiap session. Jangan asumsi dari memory. File-file ini berisi aturan kritis yang sering dilanggar: dev URL, PHP version, naming convention, bootstrap chain, security rules, dll. Baca ulang setiap session, bukan hanya sekali.",
+      "evidence": "CLAUDE.md, docs/RULES.md",
+      "created_at": "2026-11-23T15:35:00+07:00"
+    },
+    {
+      "id": "lesson-013",
+      "category": "workflow",
+      "title": "Jangan Edit File Tanpa Pikir Panjang",
+      "description": "Setiap edit file harus melalui analisis: 1) Baca file actual, 2) Pahami konteks dan dampak, 3) Tentukan apakah perubahan diperlukan, 4) Verifikasi dengan test. Jangan edit sembarangan hanya karena 'terlihat perlu'. Pertimbangkan: apakah ini akan break sesuatu? Apakah ada dependency lain? Apakah user sudah edit file ini?",
+      "evidence": "Multiple incidents: .starter, Dispatcher.php, config files",
+      "created_at": "2026-11-23T15:35:00+07:00"
+    },
+    {
+      "id": "lesson-014",
+      "category": "workflow",
+      "title": "Jangan Asumsi - Verifikasi dengan Kode",
+      "description": "Jangan pernah berasumsi tentang state codebase. Selalu verifikasi dengan: git status, git diff, view file, grep. Asumsi sering salah dan menyebabkan error yang tidak perlu. Jika ragu, baca file actual, jangan tebak.",
+      "evidence": "Multiple incidents where I assumed file state without reading",
+      "created_at": "2026-11-23T15:35:00+07:00"
+    },
+    {
+      "id": "lesson-015",
+      "category": "workflow",
+      "title": "Simpan Kesalahan sebagai Pengingat",
+      "description": "Setiap kesalahan yang dibuat harus dicatat di .claude/learnings.json agar tidak terulang. Ini bukan opsional - ini WAJIB. Kesalahan yang sama tidak boleh terjadi dua kali. Jika terjadi, berarti learning system gagal.",
+      "evidence": "User feedback: 'SIMPA KESALAHANMU SEBAGAI PENGINGAT! JANGAN ULANGI KESALAHAN YANG SAMA!'",
+      "created_at": "2026-11-23T15:35:00+07:00"
     }
   ]
 }

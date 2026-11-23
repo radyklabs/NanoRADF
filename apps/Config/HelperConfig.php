@@ -9,9 +9,5 @@
  * @since 0.0.1
  */
 
-return [
-    'uri',
-    'config',
-    'utilities',
-    'theme',
-];
+// Ku pindah ke src/Config/HelperConfig.php sebagai nilai default
+return [];

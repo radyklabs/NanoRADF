@@ -18,32 +18,32 @@
  */
 
 return [
-    'theme' => [
-        'face' => 'default',
-        'bone' => 'default',
-    ],
+    // Ku pindah ke Config/ThemeConfig.php
+    // 'theme' => [
+    //     'face' => 'default',
+    //     'bone' => 'default',
+    // ],
 
     // Symbolic ids that become the `<link ... id="...">` / `<script ... id="...">`.
     // Values are the path relative to the matching mask-url domain (without leading '/').
     // The mask engine finds the owning pattern and rewrites accordingly.
-    'id_registry' => [
-        'style'         => 'css/style',
-        'design-system' => 'system/css/System',
-        'app'           => 'js/app',
-    ],
 
-    'enqueue_styles'  => ['style', 'design-system'],
-    'enqueue_scripts' => ['app'],
+    // Kupindah ke src/Config/AssetsConfig sebagai nilai default
+    // 'id_registry' => [
+    //     'style'         => 'css/style',
+    //     'design-system' => 'system/css/System',
+    //     'app'           => 'js/app',
+    // ],
 
-    'bone_enqueue_styles'  => ['style'],
-    'bone_enqueue_scripts' => ['app'],
+    // Available ['style', 'design-system']
+    // themes placed in /public/themes
+    'enqueue_styles'  => ['style'],
+    'enqueue_scripts' => [],
 
-    'mask_urls' => [
-        '/css/{*}'        => '/public/themes/{face_theme_active_name}/css/{*}',
-        '/js/{*}'         => '/public/themes/{face_theme_active_name}/js/{*}',
-        '/assets/css/{*}' => '/src/Themes/{bone_theme_active_name}/css/{*}',
-        '/assets/js/{*}'  => '/src/Themes/{bone_theme_active_name}/js/{*}',
-        '/system/css/{*}' => '/src/Views/Tokens/{*}',
-        '/system/js/{*}' => '/src/Views/Scripts/{*}',
-    ],
+    // Placed in /src/Themes (setelah ku pikir harusnya ada di /apps)
+    'bone_enqueue_styles'  => [],
+    'bone_enqueue_scripts' => [],
+
+    // Tuliskan disini batasan mask url
+    'mask_urls' => [],
 ];

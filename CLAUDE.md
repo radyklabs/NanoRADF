@@ -98,6 +98,44 @@ Release workflow (`>release`) prepares, merges, and tags in one invocation; neve
 | `>track` | Compare the plan against the code, update statuses and related docs, then commit and push. |
 | `>audit` | Deep audit: manual file-by-file, line-by-line review of logic, cross-file consistency/correlation, dead/junk code, security gaps, and anomalies; tools are evidence only; record findings in `docs/REPORT.md` and related docs. |
 
+## MANDATORY PRE-ACTION CHECKLIST (Binding Rule)
+
+**This checklist is ENFORCED at session start and before EVERY file edit.**  
+**Location:** `.claude/pre_action_checklist.md` — READ IT FIRST.
+
+### Before ANY task:
+1. **Read** `.claude/pre_action_checklist.md` completely.
+2. **Read** `CLAUDE.md` completely.
+3. **Read** `docs/RULES.md` completely.
+4. **Read** `docs/PLAN.md` completely.
+5. **Check** `git status --short` and `git diff HEAD`.
+
+### Before ANY file edit:
+- [ ] Phase 0: User explicitly requested THIS file change?
+- [ ] Phase 1: Read actual file content completely (not diff, not skim)?
+- [ ] Phase 2: Written plan with file:line references + user confirmed?
+- [ ] Phase 3: Only files in scope?
+- [ ] Phase 4: Tests/verification plan ready?
+
+**If any [ ] = NO → DO NOT CALL edit tool. STOP and ask user.**
+
+### After ALL edits:
+- [ ] All test suites PASS (`smoke_check`, `assets_check`, `view_check`, `route_check`, `layout_check`, `bootstrap_probe`)
+- [ ] `git diff` shows only intended changes
+- [ ] `docs/CHANGELOG.md` updated under `[Unreleased]`
+- [ ] `docs/PLAN.md` updated if phase/status changed
+- [ ] `.claude/learnings.json` updated if new lesson
+
+### Emergency Stop (STOP IMMEDIATELY and ask user):
+- Any test fails unexpectedly
+- Git shows unexpected changes
+- Breaking change discovered mid-task
+- Constant/function not found at runtime
+- Uncertainty > 10% on any decision
+- User said "stop" or "wait"
+
+**This rule is NON-NEGOTIABLE. Violation = task failure.**
+
 ### `>audit`
 
 Perform a deep repository audit and document findings. PHPCS, PHPStan, PHPUnit, and other tools are **supporting evidence only** — a green tool run is never the audit itself, and tool output must never substitute for reading the code. Do not silently fix or remove code during the audit.

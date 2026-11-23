@@ -90,7 +90,7 @@ final class Boot
     {
         $stems       = [];
 
-        $helper_config = interlace (configfapp, fl ('HelperConfig'));
+        $helper_config = interlace (configf, fl ('HelperConfig'));
         if (is_readable ($helper_config)) {$stems = (array) require $helper_config;}
 
         foreach ($stems as $stem)
@@ -98,6 +98,11 @@ final class Boot
             $file = interlace (helperf, fl ("{$stem}Helper"));
             if (!is_readable ($file)) {throw new Exception ('helper', 500);}
             require_once $file;
+            
+            // If there will be helper in apps
+            // $fileapp = interlace (helperfapp, fl ("{$stem}Helper"));
+            // if (!is_readable ($fileapp)) {throw new Exception ('helperapp', 500);}
+            // require_once $fileapp;
         }
     }
 }

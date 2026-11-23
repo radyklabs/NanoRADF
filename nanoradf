@@ -23,6 +23,7 @@ if (!isset ($application_folder)
     exit ("<h1>404 Not Found</h1><p>The requested page (or file) could not be found.</p>");
 }
 
+define ('publicpath', realpath (getcwd()).DIRECTORY_SEPARATOR);
 define ('basepath', realpath (__DIR__).DIRECTORY_SEPARATOR);
 
 $starter_key = call_user_func ('implode', '.', [basepath, 'starter']);
@@ -33,6 +34,7 @@ try
 {
     if (isset ($error)) {throw new Exception ($error, 500);}
     unset ($error);
+
     call_user_func ([$kernel, 'initiate']);
 
     // Dispatch on web SAPIs; CLI stays a plain loader so tests/smoke_check.php
@@ -52,7 +54,7 @@ catch (Throwable $th)
     else
     {
         header ('Content-Type: text/html; charset=utf-8', true, 500);
-        echo "<link rel=\"stylesheet\" href=\"/themes/default/css/error.css\"/>";
+        if (realpath (publicpath.'error.css')) {echo "<link href=\"/error.css\" rel=\"stylesheet\" />";}
         exit ("<notice><h1>500 Internal System Error</h1><p>An unexpected error occurred.</p></notice>");
     }
 }

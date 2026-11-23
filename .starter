@@ -24,7 +24,7 @@ define ('appversion', '0.0.1');
 
 define ('sep', DIRECTORY_SEPARATOR);
 
-define ('publicpath', realpath (basepath.'public').sep);
+// define ('publicpath', realpath (basepath.'public').sep);
 
 /**
  * Load `.env` into the process environment.
@@ -154,12 +154,12 @@ function blackwall (Throwable $th)
         $message = [
             'starter'   => 'The starter file could not be found. Please reinstall the framework.',
             'phpmin'    => 'This version of PHP is not supported. Please upgrade to a newer release.',
-            'common'    => 'The helper library could not be loaded. Please check the installation.',
+            'common'    => 'The common library could not be loaded. Please check the installation.',
             'config'    => 'The configuration file could not be found. Please check the installation.',
             'structure' => 'The framework directories could not be registered. Please check the installation.',
             'boot'      => 'The kernel could not be started. Please check the installation.',
             'kernel'    => 'The application could not be started. Please try again later.',
-'helper'    => 'The registered helper file could not be loaded. Please check the installation.',
+            'helper'    => 'The registered helper file could not be loaded. Please check the installation.',
         ][$th->getMessage ()];
     }
     else
@@ -192,11 +192,8 @@ function blackwall (Throwable $th)
     else {error_log ("[{$status}] {$message}");}
 
     header ('Content-Type: text/html; charset=utf-8', true, $status);
-    $errorcsspath = 'themes/default/css/error.css';
-    if (is_readable (publicpath.$errorcsspath))
-    {
-        echo "<link rel=\"stylesheet\" href=\"/themes/default/css/error.css\"/>";
-    }
+    
+    if (realpath (publicpath.'error.css')) {echo "<link rel=\"stylesheet\" href=\"/error.css\"/>";}
     exit ("<notice><h1>{$status} {$heading}</h1><p>{$message}</p></notice>{$trace_section}");
 }
 

@@ -31,7 +31,12 @@ final class AssetsService
     public static function config (): array
     {
         /** @var array<string, mixed> $config */
-        $config = require interlace (appf, 'Config', 'AssetsConfig.php');
+        // $config = require interlace (configf, fl ('AssetsConfig'));
+        // if (is_readable (interlace (configfapp, fl ('AssetsConfig'))))
+        // {
+            // $configapp = require interlace (configfapp, fl ('AssetsConfig'));
+        // }
+        $config = gconfig ('assets');
 
         return $config;
     }

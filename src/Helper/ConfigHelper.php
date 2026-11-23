@@ -15,7 +15,7 @@ if (!defined ('basepath'))
     exit ("<h1>404 Not Found</h1><p>The requested page could not be found.</p>");
 }
 
-function gconf (string $config): array
+function gconfig (string $config): array
 {
     $resolve = ucfirst (strtolower ($config));
 

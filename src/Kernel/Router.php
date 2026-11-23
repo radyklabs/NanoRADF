@@ -128,7 +128,7 @@ final class Router
     {
         if (self::$groups !== null) {return self::$groups;}
 
-        $file = interlace (appf, 'Config', 'RoutesConfig.php');
+        $file = interlace (configfapp, fl ('RoutesConfig'));
         $raw  = is_readable ($file) ? require $file : [];
 
         if (!is_array ($raw))

@@ -25,7 +25,7 @@ final class WelcomeController extends PublicController
             'mode'     => (string) genv ('app.mode', 'full'),
             'features' => ['dot-notation names', '@include partials', 'auto-escaping'],
             'loud'     => true,
-            'unsafe'   => '<script>alert(1)</script>',
+            'unsafe'   => '<script>alert(\'parsing successful\')</script>',
         ]);
     }
 }

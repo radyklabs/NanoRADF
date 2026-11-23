@@ -5,7 +5,7 @@ namespace System\Services;
 /**
  * AssetsService — enqueue, URL masking, and asset serving.
  *
- * Mask patterns live in `apps/Config/Assets.php` (`mask_urls`): a URL pattern
+ * Mask patterns live in `apps/Config/AssetsConfig.php` (`mask_urls`): a URL pattern
  * maps to a disk pattern. `{*}` matches any number of segments;
  * `{face_theme_active_name}` / `{bone_theme_active_name}` expand to the active
  * theme. Only paths matching a pattern are reachable — everything else is

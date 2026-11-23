@@ -120,7 +120,7 @@ Two layers, strictly separated:
 
 - `src/` — framework core: kernel (`.config` → `.structures` → `Boot`), base controllers, services, helper, contracts, view taxonomy, themes. Never contains application logic.
 - `apps/` — application layer, always the **main MVC**:
-  - `apps/Config/Routes.php` — central route table (URL → handler), single source of truth.
+  - `apps/Config/RoutesConfig.php` — central route table (URL → handler), single source of truth.
   - `apps/Services/` — app-wide shared services.
   - `apps/{Controllers,Model,Views}/` — default application MVC (flat; decision D9).
 - `modules/` — **optional HMVC**, project root, sibling of `apps/`. Root autoload (`Modules\...`) is always active; the per-module folder/namespace templates register only when `app.modules=true`. Set via `$modules_folder` in `public/index.php`. `modules/<Name>/` folder contract:
@@ -179,7 +179,7 @@ Module views live in `modules/<Name>/Views/` as PHP view classes (e.g. `WelcomeV
 │   ├── Views/            # Blade-shaped taxonomy (7 role folders)      [scaffold]
 │   └── Themes/admin/     # admin theme assets                          [scaffold]
 ├── apps/                # application layer — main MVC (namespace App\…)
-│   ├── Config/Routes.php # route table                                 [scaffold]
+│   ├── Config/RoutesConfig.php # route table                                 [scaffold]
 │   ├── Services/         # shared app services                         [empty]
 │   ├── Controllers/       # app controllers (flat)                     [empty]
 │   ├── Model/            # app models (flat)                           [empty]

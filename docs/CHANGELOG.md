@@ -8,6 +8,10 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning: [S
 ### Added
 - urlprettify() function in .supports: builds full URLs from paths with auto-detected or configured base URL, normalizes slashes with urlify(), and handles server/protocol detection
 
+### Docs
+- Humanized docblocks across framework bootstrap layer (public/index.php, nanoradf, .starter, .config, .structures, .supports): descriptions rewritten for readability while preserving technical accuracy; added @package/@author/@copyright standard headers consistent with existing nanoradf gateway convention.
+- CLAUDE.md Phase 1 checklist enhanced: file reads must always fetch current disk state — never assume content from memory due to potential concurrent edits by user or other agents.
+
 ### Added
 - Config file rename for naming consistency: `apps/Config/Assets.php` → `AppsConfig/AssetsConfig.php`, `apps/Config/Routes.php` → `apps/Config/RoutesConfig.php`, `apps/Config/Helper.php` → `apps/Config/HelperConfig.php` (aligns with `gconf()` stem-to-config resolution pattern used by `ConfigHelper.php`).
 - Phase 2b — Security hardening: Security headers (CSP, HSTS, X-Frame-Options, X-Content-Type-Options, Referrer-Policy) applied in `Dispatcher::emit()` via new `securityHeaders()` method; CSP differentiated for JSON vs HTML responses; HSTS only on HTTPS.

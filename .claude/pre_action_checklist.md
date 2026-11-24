@@ -28,6 +28,7 @@
 
 ### 1.1 File Reading (MANDATORY)
 - [ ] **Read every target file** completely — not skim, not diff, FULL READ.
+- [ ] **Never assume file content from memory or prior reads** — concurrent editors may have changed the file; always read fresh from disk before proposing any change.
 - [ ] **Read all dependent files** — trace dependencies upstream and downstream.
 - [ ] **Read config files** — understand current state before changing.
 - [ ] **Read test files** — understand expected behavior.

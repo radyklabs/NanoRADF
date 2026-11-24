@@ -1,5 +1,5 @@
 {
-  "last_updated": "2026-11-23T14:00:00+07:00",
+  "last_updated": "2026-11-24T13:05:00+07:00",
   "learnings": [
     {
       "id": "lesson-001",
@@ -112,70 +112,78 @@
       "description": "Setiap kesalahan yang dibuat harus dicatat di .claude/learnings.json agar tidak terulang. Ini bukan opsional - ini WAJIB. Kesalahan yang sama tidak boleh terjadi dua kali. Jika terjadi, berarti learning system gagal.",
       "evidence": "User feedback: 'SIMPA KESALAHANMU SEBAGAI PENGINGAT! JANGAN ULANGI KESALAHAN YANG SAMA!'",
       "created_at": "2026-11-23T15:35:00+07:00"
-        },
-        {
-          "id": "lesson-016",
-          "category": "security",
-          "title": "Security Hardening Wajib di Early Phase",
-          "description": "CSRF protection, rate limiting, dan security headers (CSP, HSTS, X-Frame-Options) HARUS diimplementasikan di early phase (Phase 2b), bukan ditunda ke phase akhir. Security gaps di early phase berbahaya karena semua layer atas bergantung pada foundation yang aman.",
-          "evidence": "Review findings: CSRF missing, rate limiting missing, security headers missing — all P0 critical",
-          "created_at": "2026-11-23T17:00:00+07:00"
-        },
-        {
-          "id": "lesson-017",
-          "category": "code_quality",
-          "title": "Dead Code Cleanup di Early Phase",
-          "description": "Dead code (unused methods, empty helpers, orphan files) HARUS dibersihkan di early phase (Phase 2c), bukan ditunda. Dead code menambah cognitive load, memperlambat review, dan berpotensi jadi security hole.",
-          "evidence": "Review findings: AssetsService::candidate(), diskPath(), rewrite() unused; ThemeHelper empty; src/Config/Theme.php orphan",
-          "created_at": "2026-11-23T17:00:00+07:00"
-        },
-        {
-          "id": "lesson-018",
-          "category": "architecture",
-          "title": "Simplifikasi Over-Engineered Code Early",
-          "description": "Code yang over-engineered (AssetsService::url() terlalu kompleks) HARUS disederhanakan segera (Phase 4b), bukan dibiarkan. Over-complexity menambah bug surface, sulit di-maintain, dan memperlambat onboarding.",
-          "evidence": "Review findings: AssetsService::url() 60+ lines, legacy ds/ fast-path, double loop, complex servesSurface()",
-          "created_at": "2026-11-23T17:00:00+07:00"
-            },
-            {
-          "id": "lesson-019",
-          "category": "config",
-          "title": "array_replace_recursive Behavior dengan Empty Array",
-          "description": "array_replace_recursive($default, $override) dengan $override['key'] = [] akan REPLACE top-level key sepenuhnya, tapi nested keys (seperti mask_urls, id_registry) akan di-MERGE (empty array tidak menghapus nested values). Enqueue lists (top-level) di-replace, mask_urls (nested) di-merge.",
-          "evidence": "apps/Config/AssetsConfig.php override behavior verified with PHP test",
-          "created_at": "2026-11-23T21:30:00+07:00"
-            },
-            {
-          "id": "lesson-020",
-          "category": "config",
-          "title": "Theme Config Separation dari AssetsConfig",
-          "description": "Theme config (face/bone theme names) dipindah ke file terpisah ThemeConfig.php (src/Config + apps/Config) agar konsisten dengan gconf() pattern. AssetsService::theme() updated untuk baca dari gconfig('theme')['default']['public'|'private'] dengan backwards-compat alias (face/bone).",
-          "evidence": "src/Config/ThemeConfig.php, apps/Config/ThemeConfig.php, AssetsService::theme()",
-          "created_at": "2026-11-23T21:45:00+07:00"
-            },
-            {
-          "id": "lesson-021",
-          "category": "performance",
-          "title": "Segment Prefix Matching vs PCRE Regex untuk Asset Resolution",
-          "description": "AssetsService::url() dan resolve() diganti dari per-request PCRE regex (preg_match per pattern) ke segment prefix matching (str_starts_with + substr). Pre-compiled pattern map di-cache per surface. O(n) string ops jauh lebih efisien dari PCRE overhead. Legacy regex() dan matchPattern() dihapus.",
-          "evidence": "AssetsService.php patternMap(), allPatterns(), anchor() replacing regex()/matchPattern()",
-          "created_at": "2026-11-23T22:00:00+07:00"
-            },
-            {
-          "id": "lesson-022",
-          "category": "security",
-          "title": "Security Headers di Dispatcher::emit()",
-          "description": "Security headers (CSP, HSTS, X-Frame-Options, X-Content-Type-Options, Referrer-Policy) diterapkan di Dispatcher::emit() via securityHeaders() method. CSP differentiated untuk JSON vs HTML responses. HSTS hanya di HTTPS. Ini memastikan SEMUA response (termasuk error pages) mendapat security headers.",
-          "evidence": "src/Kernel/Dispatcher.php securityHeaders() method",
-          "created_at": "2026-11-23T22:30:00+07:00"
-            },
-            {
-          "id": "lesson-023",
-          "category": "workflow",
-          "title": "Pre-Action Checklist Wajib Output Sebelum Edit",
-          "description": "Setiap kali akan memanggil tool edit, HARUS output PRE-ACTION CHECKLIST di response dengan semua phase (0-4) dan checkbox. Ini memastikan: user explicitly requested, file dibaca dulu, plan tertulis + dikonfirmasi, hanya file in scope, test plan ready. Jika ada [ ] = NO → STOP dan tanya user.",
-          "evidence": "CLAUDE.md MANDATORY PRE-ACTION CHECKLIST section added",
-          "created_at": "2026-11-23T21:50:00+07:00"
+    },
+    {
+      "id": "lesson-016",
+      "category": "security",
+      "title": "Security Hardening Wajib di Early Phase",
+      "description": "CSRF protection, rate limiting, dan security headers (CSP, HSTS, X-Frame-Options) HARUS diimplementasikan di early phase (Phase 2b), bukan ditunda ke phase akhir. Security gaps di early phase berbahaya karena semua layer atas bergantung pada foundation yang aman.",
+      "evidence": "Review findings: CSRF missing, rate limiting missing, security headers missing — all P0 critical",
+      "created_at": "2026-11-23T17:00:00+07:00"
+    },
+    {
+      "id": "lesson-017",
+      "category": "code_quality",
+      "title": "Dead Code Cleanup di Early Phase",
+      "description": "Dead code (unused methods, empty helpers, orphan files) HARUS dibersihkan di early phase (Phase 2c), bukan ditunda. Dead code menambah cognitive load, memperlambat review, dan berpotensi jadi security hole.",
+      "evidence": "Review findings: AssetsService::candidate(), diskPath(), rewrite() unused; ThemeHelper empty; src/Config/Theme.php orphan",
+      "created_at": "2026-11-23T17:00:00+07:00"
+    },
+    {
+      "id": "lesson-018",
+      "category": "architecture",
+      "title": "Simplifikasi Over-Engineered Code Early",
+      "description": "Code yang over-engineered (AssetsService::url() terlalu kompleks) HARUS disederhanakan segera (Phase 4b), bukan dibiarkan. Over-complexity menambah bug surface, sulit di-maintain, dan memperlambat onboarding.",
+      "evidence": "Review findings: AssetsService::url() 60+ lines, legacy ds/ fast-path, double loop, complex servesSurface()",
+      "created_at": "2026-11-23T17:00:00+07:00"
+    },
+    {
+      "id": "lesson-019",
+      "category": "config",
+      "title": "array_replace_recursive Behavior dengan Empty Array",
+      "description": "array_replace_recursive($default, $override) dengan $override['key'] = [] akan REPLACE top-level key sepenuhnya, tapi nested keys (seperti mask_urls, id_registry) akan di-MERGE (empty array tidak menghapus nested values). Enqueue lists (top-level) di-replace, mask_urls (nested) di-merge.",
+      "evidence": "apps/Config/AssetsConfig.php override behavior verified with PHP test",
+      "created_at": "2026-11-23T21:30:00+07:00"
+    },
+    {
+      "id": "lesson-020",
+      "category": "config",
+      "title": "Theme Config Separation dari AssetsConfig",
+      "description": "Theme config (face/bone theme names) dipindah ke file terpisah ThemeConfig.php (src/Config + apps/Config) agar konsisten dengan gconf() pattern. AssetsService::theme() updated untuk baca dari gconfig('theme')['default']['public'|'private'] dengan backwards-compat alias (face/bone).",
+      "evidence": "src/Config/ThemeConfig.php, apps/Config/ThemeConfig.php, AssetsService::theme()",
+      "created_at": "2026-11-23T21:45:00+07:00"
+    },
+    {
+      "id": "lesson-021",
+      "category": "performance",
+      "title": "Segment Prefix Matching vs PCRE Regex untuk Asset Resolution",
+      "description": "AssetsService::url() dan resolve() diganti dari per-request PCRE regex (preg_match per pattern) ke segment prefix matching (str_starts_with + substr). Pre-compiled pattern map di-cache per surface. O(n) string ops jauh lebih efisien dari PCRE overhead. Legacy regex() dan matchPattern() dihapus.",
+      "evidence": "AssetsService.php patternMap(), allPatterns(), anchor() replacing regex()/matchPattern()",
+      "created_at": "2026-11-23T22:00:00+07:00"
+    },
+    {
+      "id": "lesson-022",
+      "category": "security",
+      "title": "Security Headers di Dispatcher::emit()",
+      "description": "Security headers (CSP, HSTS, X-Frame-Options, X-Content-Type-Options, Referrer-Policy) diterapkan di Dispatcher::emit() via securityHeaders() method. CSP differentiated untuk JSON vs HTML responses. HSTS hanya di HTTPS. Ini memastikan SEMUA response (termasuk error pages) mendapat security headers.",
+      "evidence": "src/Kernel/Dispatcher.php securityHeaders() method",
+      "created_at": "2026-11-23T22:30:00+07:00"
+    },
+    {
+      "id": "lesson-023",
+      "category": "workflow",
+      "title": "Pre-Action Checklist Wajib Output Sebelum Edit",
+      "description": "Setiap kali akan memanggil tool edit, HARUS output PRE-ACTION CHECKLIST di response dengan semua phase (0-4) dan checkbox. Ini memastikan: user explicitly requested, file dibaca dulu, plan tertulis + dikonfirmasi, hanya file in scope, test plan ready. Jika ada [ ] = NO → STOP dan tanya user.",
+      "evidence": "CLAUDE.md MANDATORY PRE-ACTION CHECKLIST section added",
+      "created_at": "2026-11-23T21:50:00+07:00"
+    },
+    {
+      "id": "lesson-024",
+      "evidence": "CLAUDE.md:115, session 2026-11-24 concurrent-edit incident",
+      "created_at": "2026-11-24T13:05:00+07:00",
+      "category": "workflow",
+      "description": "When editing any file, always read its complete current content from disk immediately before proposing changes. Never rely on memory of prior reads or cached content. The user may be actively editing the same files in their IDE — stale assumptions lead to lost work and conflicts. This applies even to files just reviewed moments ago.",
+      "title": "Always Read Current File State Before Editing"
     }
   ]
 }

@@ -18,7 +18,7 @@ namespace System;
 
 if (!defined ('basepath'))
 {
-	$errorcss = '/error.css';
+	$errorcss ??= '/error.css';
 	http_response_code (404);
 	header ('Content-Type: text/html; charset=utf-8');
 	if (realpath (getcwd ().$errorcss)) {echo "<link href=\"{$errorcss}\" rel=\"stylesheet\" />";}
@@ -378,4 +378,29 @@ function url_exists (string $url, int $timeout = 2): bool
 	if ($headers === false) {return false;}
 	$status = $headers[0] ?? '';
 	return preg_match ('/^HTTP\/\d\.\d\s+(2\d\d|3\d\d)/', $status) === 1;
+}
+
+function error_css ()
+{
+	$uri = parse_url(gserver('request.uri'), PHP_URL_PATH);
+
+	// $path = '/error/';
+	if (strpos($uri, '/exception/') === 0) {
+		$file = pathinfo($uri, PATHINFO_BASENAME);
+		// $file = substr ($uri, strlen ($path));
+		// $file = 'core.css';
+		$abspath = interlace (__DIR__, '/src/Views/Styles/Errors', $file);
+		$secpath = interlace (getcwd(), 'error.css');
+		$size = filesize($abspath) + (is_readable ($secpath) ? filesize ($secpath)+1:0);
+		if (is_readable ($abspath))
+		{
+			header('Content-Type: text/css; charset=utf-8');
+			header('Content-Length: ' . $size);
+			readfile($abspath);
+		}
+		if (is_readable ($secpath)) {echo "\n"; readfile($secpath);}
+		exit;
+	}
+
+	return false; // Biarkan file lain dilayani secara normal
 }

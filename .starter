@@ -202,6 +202,8 @@ function blackwall (Throwable $th)
         $trace_section .= '</ol></trace>';
     }
 
+    $footer = '<nanoradf_footer>NanoRADF &copy; 1986 - 2026</nanoradf_footer>';
+
     $log_file = 'system.log';
     $log_dir = realpath (basepath . 'storage/logs');
     if (!is_dir ($log_dir)) {@mkdir ($log_dir, 0775, true);}
@@ -211,11 +213,11 @@ function blackwall (Throwable $th)
         error_log ("[{$status}] {$message}", 3, "{$log_dir}/{$log_file}");
     }
     else {error_log ("[{$status}] {$message}");}
-
+    error_css();
     header ('Content-Type: text/html; charset=utf-8', true, $status);
-    
-    if (realpath (publicpath.'error.css')) {echo "<link rel=\"stylesheet\" href=\"/error.css\"/>";}
-    exit ("<notice><h1>{$status} {$heading}</h1><p>{$message}</p></notice>{$trace_section}");
+    echo "<link rel=\"stylesheet\" href=\"/exception/core.css\"/>";
+    // if (realpath (publicpath.'error.css')) {echo "<link rel=\"stylesheet\" href=\"/error.css\"/>";}
+    exit ("<notice><h1>{$status} {$heading}</h1><p>{$message}</p></notice>{$trace_section}{$footer}");
 }
 
 // Helper library (interlace, genv, …); failure → $error='common'.

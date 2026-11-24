@@ -1,26 +1,25 @@
 <?php declare (strict_types=1);
 
+/**
+ * Router — matches HTTP requests against the central route table.
+ * --
+ * Resolves incoming method + path combinations to controller actions.
+ * Supports flat routes (`GET /hello/{name}`) and prefix groups
+ * (`/admin` → `['GET /dashboard' => ...]`). Parameter placeholders use
+ * `{name}` or `{name:regex}`; exact routes always win over patterns.
+ * Unhandled paths return 404, mismatched verbs return 405 with an Allow header.
+ *
+ * @package     NanoRADF
+ * @author      RADLabs Development Team
+ * @copyright   Radlabs Studio (c) 1986 - 2026
+ * @since       0.0.1
+ */
+
 namespace System\Kernel;
 
-/**
- * Router — matches a request against the central route table and resolves it
- * to a controller action.
- *
- * Table shape lives in `apps/Config/RoutesConfig.php`:
- *   - flat: `'GET /hello/{name}' => Controller::class . '::hello'`
- *   - prefix group (the string key IS the prefix; inner keys must be full
- *     `METHOD /path` entries — a bare `/stats` is rejected):
- *       '/admin' => [
- *           'GET /dashboard'   => Ctrl::class . '::index',
- *           'GET /stats/{id}'  => Ctrl::class . '::show',
- *       ]
- *
- * `{name}` is required (`[^/]+`); `{name:regex}` narrows a segment. Exact
- * routes win over parameterised ones within a method. A missing class or
- * action on a matched target is a wiring error, not a miss.
- *
- * @since 0.0.1
- */
+use function System\interlace;
+use function System\fl;
+
 final class Router
 {
     private function __construct () {}
@@ -34,19 +33,20 @@ final class Router
     private static ?array $groups = null;
 
     /**
-     * Resolve a request. `['status', 'body']` for the first match; an unrouted
-     * path yields 404 (or throws when $throw is true), and a routed path under
-     * another verb yields 405 (or throws when $throw is true) with the real
-     * `Allow:` set from the table.
+     * Resolve the current HTTP request against the route table.
      *
-     * When $throw is true, unhandled 404/405 are raised as RuntimeException so
-     * the caller (Dispatcher) can render a themed error page.
+     * Returns an array with `status`, `body`, and optional `headers`. On 404/405,
+     * throws a RuntimeException so the Dispatcher can render themed error pages.
+     * HEAD requests are served as GET candidates with body stripped afterward.
      *
-     * @since  0.0.1
-     * @param  string $method  HTTP method (upper-cased here).
-     * @param  string $path    Request path without query string.
-     * @param  bool   $throw   Throw on 404/405 instead of returning?
-     * @return array{status:int, body:string}
+     * @package   NanoRADF
+     * @author    RADLabs Development Team
+     * @copyright Radlabs Studio (c) 1986 - 2026
+     * @since     0.0.1
+     * @param     string $method HTTP method (upper-cased).
+     * @param     string $path   Request path without query string.
+     * @param     bool   $throw  Throw on 404/405 instead of returning?
+     * @return    array{status:int, body:string, headers:list<string>}
      */
     public static function dispatch (string $method, string $path, bool $throw = false): array
     {
@@ -83,12 +83,18 @@ final class Router
     }
 
     /**
-     * Match only — null when no route matches.
+     * Match only — returns null when no route matches the given method + path.
      *
-     * @since  0.0.1
-     * @param  string $method HTTP method.
-     * @param  string $path   Request path.
-     * @return array{status:int, body:string}|null
+     * Exact routes are checked first; parameterised routes follow. Parameters
+     * are decoded before being passed to the controller action.
+     *
+     * @package   NanoRADF
+     * @author    RADLabs Development Team
+     * @copyright Radlabs Studio (c) 1986 - 2026
+     * @since     0.0.1
+     * @param     string $method HTTP method.
+     * @param     string $path   Request path.
+     * @return    array{status:int, body:string, headers:list<string>}|null
      */
     public static function match (string $method, string $path): ?array
     {
@@ -119,10 +125,17 @@ final class Router
     }
 
     /**
-     * Load and compile the route table.
+     * Load, compile, and cache the route table from apps/Config/RoutesConfig.php.
      *
-     * @since  0.0.1
-     * @return array<string, list<array{0:string, 1:string, 2:list<string>}>>
+     * Parses both flat entries (`'GET /hello/{name}' => Ctrl::method`) and prefix
+     * groups (`'/admin' => ['GET /dashboard' => ...]`). Malformed entries throw at
+     * boot time, not on the first hit. Results are cached in `$groups` per process.
+     *
+     * @package   NanoRADF
+     * @author    RADLabs Development Team
+     * @copyright Radlabs Studio (c) 1986 - 2026
+     * @since     0.0.1
+     * @return    array<string, list<array{0:string, 1:string, 2:list<string>}>>
      */
     public static function table (): array
     {
@@ -193,10 +206,16 @@ final class Router
     }
 
     /**
-     * Re-read the table (explicit rebuild helper).
+     * Rebuild the compiled route table by clearing the cache.
      *
-     * @since  0.0.1
-     * @return void
+     * Use after modifying RoutesConfig.php during development. Does not reload
+     * the config file — only resets the in-memory compiled form.
+     *
+     * @package   NanoRADF
+     * @author    RADLabs Development Team
+     * @copyright Radlabs Studio (c) 1986 - 2026
+     * @since     0.0.1
+     * @return    void
      */
     public static function flush (): void
     {

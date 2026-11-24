@@ -4,30 +4,38 @@ namespace System\Kernel;
 
 use System\Services\AssetsService;
 use System\Services\DripService;
+use function System\gserver;
 
 /**
- * Request dispatcher — resolves the matched route and renders it.
+ * Request dispatcher — handles assets and routes for each HTTP request.
+ * --
+ * Entry point after routing. Intercepts masked asset requests before routing,
+ * dispatches matched routes through the Router, and emits responses with
+ * security headers. Unhandled 404/405 errors render themed error pages via
+ * Drip instead of raw text.
  *
- * Called by the gateway after boot. Keeps header/status/body emission out of
- * the gateway so routing stays a one-liner there.
- *
- * @since 0.0.1
+ * @package     NanoRADF
+ * @author      RADLabs Development Team
+ * @copyright   Radlabs Studio (c) 1986 - 2026
+ * @since       0.0.1
  */
 final class Dispatcher
 {
     private function __construct () {}
 
     /**
-     * Dispatch the current HTTP request and emit headers/body. No catch here: a
-     * runtime fault bubbles to the gateway's single catch-all so it renders with
-     * exactly one disclosure rule.
+     * Dispatch the current HTTP request: assets first, then routes.
      *
-     * When a route misses (404) or conflicts (405), the dispatcher catches the
-     * exception and delegates to errorPage() so the error response is rendered
-     * through the Drip engine with whatever styling is configured.
+     * Masked assets bypass routing entirely to prevent app routes from shadowing
+     * them. After serving an asset (or skipping), the router handles the rest.
+     * Runtime faults bubble to the gateway's single catch-all; handled 404/405
+     * errors are rendered as themed pages via Drip.
      *
-     * @since  0.0.1
-     * @return void
+     * @package   NanoRADF
+     * @author    RADLabs Development Team
+     * @copyright Radlabs Studio (c) 1986 - 2026
+     * @since     0.0.1
+     * @return    void
      */
     public static function handle (): void
     {
@@ -64,15 +72,17 @@ final class Dispatcher
     }
 
     /**
-     * Resolve a masked asset path to an absolute file path.
+     * Resolve a masked asset path to an absolute file path on disk.
      *
-     * Takes normalised request path, matches against mask_urls config patterns,
-     * and returns the absolute disk path when found. Returns null when no match
-     * or file does not exist.
+     * Matches the normalised request path against URL mask patterns from config.
+     * Returns the absolute file path when found; null when no match or file missing.
      *
-     * @since  0.0.1
-     * @param  string $path Normalised request path.
-     * @return string|null Absolute file path, or null when not a masked asset.
+     * @package   NanoRADF
+     * @author    RADLabs Development Team
+     * @copyright Radlabs Studio (c) 1986 - 2026
+     * @since     0.0.1
+     * @param     string $path Normalised request path.
+     * @return    string|null Absolute file path, or null when not a masked asset.
      */
     public static function dispatchAssets (string $path): ?string
     {
@@ -81,12 +91,19 @@ final class Dispatcher
     }
 
     /**
-     * Serve a resolved asset file with proper HTTP headers.
+     * Serve a resolved asset file with appropriate HTTP headers.
      *
-     * @since  0.0.1
-     * @param  string $file Absolute file path.
-     * @param  bool   $head HEAD request: send headers, no body.
-     * @return void
+     * Sets Content-Type from file extension (with Windows-compatible MIME lookup),
+     * Cache-Control, and ETag. For HEAD requests, sends headers only; otherwise
+     * streams the file content directly.
+     *
+     * @package   NanoRADF
+     * @author    RADLabs Development Team
+     * @copyright Radlabs Studio (c) 1986 - 2026
+     * @since     0.0.1
+     * @param     string $file Absolute file path.
+     * @param     bool   $head HEAD request: send headers, no body.
+     * @return    void
      */
     private static function serveAsset (string $file, bool $head): void
     {
@@ -117,16 +134,19 @@ final class Dispatcher
     }
 
     /**
-     * Render an error page from src/Views/Errors/ via Drip.
+     * Render a themed error page via Drip for the given status code.
      *
-     * Uses Drip directly (not Views::render) to avoid injecting face/bone
-     * asset tags that belong to normal pages. Falls back to static markup
-     * when the view file is missing.
+     * Uses Drip directly (not Views::render) to avoid injecting asset tags that
+     * belong to normal pages. Falls back to static markup when the view file is
+     * missing. Only shows exception details when debug mode is active.
      *
-     * @since  0.0.2
-     * @param  int               $code      HTTP status code.
-     * @param  Throwable|null    $exception Optional exception for debug detail.
-     * @return void
+     * @package   NanoRADF
+     * @author    RADLabs Development Team
+     * @copyright Radlabs Studio (c) 1986 - 2026
+     * @since     0.0.2
+     * @param     int              $code      HTTP status code.
+     * @param     Throwable|null   $exception Optional exception for debug detail.
+     * @return    void
      */
     public static function errorPage (int $code, ?Throwable $exception = null): void
     {
@@ -157,12 +177,15 @@ final class Dispatcher
     }
 
     /**
-         * Send the response to the client: security headers, extra headers, then
-         * status + media type, then the body.
+     * Send the response to the client: security headers, extra headers, then
+     * status + media type, then the body.
      *
-     * @since  0.0.1
-     * @param  array{status:int, body:string, headers?:list<string>} $response
-     * @return void
+     * @package   NanoRADF
+     * @author    RADLabs Development Team
+     * @copyright Radlabs Studio (c) 1986 - 2026
+     * @since     0.0.1
+     * @param     array{status:int, body:string, headers?:list<string>} $response
+     * @return    void
      */
     private static function emit (array $response): void
     {
@@ -186,14 +209,20 @@ final class Dispatcher
         echo (string) ($response['body'] ?? '');
     }
 
-        /**
-         * Apply security headers to the response.
-         *
-         * @since  0.0.1
-         * @param  bool $isJson Whether response is JSON (affects CSP).
-         * @return void
-         */
-        private static function securityHeaders (bool $isJson): void
+    /**
+     * Apply security headers to every response.
+     *
+     * X-Content-Type-Options, X-Frame-Options, Referrer-Policy always sent.
+     * HSTS conditional on HTTPS; CSP differentiated between JSON and HTML.
+     *
+     * @package   NanoRADF
+     * @author    RADLabs Development Team
+     * @copyright Radlabs Studio (c) 1986 - 2026
+     * @since     0.0.1
+     * @param     bool $isJson Whether response is JSON (affects CSP).
+     * @return    void
+     */
+    private static function securityHeaders (bool $isJson): void
         {
             // Prevent MIME type sniffing
             header ('X-Content-Type-Options: nosniff');

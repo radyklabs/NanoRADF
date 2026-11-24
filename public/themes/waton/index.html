@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{{$title ?? 'NanoRADF Admin'}}</title>
+{{!$bone_head ?? ''!}}
+</head>
+<body class="bone">
+    <header class="bone-header">
+        <a href="/" class="bone-header__brand">NanoRADF Admin</a>
+    </header>
+
+    <main class="bone-main">
+        @yield('content')
+    </main>
+
+    <footer class="bone-footer">
+        <p>&copy; {{ date('Y') }} NanoRADF Admin</p>
+    </footer>
+{{!$bone_foot ?? ''!}}
+</body>
+</html>

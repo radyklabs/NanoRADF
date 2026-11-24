@@ -7,6 +7,11 @@
  * the application styled as? The answer comes from the theme config, with the
  * application's choice winning over the framework default.
  *
+ * A resolver class can take over that decision — set `resolver` in the theme
+ * config to a class implementing `ThemeResolverInterface`. That is the seam
+ * where a database or user preference plugs in later; when no resolver is
+ * registered, or it declines to answer, config decides.
+ *
  * Both naming styles are accepted, so older code keeps working: `public`/`face`
  * both mean the visitor-facing side, `private`/`bone` both mean the backend.
  *
@@ -45,7 +50,24 @@ function theme (string $surface = 'public'): string
         default => 'public',
     };
 
-    $config = gconfig ('theme');
+    $config  = gconfig ('theme');
     $default = (array) ($config['default'] ?? []);
+
+    // A resolver, when registered, decides first — that is where a database
+    // or user preference plugs in. Returning null falls through to config.
+    $resolver = $config['resolver'] ?? null;
+
+    if (is_string ($resolver) && $resolver !== '' && class_exists ($resolver))
+    {
+        $instance = new $resolver ();
+
+        if ($instance instanceof \System\Contracts\Interfaces\ThemeResolverInterface)
+        {
+            $resolved = $instance->resolve ($surface);
+
+            if (is_string ($resolved) && $resolved !== '') {return $resolved;}
+        }
+    }
+
     return (string) ($default[$surface] ?? 'default');
 }

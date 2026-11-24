@@ -146,7 +146,7 @@ function blackwall (Throwable $th)
     $sentinel = [
         'starter', 'phpmin', 'common', 'config',
         'structure', 'boot', 'kernel', 'init', 'helper',
-        'helperapp'
+        'helperapp', 'theme'
         ];
     $known    = in_array ($th->getMessage (), $sentinel, true);
     $code     = $th->getCode () !== 0 ? $th->getCode () : 500;
@@ -171,26 +171,35 @@ function blackwall (Throwable $th)
             'init'      => 'The initiation could not be started. Please try again later.',
             'helper'    => 'The registered helper file could not be loaded. Please check the installation.',
             'helperapp' => 'Yours registered helper file could not be loaded. Please check the installation.',
+            'theme'     => 'Theme not found.',
         ][$th->getMessage ()];
     }
-    else
+
+    elseif (is_debug()) {$message = $th->getMessage ().' in '.$th->getFile ().':'.$th->getLine ();}
+
+    else {$message = 'An unexpected error occurred. Please contact the Administrator.';}
+
+    if (is_debug())
     {
-        if (is_debug())
+        $trace_section .= '<trace><ol reversed>';
+        $trace_list_format = '<li><num>#%d</num><err><file>%s</file><code>%s</code></err></li>';
+
+        $trace = explode ('#', $th->getTraceAsString());
+        array_shift ($trace);
+
+        $num = count($trace);
+
+        foreach ($trace as $tr)
         {
-            $trace_section .= '<trace><ul>';
-            $trace_list_format = '<li>%s</li>';
-
-            $trace = explode ('#', $th->getTraceAsString());
-            array_shift ($trace);
-
-            foreach ($trace as $tr) {$trace_section .= sprintf ($trace_list_format, $tr);}
-
-            $trace_section .= '</ul></trace>';
-
-            $message = $th->getMessage ().' in '.$th->getFile ().':'.$th->getLine ();
+            $t = explode (' ', $tr);
+            array_shift ($t);
+            $t[0] ??= '';
+            $t[1] ??= '';
+            // $tr = implode (' ', $t);
+            $trace_section .= sprintf ($trace_list_format, $num--, rtrim($t[0],':'), $t[1]);
         }
 
-        else {$message = 'An unexpected error occurred. Please contact the Administrator.';}
+        $trace_section .= '</ol></trace>';
     }
 
     $log_file = 'system.log';

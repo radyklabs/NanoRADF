@@ -3,10 +3,9 @@
 /**
  * The Gateway: NanoRADF
  * --
- * Bootstrap entry point — validates configuration, loads environment
- * settings, resolves helpers and kernel, then dispatches the request.
- * Every bootstrap failure funnels through a single safe error handler
- * that writes to `storage/logs/system.log`.
+ * Bootstrap entry point — validates configuration, loads environment settings, resolves helpers
+ * and kernel, then dispatches the request. Every bootstrap failure funnels through a single
+ * safe error handler that writes to `storage/logs/system.log`.
  *
  * @package     NanoRADF
  * @author      RADLabs Development Team

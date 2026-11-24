@@ -1,26 +1,27 @@
 <?php declare (strict_types=1);
-/**
- * Request dispatcher — handles assets and routes for each HTTP request.
- * --
- * Entry point after routing. Intercepts masked asset requests before routing,
- * dispatches matched routes through the Router, and emits responses with
- * security headers. Unhandled 404/405 errors render themed error pages via
- * Drip instead of raw text.
- *
- * @package     NanoRADF
- * @author      RADLabs Development Team
- * @copyright   Radlabs Studio (c) 1986 - 2026
- * @since       0.0.1
- */
-
+ 
+  /**
+  * Request dispatcher — handles assets and routes for each HTTP request.
+  * --
+  * Entry point after routing. Intercepts masked asset requests before routing,
+  * dispatches matched routes through the Router, and emits responses with
+  * security headers. Unhandled 404/405 errors render themed error pages via
+  * Drip instead of raw text.
+  *
+  * @package     NanoRADF
+  * @author      RADLabs Development Team
+  * @copyright   Radlabs Studio (c) 1986 - 2026
+  * @since       0.0.1
+  */
+ 
 namespace System\Kernel;
-
+ 
 use Throwable;
 use RuntimeException;
 use System\Services\AssetsService;
 use System\Services\DripService;
 use function System\gserver;
-
+ 
 if (!defined ('basepath'))
 {
     $errorcss = '/error.css';

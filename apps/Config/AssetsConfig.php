@@ -9,9 +9,6 @@
  * name instead of being appended to it. Leave a key out to keep the base
  * behaviour.
  *
- * - `id_registry`: short names for files, so a queue can ask for `style`
- *   instead of spelling out a path. The name becomes the `id` attribute of
- *   the rendered tag.
  * - `enqueue_*` / `bone_enqueue_*`: the names queued for the public frontend
  *   (face) and the backend (bone). Each name is resolved to a real URL through
  *   `mask_urls`; no filesystem path is written in the queue.

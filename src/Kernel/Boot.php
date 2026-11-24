@@ -129,7 +129,7 @@ final class Boot
         $stemsapp       = [];
 
         $helperapp_config = interlace (configfapp, fl ("{$helper_key}Config"));
-        if (is_readable ($helperapp_config)) {$stems = (array) require $helperapp_config;}
+        if (is_readable ($helperapp_config)) {$stemsapp = (array) require $helperapp_config;}
 
         foreach ($stemsapp as $stemapp)
         {

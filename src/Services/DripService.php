@@ -1,7 +1,5 @@
 <?php declare (strict_types=1);
 
-namespace System\Services;
-
 /**
  * Drip — the template engine behind every rendered page.
  * --
@@ -31,6 +29,8 @@ namespace System\Services;
  * @copyright   Radlabs Studio (c) 1986 - 2026
  * @since       0.0.1
  */
+
+namespace System\Services;
 
 if (!defined ('basepath'))
 {

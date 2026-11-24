@@ -1,9 +1,5 @@
 <?php declare (strict_types=1);
 
-namespace System\Services;
-
-use function System\interlace;
-
 /**
  * Where styles and scripts live, and how a URL finds its file on disk.
  * --
@@ -21,6 +17,10 @@ use function System\interlace;
  * @copyright   Radlabs Studio (c) 1986 - 2026
  * @since       0.0.1
  */
+
+namespace System\Services;
+
+use function System\interlace;
 
 if (!defined ('basepath'))
 {

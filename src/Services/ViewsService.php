@@ -1,9 +1,5 @@
 <?php declare (strict_types=1);
 
-namespace System\Services;
-
-use function System\interlace;
-
 /**
  * Turns a short view name into an `.html` file and renders it.
  * --
@@ -28,6 +24,10 @@ use function System\interlace;
  * @copyright   Radlabs Studio (c) 1986 - 2026
  * @since       0.0.1
  */
+
+namespace System\Services;
+
+use function System\interlace;
 
 if (!defined ('basepath'))
 {

@@ -10,6 +10,7 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning: [S
 
 ### Docs
 - Humanized docblocks across framework bootstrap layer (public/index.php, nanoradf, .starter, .config, .structures, .supports): descriptions rewritten for readability while preserving technical accuracy; added @package/@author/@copyright standard headers consistent with existing nanoradf gateway convention.
+- `src/Kernel/` docblocks refined: Boot, Router, Dispatcher, Controller class and method descriptions rewritten in plain language; standard headers (`@package NanoRADF`, `@author RADLabs Development Team`, `@copyright Radlabs Studio (c) 1986 - 2026`, `@since 0.0.1`) applied throughout; no logic changes.
 - CLAUDE.md Phase 1 checklist enhanced: file reads must always fetch current disk state — never assume content from memory due to potential concurrent edits by user or other agents.
 
 ### Added

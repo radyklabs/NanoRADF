@@ -78,34 +78,22 @@ final class Boot
 
         if (str_starts_with ($class, nssys))
         {
-            $system_file = interlace (systemf, substr ($class, strlen (nssys)) . '.php');
-            if (is_readable ($system_file))
-            {
-                require_once $system_file;
-            }
-
+            $system_file = interlace (systemf, fl (substr ($class, strlen (nssys))));
+            if (is_readable ($system_file)) {require_once $system_file;}
             return;
         }
 
         if (str_starts_with ($class, nsapp))
         {
-            $app_file = interlace (appf, substr ($class, strlen (nsapp)) . '.php');
-            if (is_readable ($app_file))
-            {
-                require_once $app_file;
-            }
-
+            $app_file = interlace (appf, fl (substr ($class, strlen (nsapp))));
+            if (is_readable ($app_file)) {require_once $app_file;}
             return;
         }
 
         if (str_starts_with ($class, nsmod))
         {
-            $app_file = interlace (modulesf, substr ($class, strlen (nsmod)) . '.php');
-            if (is_readable ($app_file))
-            {
-                require_once $app_file;
-            }
-
+            $app_file = interlace (modulesf, fl (substr ($class, strlen (nsmod))));
+            if (is_readable ($app_file)) {require_once $app_file;}
             return;
         }
     }

@@ -31,8 +31,6 @@ if (!defined ('basepath'))
 
 class ApiController extends BaseController
 {
-    protected string $surface = 'api';
-
     /**
      * Send a JSON answer, in the shape every API response uses.
      * --

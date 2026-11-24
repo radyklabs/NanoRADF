@@ -3,9 +3,10 @@
 /**
  * Controller — shared request lifecycle and response helpers for all surfaces.
  * --
- * Base class for every controller. Defines the surface type (`public` / `private` /
- * `api`), an authorization gate, and response builders. Controllers never echo
- * directly; they return arrays or strings consumed by the Dispatcher.
+ * Base class for every controller. Knows which surface it serves (`public`,
+ * `private`, or `api`) by looking at its own class hierarchy, provides an
+ * authorization gate, and builds responses. Controllers never echo directly;
+ * they return arrays or strings consumed by the Dispatcher.
  *
  * @package     NanoRADF
  * @author      RADLabs Development Team
@@ -15,6 +16,8 @@
 
 namespace System\Kernel;
 
+use System\Contracts\Interfaces\SurfaceAwareInterface;
+use System\Contracts\Traits\SurfaceResolverTrait;
 use System\Services\ViewsService;
 
 if (!defined ('basepath'))
@@ -26,14 +29,9 @@ if (!defined ('basepath'))
     exit ("<notice><h1>404 Not Found</h1><p>The requested page (or file) could not be found.</p></notice>");
 }
 
-class Controller
+class Controller implements SurfaceAwareInterface
 {
-    /**
-     * Surface key: 'public' | 'private' | 'api'. Drives `respond()` defaults.
-     *
-     * @var string
-     */
-    protected string $surface = 'public';
+    use SurfaceResolverTrait;
 
     /**
      * Guard applied before an action: true when the request may continue.
@@ -66,7 +64,7 @@ class Controller
      */
     protected function respond (mixed $body = '', int $status = 200, array $extra = []): array
     {
-        if ($this->surface === 'api')
+        if ($this->getSurface () === 'api')
         {
             $payload = json_encode ($extra['json'] ?? ['data' => $body], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
             return ['status' => $status, 'body' => (string) $payload, 'headers' => ['Content-Type: application/json; charset=utf-8']];
@@ -79,8 +77,8 @@ class Controller
      * Render a Drip view bound to the current controller's surface.
      *
      * Module controllers resolve plain names against their own `Views/` folder;
-     * app controllers resolve against `apps/Views/`. Layouts from `src/Views/Layouts/`
-     * are available to both.
+     * app controllers resolve against `apps/Views/`. The layout comes from the
+     * active theme for this controller's surface.
      *
      * @package   NanoRADF
      * @author    RADLabs Development Team
@@ -88,12 +86,18 @@ class Controller
      * @since     0.0.1
      * @param     string      $name   View name without extension (`file` or `folder.file`).
      * @param     array       $data   Variables for the template scope.
-     * @param     string|null $layout Layout name overriding any `@extends`.
+     * @param     string|null $layout Layout name overriding the theme layout.
      * @return    array{status:int, body:string, headers:list<string>}
      */
     protected function view (string $name, array $data = [], ?string $layout = null): array
     {
-        return $this->respond (ViewsService::render ($name, $data, $layout, ViewsService::context (static::class)));
+        return $this->respond (ViewsService::render (
+            $name,
+            $data,
+            $layout,
+            ViewsService::context (static::class),
+            $this->getSurface ()
+        ));
     }
 
     /**

@@ -409,14 +409,16 @@ final class Router
         // private/api controllers.
         if ($controller instanceof Controller && !$controller->authorize ())
         {
-                $body = $controller->surface === 'api'
+                $isApi = $controller->getSurface () === 'api';
+
+                $body = $isApi
                     ? json_encode (['ok' => false, 'error' => 'unauthenticated'], JSON_UNESCAPED_SLASHES)
                     : '<h1>403 Forbidden</h1><p>You are not allowed to access this page.</p>';
 
                 return [
-                    'status'  => $controller->surface === 'api' ? 401 : 403,
+                    'status'  => $isApi ? 401 : 403,
                     'body'    => $body,
-                    'headers' => $controller->surface === 'api' ? ['Content-Type: application/json; charset=utf-8'] : [],
+                    'headers' => $isApi ? ['Content-Type: application/json; charset=utf-8'] : [],
                 ];
         }
 

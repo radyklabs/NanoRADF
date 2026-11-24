@@ -14,6 +14,7 @@ require dirname (__DIR__).'/public/index.php';
 use System\Services\DripService;
 use System\Services\ViewsService;
 use function System\interlace;
+use function System\theme;
 
 $pass = 0;
 $fail = 0;
@@ -69,10 +70,10 @@ check ('@class builds the attribute', static fn (): bool => str_contains ($html,
 
 echo "\nLayout argument\n";
 
-$bare = ViewsService::render ('welcome.meta', ['label' => 'L', 'mode' => 'M']);
+$bare = ViewsService::fragment ('welcome.meta', ['label' => 'L', 'mode' => 'M']);
 check ('no layout renders the fragment only', static fn (): bool => !str_contains ($bare, '<!doctype html>'));
 
-$override = ViewsService::render ('welcome.index', ['title' => 'T', 'heading' => 'H', 'mode' => 'm', 'features' => [], 'loud' => false, 'unsafe' => 'x'], 'layouts.main');
+$override = ViewsService::render ('welcome.index', ['title' => 'T', 'heading' => 'H', 'mode' => 'm', 'features' => [], 'loud' => false, 'unsafe' => 'x'], 'index');
 check ('layout argument is accepted', static fn (): bool => str_contains ($override, '<!doctype html>'));
 
 echo "\nCompile guards\n";

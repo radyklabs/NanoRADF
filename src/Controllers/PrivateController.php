@@ -31,7 +31,4 @@ if (!defined ('basepath'))
 
 class PrivateController extends BaseController
 {
-    protected string $surface = 'private';
-
-    protected string $theme = 'default';
 }

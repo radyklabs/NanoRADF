@@ -148,9 +148,10 @@ final class Dispatcher
     /**
      * Render a themed error page via Drip for the given status code.
      *
-     * Uses Drip directly (not Views::render) to avoid injecting asset tags that
-     * belong to normal pages. Falls back to static markup when the view file is
-     * missing. Only shows exception details when debug mode is active.
+     * Renders the error view standalone: error pages are complete documents and
+     * never borrow a theme layout, because the theme itself may be the failure.
+     * Falls back to static markup when the view file is missing. Only shows
+     * exception details when debug mode is active.
      *
      * @package   NanoRADF
      * @author    RADLabs Development Team
@@ -170,10 +171,6 @@ final class Dispatcher
             header ('Content-Type: text/html; charset=utf-8');
             exit ("<h1>{$code} " . statc ($code) . "</h1><p>Error page not available.</p>");
         }
-
-        $layout = null;
-        $testLayout = interlace (basepath, 'apps', 'Views', 'layouts', 'main.html');
-        if (is_file ($testLayout)) {$layout = $testLayout;}
 
         $data = [
             'code'    => $code,

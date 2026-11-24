@@ -18,6 +18,8 @@
  * @since       0.0.1
  */
 
+namespace System;
+
 if (!defined ('basepath'))
 {
     $errorcss = '/error.css';
@@ -26,6 +28,7 @@ if (!defined ('basepath'))
     if (realpath (getcwd ().$errorcss)) {echo "<link href=\"{$errorcss}\" rel=\"stylesheet\" />";}
     exit ("<notice><h1>404 Not Found</h1><p>The requested page (or file) could not be found.</p></notice>");
 }
+
 /**
  * Name of the theme currently used by a surface.
  *

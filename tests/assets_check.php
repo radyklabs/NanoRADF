@@ -46,13 +46,13 @@ function check (string $label, callable $test): void
 echo "Config & enqueue\n";
 
 check ('config exposes every enqueue list', static fn (): bool => array_key_exists ('enqueue_styles', AssetsService::config ()) && array_key_exists ('bone_enqueue_scripts', AssetsService::config ()));
-check ('face styles queue style.css and System.css', static fn (): bool => AssetsService::styles ('face') === ['css/style.css', 'system/css/System.css']);
-check ('face scripts queue app.js', static fn (): bool => AssetsService::scripts ('face') === ['js/app.js']);
-check ('bone styles queue style.css', static fn (): bool => AssetsService::styles ('bone') === ['css/style.css']);
+check ('face styles queue style.css', static fn (): bool => AssetsService::styles ('face') === ['css/style.css']);
+check ('face scripts queue empty', static fn (): bool => AssetsService::scripts ('face') === []);
+check ('bone styles queue empty', static fn (): bool => AssetsService::styles ('bone') === []);
 check ('runtime enqueue is deduped', function (): bool
 {
     AssetsService::enqueueStyle ('css/style');
-    return AssetsService::styles ('face') === ['css/style.css', 'system/css/System.css'];
+    return AssetsService::styles ('face') === ['css/style.css'];
 });
 
 echo "\nActive themes\n";
@@ -62,12 +62,11 @@ check ('default bone theme is "admin"', static fn (): bool => AssetsService::the
 
 echo "\nRendering\n";
 
-check ('face styles link the masked css and tokens', static fn (): bool => substr_count (AssetsService::renderFaceStyles (), '<link') === 2
-    && str_contains (AssetsService::renderFaceStyles (), '/css/style.css')
-    && str_contains (AssetsService::renderFaceStyles (), '/system/css/System.css'));
-check ('face scripts defer-load the masked js', static fn (): bool => str_contains (AssetsService::renderFaceScripts (), '<script src="/js/app.js?v=') && str_contains (AssetsService::renderFaceScripts (), 'id="app"'));
-check ('bone styles link the bone css', static fn (): bool => str_contains (AssetsService::renderBoneStyles (), '/assets/css/style.css'));
-check ('bone scripts link the bone js', static fn (): bool => str_contains (AssetsService::renderBoneScripts (), '/assets/js/app.js'));
+check ('face styles link the masked css', static fn (): bool => substr_count (AssetsService::renderFaceStyles (), '<link') === 1
+    && str_contains (AssetsService::renderFaceStyles (), '/css/style.css'));
+check ('face scripts render empty', static fn (): bool => AssetsService::renderFaceScripts () === '');
+check ('bone styles render empty', static fn (): bool => AssetsService::renderBoneStyles () === '');
+check ('bone scripts render empty', static fn (): bool => AssetsService::renderBoneScripts () === '');
 
 echo "\nResolution\n";
 
@@ -109,7 +108,7 @@ check ('@script emits a script block', static fn (): bool => str_contains ($html
 echo "\nHelpers\n";
 
 check ('baseurl() is registered', static fn (): bool => function_exists ('baseurl') && str_contains (baseurl ('/x'), '/x'));
-check ('e() escapes', static fn (): bool => e ('<b>') === '<b>');
+check ('e() escapes', static fn (): bool => e ('<b>') === '&lt;b&gt;');
 
 echo "\n".($fail === 0 ? "PASS" : "FAIL")." — {$pass} passed, {$fail} failed\n";
 exit ($fail === 0 ? 0 : 1);

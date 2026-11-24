@@ -112,7 +112,7 @@ Release workflow (`>release`) prepares, merges, and tags in one invocation; neve
 
 ### Before ANY file edit:
 - [ ] Phase 0: User explicitly requested THIS file change?
-- [ ] Phase 1: Read actual file content completely (not diff, not skim)?
+- [ ] Phase 1: Read actual file content completely (not diff, not skim) — treat every file as actively edited by another party; always fetch the latest state directly from disk before proposing changes?
 - [ ] Phase 2: Written plan with file:line references + user confirmed?
 - [ ] Phase 3: Only files in scope?
 - [ ] Phase 4: Tests/verification plan ready?

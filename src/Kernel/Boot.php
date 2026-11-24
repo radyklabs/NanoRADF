@@ -3,9 +3,8 @@
 /**
  * Kernel bootstrap — PSR-4 autoloader and helper initializer.
  * --
- * The framework's bootstrapping anchor. Registers the single shared autoloader
- * that maps `System\` → src/, `App\` → apps/, and `Modules\<Name>\` →
- * modules/. Also loads application helpers from config before the autoloader
+ * The framework's bootstrapping anchor. Registers the single shared autoloader.
+ * Also loads application helpers from config before the autoloader
  * accepts any class. Safe to call repeatedly.
  *
  * @package     NanoRADF

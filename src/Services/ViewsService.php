@@ -1,7 +1,5 @@
 <?php declare (strict_types=1);
 
-namespace System\Services;
-
 /**
  * Views — resolves a dot-notation view name to an `.html` file and renders it.
  *
@@ -17,6 +15,11 @@ namespace System\Services;
  *
  * @since 0.0.1
  */
+
+namespace System\Services;
+
+use function System\interlace;
+
 final class ViewsService
 {
     /**

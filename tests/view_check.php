@@ -13,6 +13,7 @@ require dirname (__DIR__).'/public/index.php';
 
 use System\Services\DripService;
 use System\Services\ViewsService;
+use function System\interlace;
 
 $pass = 0;
 $fail = 0;

@@ -15,6 +15,8 @@ require dirname (__DIR__).'/public/index.php';
 use System\Kernel\Router;
 use System\Services\AssetsService;
 use System\Services\DripService;
+use function System\basepath;
+use function System\interlace;
 
 $pass = 0;
 $fail = 0;

@@ -3,6 +3,7 @@
 namespace App\Controllers;
 
 use System\Controllers\PublicController;
+use function System\genv;
 
 /**
  * Landing detector — demonstrates a routed SSR page.

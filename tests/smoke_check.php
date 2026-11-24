@@ -14,6 +14,8 @@ chdir (__DIR__ . '/../public');
 
 require __DIR__ . '/../public/index.php';
 
+use function System\interlace;
+
 echo "BOOT-LOADED\n";
 
 $consts = ['controllersf', 'servicesf', 'viewsf', 'nsctrl', 'nsserv', 'components', 'layouts', 'nsapp', 'nsmod', 'appf', 'modulesf'];

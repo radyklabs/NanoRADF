@@ -144,7 +144,7 @@ if (version_compare (PHP_VERSION, PHP_MIN_VERSION, "<")) {$error = 'phpmin';}
 function blackwall (Throwable $th)
 {
     $trace_section = '';
-    $sentinel = ['starter', 'phpmin', 'common', 'config', 'structure', 'boot', 'kernel', 'helper'];
+    $sentinel = ['starter', 'phpmin', 'common', 'config', 'structure', 'boot', 'kernel', 'init', 'helper', 'helperapp'];
     $known    = in_array ($th->getMessage (), $sentinel, true);
     $code     = $th->getCode () !== 0 ? $th->getCode () : 500;
     $status   = ($code >= 400 && $code <= 599) ? $code : 500;
@@ -165,7 +165,9 @@ function blackwall (Throwable $th)
             'structure' => 'The framework directories could not be registered. Please check the installation.',
             'boot'      => 'The kernel could not be started. Please check the installation.',
             'kernel'    => 'The application could not be started. Please try again later.',
+            'init'      => 'The initiation could not be started. Please try again later.',
             'helper'    => 'The registered helper file could not be loaded. Please check the installation.',
+            'helperapp' => 'Yours registered helper file could not be loaded. Please check the installation.',
         ][$th->getMessage ()];
     }
     else

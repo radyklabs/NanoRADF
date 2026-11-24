@@ -13,6 +13,7 @@ chdir (dirname (__DIR__) . '/public');
 require dirname (__DIR__) . '/public/index.php';
 
 use System\Kernel\Router;
+use function System\interlace;
 
 // Probe controller loaded through the autoloader; nothing in phase-3 can mask
 // router behaviour.

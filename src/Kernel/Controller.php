@@ -1,9 +1,5 @@
 <?php declare (strict_types=1);
 
-namespace System\Kernel;
-
-use System\Services\ViewsService;
-
 /**
  * Controller — shared request lifecycle and response helpers for all surfaces.
  * --
@@ -16,6 +12,20 @@ use System\Services\ViewsService;
  * @copyright   Radlabs Studio (c) 1986 - 2026
  * @since       0.0.1
  */
+
+namespace System\Kernel;
+
+use System\Services\ViewsService;
+
+if (!defined ('basepath'))
+{
+    $errorcss = '/error.css';
+    http_response_code (404);
+    header ('Content-Type: text/html; charset=utf-8');
+    if (realpath (getcwd ().$errorcss)) {echo "<link href=\"{$errorcss}\" rel=\"stylesheet\" />";}
+    exit ("<notice><h1>404 Not Found</h1><p>The requested page (or file) could not be found.</p></notice>");
+}
+
 class Controller
 {
     /**

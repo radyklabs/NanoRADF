@@ -44,7 +44,8 @@ try
     if (isset ($error)) {throw new Exception ($error, 500);}
     unset ($error, $starter_key);
 
-    call_user_func ([$kernel, 'initiate']);
+    call_user_func ([$kernel, $init]);
+    unset ($kernel, $init);
 
     // Dispatch on web SAPIs; CLI stays a plain loader so tests/smoke_check.php
     // loads without resolving routes.
@@ -55,7 +56,7 @@ try
 // plus the storage/logs/system.log entry.
 catch (Throwable $th)
 {
-    if (function_exists ('blackwall')) {blackwall ($th);} else
+    if (function_exists (__NAMESPACE__.'\blackwall')) {blackwall ($th);} else
     {
         $errorcss = 'error.css';
         header ('Content-Type: text/html; charset=utf-8', true, 500);

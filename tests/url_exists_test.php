@@ -2,6 +2,10 @@
 
 require __DIR__ . '/../public/index.php';
 
+use function System\url_exists;
+use function System\urlprettify;
+use function System\interlace;
+
 echo "Test url_exists function:" . PHP_EOL;
 
 // Test 1: Local server (if running)

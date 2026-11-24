@@ -1,11 +1,4 @@
 <?php declare (strict_types=1);
-
-namespace System\Kernel;
-
-use System\Services\AssetsService;
-use System\Services\DripService;
-use function System\gserver;
-
 /**
  * Request dispatcher — handles assets and routes for each HTTP request.
  * --
@@ -19,6 +12,24 @@ use function System\gserver;
  * @copyright   Radlabs Studio (c) 1986 - 2026
  * @since       0.0.1
  */
+
+namespace System\Kernel;
+
+use Throwable;
+use RuntimeException;
+use System\Services\AssetsService;
+use System\Services\DripService;
+use function System\gserver;
+
+if (!defined ('basepath'))
+{
+    $errorcss = '/error.css';
+    http_response_code (404);
+    header ('Content-Type: text/html; charset=utf-8');
+    if (realpath (getcwd ().$errorcss)) {echo "<link href=\"{$errorcss}\" rel=\"stylesheet\" />";}
+    exit ("<notice><h1>404 Not Found</h1><p>The requested page (or file) could not be found.</p></notice>");
+}
+
 final class Dispatcher
 {
     private function __construct () {}
@@ -58,7 +69,7 @@ final class Dispatcher
         {
             self::emit (Router::dispatch ($method, $path, $throw = true));
         }
-        catch (\RuntimeException $th)
+        catch (RuntimeException $th)
         {
             $message = (string) $th->getMessage ();
             if (!str_contains ($message, '→ 404') && !str_contains ($message, '→ 405'))
@@ -166,7 +177,7 @@ final class Dispatcher
         $data = [
             'code'    => $code,
             'title'   => statc ($code),
-            'message' => ($exception instanceof \Throwable && is_debug ())
+            'message' => ($exception instanceof Throwable && is_debug ())
                 ? htmlspecialchars ((string) $exception->getMessage (), ENT_QUOTES, 'UTF-8')
                 : null,
         ];

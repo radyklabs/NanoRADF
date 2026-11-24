@@ -1,7 +1,5 @@
 <?php declare (strict_types=1);
 
-namespace System\Services;
-
 /**
  * AssetsService — enqueue, URL masking, and asset serving.
  *
@@ -13,6 +11,11 @@ namespace System\Services;
  *
  * @since 0.0.1
  */
+
+namespace System\Services;
+
+use function System\interlace;
+
 final class AssetsService
 {
     /**

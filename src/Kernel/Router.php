@@ -17,8 +17,20 @@
 
 namespace System\Kernel;
 
+use RuntimeException;
+use InvalidArgumentException;
 use function System\interlace;
 use function System\fl;
+use function System\statc;
+
+if (!defined ('basepath'))
+{
+    $errorcss = '/error.css';
+    http_response_code (404);
+    header ('Content-Type: text/html; charset=utf-8');
+    if (realpath (getcwd ().$errorcss)) {echo "<link href=\"{$errorcss}\" rel=\"stylesheet\" />";}
+    exit ("<notice><h1>404 Not Found</h1><p>The requested page (or file) could not be found.</p></notice>");
+}
 
 final class Router
 {
@@ -74,11 +86,11 @@ final class Router
         if ($allowed !== [])
         {
             if (!headers_sent ()) {header ('Allow: '.implode (', ', $allowed));}
-            if ($throw) {throw new \RuntimeException ("{$method} {$path} → 405");}
+            if ($throw) {throw new RuntimeException ("{$method} {$path} → 405");}
             return ['status' => 405, 'body' => '<h1>405 '.statc (405).'</h1><p>The request method is not allowed for this route.</p>'];
         }
 
-        if ($throw) {throw new \RuntimeException ("{$method} {$path} → 404");}
+        if ($throw) {throw new RuntimeException ("{$method} {$path} → 404");}
         return ['status' => 404, 'body' => '<h1>404 '.statc (404).'</h1><p>The requested page could not be found.</p>'];
     }
 
@@ -194,12 +206,12 @@ final class Router
 
         if (!in_array (strtoupper (trim ($verb)), ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS'], true))
         {
-            throw new \InvalidArgumentException ("Route key '{$key}' must start with an HTTP verb (e.g. 'GET /').");
+            throw new InvalidArgumentException ("Route key '{$key}' must start with an HTTP verb (e.g. 'GET /').");
         }
 
         if (trim ($path) === '' || trim ($path)[0] !== '/')
         {
-            throw new \InvalidArgumentException ("Route key '{$key}': path part must start with '/'.");
+            throw new InvalidArgumentException ("Route key '{$key}': path part must start with '/'.");
         }
 
         return [trim ($verb), trim ($path)];
@@ -282,12 +294,12 @@ final class Router
     {
         if (!is_string ($target) || substr_count ($target, '::') !== 1)
         {
-            throw new \InvalidArgumentException ("Route {$method} {$pattern}: target must be \"Controller::class::action\".");
+            throw new InvalidArgumentException ("Route {$method} {$pattern}: target must be \"Controller::class::action\".");
         }
 
         if ($pattern === '' || $pattern[0] !== '/')
         {
-            throw new \InvalidArgumentException ("Route {$method} {$pattern}: path must start with '/'.");
+            throw new InvalidArgumentException ("Route {$method} {$pattern}: path must start with '/'.");
         }
 
             self::parseTarget ($target); // fail-loud for bad class/action
@@ -303,12 +315,12 @@ final class Router
                 // `#` is the delimiter; a literal `#` inside a rule must be escaped.
                 if (str_contains ($rule, '#') && !str_contains ($rule, '\#'))
                 {
-                    throw new \InvalidArgumentException ("Route {$method} {$pattern}: regex fragment '{{$name}}' may not contain '#'.");
+                    throw new InvalidArgumentException ("Route {$method} {$pattern}: regex fragment '{{$name}}' may not contain '#'.");
                 }
 
                 if (@preg_match ("~^(?:{$rule})$~u", 'x') === false)
                 {
-                    throw new \InvalidArgumentException ("Route {$method} {$pattern}: invalid regex fragment '{{$name}:{$rule}}'.");
+                    throw new InvalidArgumentException ("Route {$method} {$pattern}: invalid regex fragment '{{$name}:{$rule}}'.");
                 }
 
                         // Canonical group name avoids collisions between sibling routes
@@ -324,7 +336,7 @@ final class Router
 
         if (!is_string ($regexp))
         {
-            throw new \InvalidArgumentException ("Route {$method} {$pattern}: could not parse path.");
+            throw new InvalidArgumentException ("Route {$method} {$pattern}: could not parse path.");
         }
 
         return ['~^'.$regexp.'$~u', $target, $names];
@@ -368,12 +380,12 @@ final class Router
 
         if ($action === null || $action === '' || !class_exists ($class))
         {
-            throw new \RuntimeException ("Route target class not exist: {$target}");
+            throw new RuntimeException ("Route target class not exist: {$target}");
         }
 
         if (!method_exists ($class, $action))
         {
-            throw new \RuntimeException ("Route target method '{$action}' not exist on {$class}.");
+            throw new RuntimeException ("Route target method '{$action}' not exist on {$class}.");
         }
 
         return [$class, $action];
@@ -440,12 +452,12 @@ final class Router
 
         if (!class_exists ($class))
         {
-            throw new \RuntimeException ("Route target class not found: {$target}");
+            throw new RuntimeException ("Route target class not found: {$target}");
         }
 
         if ($action === '' || !method_exists ($class, $action))
         {
-            throw new \RuntimeException ("Route action '{$action}' not exist on {$class}.");
+            throw new RuntimeException ("Route action '{$action}' not exist on {$class}.");
         }
 
         return [$class, $action];

@@ -8,6 +8,9 @@
  * @since 0.0.1
  */
 
+use function System\interlace;
+use function System\fl;
+
 if (!defined ('basepath'))
 {
     http_response_code (404);

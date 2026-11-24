@@ -2,6 +2,8 @@
 
 require __DIR__ . '/../public/index.php';
 
+use function System\urlprettify;
+
 // Test 1: With app.url configured
 echo "Test 1 (with app.url): " . urlprettify('/cendol') . PHP_EOL;
 

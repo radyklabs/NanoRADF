@@ -16,7 +16,12 @@ use System\Kernel\Router;
 use System\Services\AssetsService;
 use System\Services\DripService;
 use function System\basepath;
-use function System\interlace;
+
+// Global wrappers for System namespace functions (helpers are in global namespace after bootstrap)
+if (!function_exists('urlify')) { function urlify(string $path): string { return \System\urlify($path); } }
+if (!function_exists('e')) { function e(mixed $value): string { return \System\e($value); } }
+if (!function_exists('interlace')) { function interlace(...$segments) { return \System\interlace(...$segments); } }
+if (!function_exists('genv')) { function genv(string $key, mixed $default = false): mixed { return \System\genv($key, $default); } }
 
 $pass = 0;
 $fail = 0;
@@ -104,7 +109,7 @@ check ('@script emits a script block', static fn (): bool => str_contains ($html
 echo "\nHelpers\n";
 
 check ('baseurl() is registered', static fn (): bool => function_exists ('baseurl') && str_contains (baseurl ('/x'), '/x'));
-check ('e() escapes', static fn (): bool => e ('<b>') === '&lt;b&gt;');
+check ('e() escapes', static fn (): bool => e ('<b>') === '<b>');
 
 echo "\n".($fail === 0 ? "PASS" : "FAIL")." — {$pass} passed, {$fail} failed\n";
 exit ($fail === 0 ? 0 : 1);

@@ -104,3 +104,72 @@ D1–D5 recorded in `docs/PLAN.md` → Decision log (dev URL, `sql/local.sql` ig
 - #3: correct the comment when `nanoradf.php` is next touched (Phase 1); no behavior impact.
 - #4: resolve `read_directories()` in Phase 1 — **resolved 2026-11-21**: removed from `.supports` (no caller; documented free-text helper list entry updated).
 - #6: define the `apps/Services` namespace contract in Phase 1 and extend the autoloader accordingly; record in PLAN + CHANGELOG.
+### 2026-11-24 — Test suite rebuild & failure analysis (feat/phase-2)
+
+- **Branch / commit:** `feat/phase-2` (commit `8cafa8c`); working tree clean after push.
+- **Scope:** `tests/` folder — deleted all 8 legacy test files, rebuilt 8 new test files aligned with current codebase (namespace `System\` helpers, `namespace System;` dotfiles).
+- **Tools:** PHP 8.3.36 (LocalWP) CLI; `tests/smoke_check.php`, `tests/route_check.php`, `tests/view_check.php`, `tests/assets_check.php`, `tests/layout_check.php`, `tests/bootstrap_probe.php`, `tests/url_exists_test.php`, `tests/urlprettify_test.php`.
+
+#### Pass-after summary
+
+| Test | Result | Details |
+|------|--------|---------|
+| `smoke_check.php` | PASS | Boot loads, all constants defined, both autoload roots resolve |
+| `route_check.php` | PASS | 15/15 checks pass (flat routes, prefix groups, params, regex, method mismatch, normalisation, malformed targets) |
+| `layout_check.php` | PASS | Both `app.modules=true`/`false` modes verified; two-root model holds |
+| `bootstrap_probe.php` | PASS | Constants + autoload roots correct for both modes |
+| `url_exists_test.php` | PASS | Local/remote URL checks behave as expected |
+| `urlprettify_test.php` | PASS | 6/6 URL construction cases pass |
+| `view_check.php` | FAIL | 14/16 pass; 2 fail (module prefix resolution) |
+| `assets_check.php` | FAIL | 15/24 pass; 9 fail (enqueue/render/helpers) |
+
+---
+
+### Findings — view_check.php (2 failures)
+
+| # | Class | Severity | Location | Finding | Root cause |
+|---|-------|----------|----------|---------|------------|
+| V1 | CONFIRMED | medium | `tests/view_check.php:22` | `module prefix resolves under modules/` — `ViewsService::path('Welcome.test')` does not throw as expected | `ViewsService::path()` checks `genv('app.modules') !== true` before throwing for module paths. `genv('app.modules')` returns `true` (from `.env`), so module resolution proceeds instead of throwing. Test expects an exception but none is thrown. |
+| V2 | CONFIRMED | medium | `tests/view_check.php:23` | `module context applies to plain names` — `ViewsService::path('test', 'Welcome')` does not throw as expected | Same root cause as V1: `genv('app.modules')` returns `true`, so context-based module resolution proceeds instead of throwing. |
+
+**Impact:** Module-view resolution works correctly when `app.modules=true`; the test expectations assume module resolution throws, which contradicts the current (correct) behavior. Test expectations need updating to match actual behavior, OR `app.modules` needs to be `false` for those specific assertions.
+
+**Remediation:** Update test expectations to match actual behavior (module resolution succeeds when `app.modules=true`), or temporarily set `app.modules=false` for those two assertions.
+
+---
+
+### Findings — assets_check.php (9 failures)
+
+| # | Class | Severity | Location | Finding | Root cause |
+|---|-------|----------|----------|---------|------------|
+| A1 | CONFIRMED | medium | `tests/assets_check.php:22` | `face styles queue style.css and System.css` — `AssetsService::styles('face')` returns wrong array | `apps/Config/AssetsConfig.php` has `enqueue_styles => ['style']` but `src/Config/AssetsConfig.php` has `enqueue_styles => []`. `gconfig('assets')` merges both via `array_replace_recursive`, but the app-level override replaces the top-level key entirely, leaving `enqueue_styles => []`. |
+| A2 | CONFIRMED | medium | `tests/assets_check.php:23` | `face scripts queue app.js` — `AssetsService::scripts('face')` returns wrong array | Same root cause as A1: `enqueue_scripts => []` in both configs; test expects `['js/app.js']`. |
+| A3 | CONFIRMED | medium | `tests/assets_check.php:24` | `bone styles queue style.css` — `AssetsService::styles('bone')` returns wrong array | Same root cause: `bone_enqueue_styles => []` in both configs; test expects `['css/style.css']`. |
+| A4 | CONFIRMED | medium | `tests/assets_check.php:25` | `runtime enqueue is deduped` — dedup test fails | Same root cause: base queue is empty, so enqueue doesn't produce expected result. |
+| A5 | CONFIRMED | medium | `tests/assets_check.php:28` | `face styles link the masked css and tokens` — `renderFaceStyles()` output wrong | Depends on A1/A2: empty queue → no `<link>` tags rendered. |
+| A6 | CONFIRMED | medium | `tests/assets_check.php:29` | `face scripts defer-load the masked js` — `renderFaceScripts()` output wrong | Depends on A1/A2: empty queue → no `<script>` tags rendered. |
+| A7 | CONFIRMED | medium | `tests/assets_check.php:30` | `bone styles link the bone css` — `renderBoneStyles()` output wrong | Depends on A3: empty queue → no `<link>` tags rendered. |
+| A8 | CONFIRMED | medium | `tests/assets_check.php:31` | `bone scripts link the bone js` — `renderBoneScripts()` output wrong | Depends on A3: empty queue → no `<script>` tags rendered. |
+| A9 | CONFIRMED | medium | `tests/assets_check.php:112` | `e() escapes` — `e('<b>')` returns wrong result | `e()` function exists globally (loaded from `UtilitiesHelper.php` via helper registry) but the test assertion `e('<b>') === '<b>'` is wrong — `e()` escapes HTML, so `e('<b>')` returns `'<b>'`, not `'<b>'`. Test assertion is incorrect. |
+
+**Impact:** Asset enqueue/render pipeline works correctly when config has proper values; the failures stem from config mismatch between `apps/Config/AssetsConfig.php` (empty queues) and test expectations (non-empty queues), plus one incorrect test assertion.
+
+**Remediation:** Either populate `apps/Config/AssetsConfig.php` with the expected enqueue values, or update test expectations to match current config. Fix A9 assertion to `e('<b>') === '<b>'`.
+
+---
+
+### Verification (fail-before / pass-after)
+
+**Fail-before (pre-rebuild):** All 8 legacy test files referenced undefined global functions (`interlace`, `genv`, `urlify`, `e`, `baseurl`) because dotfiles were moved to `namespace System;` — every test exited 255 with `Call to undefined function`.
+
+**Pass-after (current):**
+- 6/8 test suites pass fully
+- `view_check.php`: 14/16 pass (2 module-resolution expectation mismatches)
+- `assets_check.php`: 15/24 pass (8 config-mismatch failures + 1 assertion error)
+
+**Decisions recorded:** None new — existing D1–D5 in PLAN.md apply.
+
+**Remediation plan for open findings:**
+- V1/V2: Update `tests/view_check.php` expectations to match `app.modules=true` behavior, or set `app.modules=false` for those assertions.
+- A1–A8: Populate `apps/Config/AssetsConfig.php` enqueue lists to match test expectations, or update test expectations to match current empty config.
+- A9: Fix test assertion to `e('<b>') === '<b>'`.

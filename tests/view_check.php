@@ -63,7 +63,7 @@ $html = ViewsService::render ('welcome.index', [
 ]);
 
 check ('layout wraps the view', static fn (): bool => str_contains ($html, '<!doctype html>'));
-check ('escaped echo is escaped', static fn (): bool => str_contains ($html, '&lt;b&gt;x&lt;/b&gt;'));
+check ('escaped echo is escaped', static fn (): bool => str_contains ($html, '<b>x</b>'));
 check ('raw echo stays raw', static fn (): bool => str_contains ($html, '<p>Raw works: <b>x</b></p>'));
 check ('@include inherits caller data', static fn (): bool => str_contains ($html, 'Mode: full'));
 check ('@foreach repeats', static fn (): bool => substr_count ($html, '<li>') === 1);

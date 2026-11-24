@@ -7,7 +7,10 @@
  * bootstrapping to the `nanoradf` gateway. This file stays minimal:
  * no business logic, only paths.
  *
- * @since 0.0.1
+ * @package     NanoRADF
+ * @author      RADLabs Development Team
+ * @copyright   Radlabs Studio (c) 1986 - 2026
+ * @since       0.0.1
  */
 
 /**

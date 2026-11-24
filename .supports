@@ -8,7 +8,10 @@
  * environment variable access with dot-notation grouping, HTTP status
  * lookup, and URL construction. No classes, no state, no dependencies.
  *
- * @since 0.0.1
+ * @package     NanoRADF
+ * @author      RADLabs Development Team
+ * @copyright   Radlabs Studio (c) 1986 - 2026
+ * @since       0.0.1
  */
 
 if (!defined ('basepath'))

@@ -94,37 +94,59 @@ Definition of done (v1): all PRD acceptance criteria pass; smoke checks recorded
 - **Orphan File Removal:** Delete `src/Config/Theme.php` (orphan, not tracked by git).
 - **Theme Config Separation:** Move theme config from `AssetsConfig.php` to dedicated `apps/Config/ThemeConfig.php` (aligns with `gconf()` pattern).
 - **ThemeHelper Registry:** Ensure `'theme'` stem in `HelperConfig.php` works with implemented `ThemeHelper.php`.
+- **Theme Resolver Hook (Phase 5 prep):** Add `ThemeResolverInterface` to `src/Contracts/Interfaces/` and register `resolver` key in `ThemeConfig` (default `null`). Document the seam for database-driven theme override.
 - **Verification:** All tests pass; no dead code; ThemeHelper functional; config structure consistent.
 - **2026-11-23:** All items completed. Dead code removed, ThemeHelper implemented, ThemeConfig separated, AssetsService::theme() updated.
 - **2026-11-24 Phase 2c follow-up:** Surface resolution moved to class hierarchy (`SurfaceAwareInterface` + `SurfaceResolverTrait`, no mutable `$surface`); layouts moved to active theme only (`<theme>/index.html`, no fallback); error pages standalone; `apps/Views/layouts/` removed; theme layouts created for `public/themes/default`, `apps/Themes/default`, `apps/Themes/admin`.
 
 ### Phase 3 — Welcome module end-to-end ⚠️
 - **Depends on:** Phase 2, 2b, 2c. **Owner:** main thread.
-- Fill `apps/Modules/Welcome/` (Manifest, Config, Controller, Model, Service, Views) and register its route.
-- Verification: `/welcome` over HTTP renders through the view composer; removing the module route yields 404.
+- Fill `modules/Welcome/` (Manifest, Config, Controller, Model, Service, Views) and register its route.
+  - `modules/Welcome/Manifest.json` — identity, enabled flag, registration metadata.
+  - `modules/Welcome/Config/WelcomeConfig.php` — module config (mergeable via `gconfig()`).
+  - `modules/Welcome/Controllers/WelcomeController.php` — extends `PublicController`, actions for `/welcome`.
+  - `modules/Welcome/Model/WelcomeModel.php` — data access (read-only vs headless API in Phase 4).
+  - `modules/Welcome/Services/WelcomeService.php` — business logic.
+  - `modules/Welcome/Views/welcome.index.html` — Drip template using theme layout.
+- Register route in `apps/Config/RoutesConfig.php`: `'GET /welcome' => 'Modules\Welcome\Controllers\WelcomeController::index'`.
+- Verification: `/welcome` over HTTP renders through the view composer with theme layout; removing the module route yields 404; module context resolution works (`ViewsService::context()` returns `Welcome`).
 
 ### Phase 4 — Headless mode & server-to-server client ⚠️
 - **Depends on:** Phase 1 (parallel-safe with Phase 2–3). **Owner:** main thread.
-- `ApiController` conventions (JSON envelope, status codes, error shape), backend route group.
-- Frontend→backend PHP HTTP client (cURL/stream) with status + schema validation before rendering.
-- Verification: SSR page renders data fetched server-side; no browser `fetch` for data (grep evidence).
+- `ApiController` conventions: JSON envelope `{ok, data}` / `{ok:false, error}`, proper HTTP status codes, consistent error shape.
+- Backend route group under `/api` prefix (e.g., `/api/v1/users`, `/api/v1/posts`).
+- Frontend→backend PHP HTTP client (`System\Services\HttpClient` or similar):
+  - cURL primary, stream context fallback.
+  - Timeout, retry, circuit breaker config via `gconfig('http_client')`.
+  - Validate HTTP status (2xx only) + JSON schema (required keys, types) before rendering.
+  - No browser `fetch` for data — all SSR data fetched server-side.
+- Base URL for backend from `gconfig('app.backend_url')` or `genv('app.backend_url')`.
+- Verification: SSR page renders data fetched server-side; grep confirms no `fetch(`/`XMLHttpRequest` in public JS; client only receives final HTML.
 
-### Phase 4b — AssetsService simplification ✅
+### Phase 4b — AssetsService refactor (SRP) ⚠️
 - **Depends on:** Phase 4. **Owner:** main thread. **Priority:** P2 (Medium).
-- **Simplify `AssetsService::url()`:** Single-pass lookup with pre-compiled pattern map per surface; remove legacy `ds/` fast-path; simplify `servesSurface()` logic.
-- **Remove Dead Methods:** Delete `candidate()`, `diskPath()`, `rewrite()` (unused).
-- **Verification:** All asset tests pass; code simpler and more maintainable.
-- **2026-11-23:** Completed in Phase 2c. `url()` and `resolve()` rewritten with segment prefix matching; pre-compiled pattern map cached; `anchor()` helper added.
+- Current `AssetsService` (~21 KB, 600+ lines) does too much: config, enqueue, URL masking, resolution, rendering, serving, pattern caching, versioning, MIME lookup.
+- Split into focused classes:
+  - `AssetConfig` — read/merge config (`gconfig('assets')`), expose `id_registry`, `enqueue_*`, `mask_urls`.
+  - `AssetResolver` — `resolve(string $url): ?array{file,mime}` using segment prefix matching + cached pattern map; `anchor()` for disk path.
+  - `AssetUrlGenerator` — `url(string $name, string $surface): string` with cache-buster; uses `AssetResolver` internally.
+  - `AssetRenderer` — `renderFaceStyles()`, `renderBoneScripts()`, etc.; builds `<link>`/`<script>` tags with `id` from registry.
+  - `AssetServer` — `serveAsset(string $file, bool $head)` — MIME, headers, streaming (used by `Dispatcher::dispatchAssets()`).
+- `AssetsService` becomes a thin facade delegating to the above; backward-compatible static methods preserved.
+- Remove legacy `ds/` fast-path in `url()`.
+- Verification: All asset tests pass; each class < 150 lines; single responsibility clear; no circular deps.
 
 ### Phase 5 — Session & auth token storage ⚠️
 - **Depends on:** Phase 4. **Owner:** main thread.
 - `$_SESSION`-only access/refresh token storage; cookie flags `HttpOnly`/`SameSite=Strict`/`secure` (prod); CSRF nonce for state-changing routes; auth guards on `PrivateController`/`ApiController`.
-- Verification: token never appears in client storage (grep); unauthenticated private route rejected; nonce check blocks forged POST.
+- **Theme resolver implementation:** `DatabaseThemeResolver` implementing `ThemeResolverInterface` — reads active theme per surface from DB (user preference, tenant config). Register class name in `ThemeConfig['resolver']`. `theme()` helper calls resolver first, falls back to config `default` map.
+- Verification: token never appears in client storage (grep); unauthenticated private route rejected; nonce check blocks forged POST; theme resolver overrides config when registered.
 
 ### Phase 6 — Errors, polish, docs sync ⚠️
 - **Depends on:** Phase 3, 4. **Owner:** main thread.
 - 404/500 pages from `src/Views/Errors/`, `.env` defaults documented, README final pass, docs sync review.
-- Verification: 404/500 render themed pages; docs cross-reference check (no dangling file refs).
+- **Theme folder naming consistency:** Unify `public/themes/` (lowercase) and `apps/Themes/` (capital) — pick one convention, update `mask_urls` patterns, `AssetsService::anchor()`, `ViewsService::resolveThemeLayout()`, and all references. This is a breaking change; do with version bump.
+- Verification: 404/500 render themed pages; docs cross-reference check (no dangling file refs); theme folder naming consistent across codebase.
 
 ### Phase 7 — Audit & release readiness ⚠️
 - **Depends on:** Phase 1–6. **Owner:** main thread via `>audit` then `>release` (user-invoked).
@@ -152,12 +174,15 @@ Definition of done (v1): all PRD acceptance criteria pass; smoke checks recorded
 |------|--------|----------|
 | 2026-11-20 15:11 | **Plan == code, no drift.** Phase 0 re-verified (boot smoke + autoload: `BOOT-LOADED`, `autoload sys=YES mod=YES`, exit 0). Phases 1–6: every target file still a 0-byte scaffold (`Kernel/Router.php`, `Kernel/Controller.php`, Api/Private/Public controllers, `apps/Config/RoutesConfig.php`, `Helper/UtilitiesHelper.php`, `AssetsService.php`, all `src/Views/*`, Welcome module, themes) → ⚠️ statuses correct, no phase advanced. Open risks #1–#3 unchanged. Working tree clean at `24404fa`; no `origin` remote → push skipped. | `git status`, per-file size inventory, `boot_check.php` |
 | 2026-11-23 15:30 | **Phase 0–2 complete.** Bootstrap, routing, view system, assets all functional. All test suites PASS (smoke, assets, view, route). Security hardening (Phase 2b), code quality (Phase 2c), and AssetsService simplification (Phase 4b) added to plan based on review findings. | `tests/*.php` all PASS; `git status` clean; PR #3 MERGED |
+| 2026-11-24 22:40 | **Phase 2c advanced: surface resolution + theme layouts.** `SurfaceAwareInterface` + `SurfaceResolverTrait` determine surface from class hierarchy (no mutable `$surface`). Layouts moved to active theme only (`<theme>/index.html`), no fallback. Error pages standalone. Theme resolver hook prep for Phase 5 (`ThemeResolverInterface`, `resolver` key in config). Bug fix: restored `apps/Config/ThemeConfig.php` `'private' => 'admin'` mapping accidentally changed during resolver work. | 8/8 tests PASS; commit `e8a9990` + `3cf5eb4` + `6e25ed7` |
 
 ## Open risks
 
 - `apps/Services` / `apps/Config` classes have no namespace mapping today — closed **by design** in Phase 0b (single `App\` → `apps/` root); confirm with the both-mode verification there.
 - `read_directories()` removed in Phase 1 (no caller; entry no longer declares `$directories`).
 - No test framework: smoke checks are manual until a test runner is agreed (candidate: plain-PHP assert scripts, zero deps).
-- **NEW:** Security hardening (Phase 2b) not yet implemented — CSRF, rate limiting, security headers pending.
-- **NEW:** Code quality cleanup (Phase 2c) not yet implemented — dead code, ThemeHelper, orphan files pending.
-- **NEW:** AssetsService simplification (Phase 4b) pending — over-complex url() method.
+- **Phase 2b:** Security headers implemented. CSRF and Rate Limiting deferred to Phase 5.
+- **Phase 2c:** Code quality cleanup completed. Theme resolver hook added for Phase 5.
+- **Phase 4b:** AssetsService refactor (SRP) pending — current monolithic class needs split into `AssetConfig`, `AssetResolver`, `AssetUrlGenerator`, `AssetRenderer`, `AssetServer`.
+- **Theme folder naming:** `public/themes/` (lowercase) vs `apps/Themes/` (capital) — inconsistent. Phase 6 will unify (breaking change).
+- **Module HMVC:** `modules/Welcome/` still 0-byte scaffold. Phase 3 will fill it.

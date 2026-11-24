@@ -1,10 +1,12 @@
 <?php declare (strict_types=1);
 
 /**
- * Global helper library — loaded first by the gateway.
- *
- * Pure functions shared across every bootstrap stage: path/namespace
- * normalisation, .env access, and HTTP utilities. Zero dependencies.
+ * Shared utility functions — the framework's basic toolbox.
+ * --
+ * A self-contained collection of pure helpers used throughout bootstrap
+ * and beyond: path joining and normalization, PSR-4 namespace conversion,
+ * environment variable access with dot-notation grouping, HTTP status
+ * lookup, and URL construction. No classes, no state, no dependencies.
  *
  * @since 0.0.1
  */

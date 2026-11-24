@@ -1,23 +1,24 @@
 <?php declare (strict_types=1);
 
-namespace System;
-
-use Exception;
-use Throwable;
-use System\Kernel\Dispatcher;
-
 /**
  * The Gateway: NanoRADF
  * --
- * Bootstrap stage 1: entry guard → constants → dotenv → helper
- * libraries → kernel hand-off, wrapped by a catch-all error path
- * that logs to storage/logs/system.log.
+ * Bootstrap entry point — validates configuration, loads environment
+ * settings, resolves helpers and kernel, then dispatches the request.
+ * Every bootstrap failure funnels through a single safe error handler
+ * that writes to `storage/logs/system.log`.
  *
  * @package     NanoRADF
  * @author      RADLabs Development Team
  * @copyright   Radlabs Studio (c) 1986 - 2026
  * @since       0.0.1
  */
+
+namespace System;
+
+use Exception;
+use Throwable;
+use System\Kernel\Dispatcher;
 
 // Entry guard: folder names must be set by public/index.php.
 if (!isset ($application_folder)

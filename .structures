@@ -1,11 +1,12 @@
 <?php declare (strict_types=1);
 
 /**
- * Path and namespace constants for every source tree.
- *
- * Loaded by `.config` during bootstrap. For each root that exists on disk it
- * defines the `*f` directory constant and, where mapped, the `ns*` namespace
- * constant; missing directories are skipped silently.
+ * Namespace registry — maps directories to autoloadable namespaces.
+ * --
+ * Discovered during bootstrap by `.config`. For every source folder that
+ * exists on disk, this file declares a path constant (`appf`, `systemf`, etc.)
+ * and its matching namespace prefix (`nsapp`, `nssys`, etc.). Modules are
+ * registered conditionally based on the `app.modules` environment flag.
  *
  * @since 0.0.1
  */

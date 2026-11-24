@@ -96,6 +96,7 @@ Definition of done (v1): all PRD acceptance criteria pass; smoke checks recorded
 - **ThemeHelper Registry:** Ensure `'theme'` stem in `HelperConfig.php` works with implemented `ThemeHelper.php`.
 - **Verification:** All tests pass; no dead code; ThemeHelper functional; config structure consistent.
 - **2026-11-23:** All items completed. Dead code removed, ThemeHelper implemented, ThemeConfig separated, AssetsService::theme() updated.
+- **2026-11-24 Phase 2c follow-up:** Surface resolution moved to class hierarchy (`SurfaceAwareInterface` + `SurfaceResolverTrait`, no mutable `$surface`); layouts moved to active theme only (`<theme>/index.html`, no fallback); error pages standalone; `apps/Views/layouts/` removed; theme layouts created for `public/themes/default`, `apps/Themes/default`, `apps/Themes/admin`.
 
 ### Phase 3 — Welcome module end-to-end ⚠️
 - **Depends on:** Phase 2, 2b, 2c. **Owner:** main thread.

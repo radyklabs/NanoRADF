@@ -1,11 +1,22 @@
 <?php declare (strict_types=1);
 
 /**
- * Config helpers — global, loaded from the helper registry.
+ * The `gconfig()` function — read a config file and merge its two layers.
+ * --
+ * Every config name has two homes: the framework's defaults in `src/Config/`
+ * and the application's own version in `apps/Config/`. This function reads both
+ * and merges them, application values winning key by key, so an app only has to
+ * write down what it changes.
  *
- * Function-only by contract (see apps/Config/HelperConfig.php).
+ * The name is matched case-insensitively: `gconfig('assets')`,
+ * `gconfig('Assets')`, and `gconfig('ASSETS')` all read `AssetsConfig.php`.
  *
- * @since 0.0.1
+ * Helper files hold functions only — no classes, interfaces, traits, or enums.
+ *
+ * @package     NanoRADF
+ * @author      RADLabs Development Team
+ * @copyright   Radlabs Studio (c) 1986 - 2026
+ * @since       0.0.1
  */
 
 use function System\interlace;
@@ -13,11 +24,20 @@ use function System\fl;
 
 if (!defined ('basepath'))
 {
+    $errorcss = '/error.css';
     http_response_code (404);
     header ('Content-Type: text/html; charset=utf-8');
-    exit ("<h1>404 Not Found</h1><p>The requested page could not be found.</p>");
+    if (realpath (getcwd ().$errorcss)) {echo "<link href=\"{$errorcss}\" rel=\"stylesheet\" />";}
+    exit ("<notice><h1>404 Not Found</h1><p>The requested page (or file) could not be found.</p></notice>");
 }
 
+/**
+ * Read a config file, with the application's values laid over the defaults.
+ *
+ * @since  0.0.1
+ * @param  string $config Config name, case-insensitive (`assets`, `theme`, …).
+ * @return array<string, mixed> Merged config; empty array when neither file exists.
+ */
 function gconfig (string $config): array
 {
     $resolve = ucfirst (strtolower ($config));

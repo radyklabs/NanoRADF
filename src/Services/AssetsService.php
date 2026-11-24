@@ -1,20 +1,35 @@
 <?php declare (strict_types=1);
 
-/**
- * AssetsService — enqueue, URL masking, and asset serving.
- *
- * Mask patterns live in `apps/Config/AssetsConfig.php` (`mask_urls`): a URL pattern
- * maps to a disk pattern. `{*}` matches any number of segments;
- * `{face_theme_active_name}` / `{bone_theme_active_name}` expand to the active
- * theme. Only paths matching a pattern are reachable — everything else is
- * unknown and served 404.
- *
- * @since 0.0.1
- */
-
 namespace System\Services;
 
 use function System\interlace;
+
+/**
+ * Where styles and scripts live, and how a URL finds its file on disk.
+ * --
+ * This service owns the asset side of the application: which names are queued
+ * for each surface, how those names turn into real URLs, and how a request for
+ * an asset URL is mapped back to a file that can be served.
+ *
+ * The rules live in config (`mask_urls`): a URL pattern points at a disk
+ * pattern, `{*}` stands for any number of path segments, and theme placeholders
+ * expand to whichever theme is active. Anything that does not match a pattern
+ * is not reachable — it gets a 404 instead of a guess.
+ *
+ * @package     NanoRADF
+ * @author      RADLabs Development Team
+ * @copyright   Radlabs Studio (c) 1986 - 2026
+ * @since       0.0.1
+ */
+
+if (!defined ('basepath'))
+{
+    $errorcss = '/error.css';
+    http_response_code (404);
+    header ('Content-Type: text/html; charset=utf-8');
+    if (realpath (getcwd ().$errorcss)) {echo "<link href=\"{$errorcss}\" rel=\"stylesheet\" />";}
+    exit ("<notice><h1>404 Not Found</h1><p>The requested page (or file) could not be found.</p></notice>");
+}
 
 final class AssetsService
 {
@@ -26,7 +41,7 @@ final class AssetsService
     private static array $queue = [];
 
     /**
-     * Read the asset configuration.
+     * The merged asset config, framework defaults plus application overrides.
      *
      * @since  0.0.1
      * @return array<string, mixed>
@@ -45,13 +60,10 @@ final class AssetsService
     }
 
     /**
-     * Active theme name for a surface (config value, override in controllers).
+     * Theme name for a surface, read from config.
      *
-         * Reads from gconfig('theme')['default']['public'|'private'].
-         * Accepts 'public', 'private', 'face', or 'bone' (backwards compat alias).
-         *
      * @since  0.0.1
-         * @param  string $surface 'public'/'face' (frontend) or 'private'/'bone' (backend).
+     * @param  string $surface `public`/`face` for the frontend, `private`/`bone` for the backend.
      * @return string Theme name.
      */
         public static function theme (string $surface = 'public'): string
@@ -69,11 +81,11 @@ final class AssetsService
     }
 
     /**
-     * Register a style for a surface.
+     * Queue a style for a surface.
      *
      * @since  0.0.1
-     * @param  string $path    Asset path relative to the mask base.
-     * @param  string $surface 'face' or 'bone'.
+     * @param  string $path    Asset name or path.
+     * @param  string $surface `face` for the frontend, `bone` for the backend.
      * @return void
      */
     public static function enqueueStyle (string $path, string $surface = 'face'): void
@@ -82,11 +94,11 @@ final class AssetsService
     }
 
     /**
-     * Register a script for a surface.
+     * Queue a script for a surface.
      *
      * @since  0.0.1
-     * @param  string $path    Asset path relative to the mask base.
-     * @param  string $surface 'face' or 'bone'.
+     * @param  string $path    Asset name or path.
+     * @param  string $surface `face` for the frontend, `bone` for the backend.
      * @return void
      */
     public static function enqueueScript (string $path, string $surface = 'face'): void
@@ -95,10 +107,10 @@ final class AssetsService
     }
 
     /**
-     * Queued styles for a surface.
+     * Styles queued for a surface, config first then runtime additions.
      *
      * @since  0.0.1
-     * @param  string $surface 'face' or 'bone'.
+     * @param  string $surface `face` or `bone`.
      * @return list<string>
      */
     public static function styles (string $surface = 'face'): array
@@ -110,10 +122,10 @@ final class AssetsService
     }
 
     /**
-     * Queued scripts for a surface.
+     * Scripts queued for a surface, config first then runtime additions.
      *
      * @since  0.0.1
-     * @param  string $surface 'face' or 'bone'.
+     * @param  string $surface `face` or `bone`.
      * @return list<string>
      */
     public static function scripts (string $surface = 'face'): array
@@ -169,13 +181,15 @@ final class AssetsService
     }
 
     /**
-     * Resolve a URL to a file and MIME type.
+     * Turn an asset URL into the file it points at, plus its MIME type.
      *
-         * Uses segment prefix matching (O(n) string ops) instead of regex per request.
-         *
+     * Uses segment prefix matching (plain string work, no regex per request).
+     * Returns null when the URL matches no pattern, the file is missing, or the
+     * path tries to escape the project root.
+     *
      * @since  0.0.1
-     * @param  string $url URL path (no leading slash required).
-     * @return array{file:string, mime:string}|null Null when unknown, missing, or escaping the root.
+     * @param  string $url URL path, with or without a leading slash.
+     * @return array{file:string, mime:string}|null
      */
     public static function resolve (string $url): ?array
     {
@@ -203,12 +217,12 @@ final class AssetsService
         return null;
     }
 
-        /**
-         * Get all mask patterns without surface filtering (for resolve).
-         *
-         * @since  0.0.1
-         * @return array<string, array{url_prefix:string, disk_prefix:string}>
-         */
+    /**
+     * Every mask pattern, flattened into prefix → disk-prefix pairs.
+     *
+     * @since  0.0.1
+     * @return array<string, array{url_prefix:string, disk_prefix:string}>
+     */
         private static function allPatterns (): array
         {
             static $cache = null;
@@ -246,15 +260,16 @@ final class AssetsService
             return $map;
         }
 
-        /**
-         * Anchor a config disk path (leading `/public` or `/src`) to its real root.
-         *
-         * Config disk patterns are rooted at the project base, e.g. `/public/themes/...`.
-         *
-         * @since  0.0.1
-         * @param  string $path Disk path starting with `/`.
-         * @return string Absolute path.
-         */
+    /**
+     * Anchor a config disk path to its real location on disk.
+     *
+     * Config paths start with `/public`, `/src`, or `/apps`; this turns them
+     * into absolute paths rooted at the project base.
+     *
+     * @since  0.0.1
+     * @param  string $path Disk path starting with `/`.
+     * @return string Absolute path.
+     */
         private static function anchor (string $path): string
         {
             if (str_starts_with ($path, '/public/'))
@@ -278,12 +293,12 @@ final class AssetsService
     /**
      * URL for a queued asset name, masked through the configured patterns.
      *
-     * Accepts either symbolic ids (looked up in `id_registry`) or raw paths.
-         * Uses segment prefix matching (O(n) string ops) instead of regex per request.
+     * Accepts symbolic ids (looked up in `id_registry`) or raw paths. The
+     * result carries a cache buster from the file's mtime.
      *
      * @since  0.0.1
      * @param  string $name    Asset id or path, e.g. `style`, `design-system`, `css/style.css`.
-         * @param  string $surface 'face' (public frontend) or 'bone' (backend).
+     * @param  string $surface `face` for the frontend, `bone` for the backend.
      * @return string URL with a cache buster.
      */
     public static function url (string $name, string $surface = 'face'): string
@@ -330,14 +345,13 @@ final class AssetsService
             return '/'.$name;
         }
 
-        /**
-         * Build pre-compiled pattern map for a surface.
-         * Returns [url_prefix => [url_prefix, disk_prefix, theme_placeholder]].
-         *
-         * @since  0.0.1
-         * @param  string $surface 'face' or 'bone'.
-         * @return array<string, array{url_prefix:string, disk_prefix:string, theme:string}>
-         */
+    /**
+     * Pre-compiled pattern map for one surface.
+     *
+     * @since  0.0.1
+     * @param  string $surface `face` or `bone`.
+     * @return array<string, array{url_prefix:string, disk_prefix:string, theme:string}>
+     */
         private static function patternMap (string $surface): array
         {
             static $cache = [];
@@ -381,11 +395,11 @@ final class AssetsService
     }
 
     /**
-     * Whether a resolved disk path belongs to a surface's theme or to Tokens.
+     * Whether a disk pattern belongs to one surface's theme or to shared Tokens.
      *
      * @since  0.0.1
-     * @param  string $preview Resolved disk path.
-         * @param  string $surface 'face' (public frontend) or 'bone' (backend).
+     * @param  string $disk Resolved disk path.
+     * @param  string $surface `face` or `bone`.
      * @return bool
      */
     private static function servesSurface (string $disk, string $surface): bool
@@ -397,7 +411,7 @@ final class AssetsService
     }
 
     /**
-     * Compile a URL pattern into a regex, capturing `{*}` as one group.
+     * Turn a URL pattern into a regex that captures the `{*}` tail.
      *
      * @since  0.0.1
      * @param  string $pattern Pattern such as `/css/{*}`.
@@ -431,7 +445,7 @@ final class AssetsService
     }
 
     /**
-     * Match a URL against a pattern; capture the `{*}` tail.
+     * Test a URL against a pattern and capture the `{*}` tail.
      *
      * @since  0.0.1
      * @param  string $pattern URL pattern.
@@ -535,12 +549,11 @@ final class AssetsService
     }
 
     /**
-     * Build the queued names for a surface (config first, then runtime),
-     * appending the extension when missing.
+     * Build the queued names for a surface: config list first, then runtime adds.
      *
-     * Config entries may be either symbolic ids (looked up in `id_registry`)
-     * or raw paths. A raw path already containing a dot is kept as-is; an id
-     * is expanded to `<registry_entry>.<ext>`.
+     * Config entries may be symbolic ids (looked up in `id_registry`) or raw
+     * paths. A raw path already containing a dot stays as-is; an id is expanded
+     * to `<registry_entry>.<ext>`.
      *
      * @since  0.0.1
      * @param  array            $config  Config list (mixed ids / paths).
@@ -585,7 +598,7 @@ final class AssetsService
 
 
     /**
-     * Cache-buster: file mtime when the file exists, else '0'.
+     * Cache buster: the file's mtime, or `0` when the file cannot be resolved.
      *
      * @since  0.0.1
      * @param  string $name    Asset name.
@@ -598,7 +611,7 @@ final class AssetsService
     }
 
     /**
-     * MIME type by extension.
+     * MIME type by file extension.
      *
      * @since  0.0.1
      * @param  string $file File path.
@@ -626,7 +639,7 @@ final class AssetsService
     }
 
     /**
-     * Escape an attribute value.
+     * Escape an attribute value for safe HTML output.
      *
      * @since  0.0.1
      * @param  string $value Raw value.

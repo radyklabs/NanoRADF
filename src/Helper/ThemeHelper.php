@@ -1,30 +1,38 @@
 <?php declare (strict_types=1);
 
 /**
- * Theme helpers — global, loaded from the helper registry.
+ * The `theme()` function — which theme a surface is wearing.
+ * --
+ * Answers the question templates and services keep asking: what is this side of
+ * the application styled as? The answer comes from the theme config, with the
+ * application's choice winning over the framework default.
  *
- * Function-only by contract (see apps/Config/HelperConfig.php).
+ * Both naming styles are accepted, so older code keeps working: `public`/`face`
+ * both mean the visitor-facing side, `private`/`bone` both mean the backend.
  *
- * @since 0.0.1
+ * Helper files hold functions only — no classes, interfaces, traits, or enums.
+ *
+ * @package     NanoRADF
+ * @author      RADLabs Development Team
+ * @copyright   Radlabs Studio (c) 1986 - 2026
+ * @since       0.0.1
  */
 
 if (!defined ('basepath'))
 {
+    $errorcss = '/error.css';
     http_response_code (404);
     header ('Content-Type: text/html; charset=utf-8');
-    exit ("<h1>404 Not Found</h1><p>The requested page could not be found.</p>");
+    if (realpath (getcwd ().$errorcss)) {echo "<link href=\"{$errorcss}\" rel=\"stylesheet\" />";}
+    exit ("<notice><h1>404 Not Found</h1><p>The requested page (or file) could not be found.</p></notice>");
 }
-
 /**
-     * Get active theme name for a surface.
-     *
-     * Reads from gconfig('theme')['default']['public'|'private'].
-     * Accepts 'public', 'private', 'face', or 'bone' (backwards compat alias).
-     *
-     * @since  0.0.1
-     * @param  string $surface 'public'/'face' (frontend) or 'private'/'bone' (backend).
-     * @return string Theme name.
-     */
+ * Name of the theme currently used by a surface.
+ *
+ * @since  0.0.1
+ * @param  string $surface `public`/`face` for the frontend, `private`/`bone` for the backend.
+ * @return string Theme name, falling back to `default`.
+ */
 function theme (string $surface = 'public'): string
 {
     $surface = match ($surface)

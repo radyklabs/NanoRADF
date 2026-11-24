@@ -3,28 +3,54 @@
 namespace System\Services;
 
 /**
- * Drip Template Engine — compiles `.html` templates into cached PHP.
+ * Drip — the template engine behind every rendered page.
+ * --
+ * Drip reads an `.html` file, translates it into plain PHP, and caches the
+ * result so the next request skips the work. The cache is rebuilt whenever the
+ * source file changes, so a template can be edited and immediately reloaded.
  *
- * Echo: `{{$var}}` escapes (spaces optional), `{{!$var!}}` prints raw.
- * Comments: `{{-- … --}}` is dropped. A directive or echo wrapped in an HTML
- * comment (`<!-- @yield('content') -->`) is unwrapped and compiled, so a
- * template still previews as static HTML.
+ * What templates can say to it:
  *
- * Unknown `@word` sequences pass through untouched — CSS `@media` and
- * `user@host` stay literal.
+ * - `{{$var}}` prints a value, escaped for HTML. Spaces are optional.
+ * - `{{!$var!}}` prints raw, for HTML you already trust.
+ * - `{{-- … --}}` is dropped entirely.
+ * - `@extends`, `@section`, `@yield` build the page out of a layout.
+ * - `@include` pulls in another view, sharing the variables in scope.
+ * - `@if / @elseif / @else / @endif` and `@foreach / @endfor` for control flow.
+ * - `@style … @endstyle` and `@script … @endscript` for inline assets.
+ * - `@php … @endphp` for the odd case that needs real PHP.
+ * - `@class` for conditional class lists, `@enqueueStyles`/`@enqueueScripts`
+ *   for the asset tags.
  *
- * @since 0.0.1
+ * A directive or echo written inside an HTML comment is unwrapped and compiled,
+ * so a template still previews as plain static HTML. Unknown `@word` sequences
+ * pass through untouched — CSS `@media` and `user@host` stay literal.
+ *
+ * @package     NanoRADF
+ * @author      RADLabs Development Team
+ * @copyright   Radlabs Studio (c) 1986 - 2026
+ * @since       0.0.1
  */
+
+if (!defined ('basepath'))
+{
+    $errorcss = '/error.css';
+    http_response_code (404);
+    header ('Content-Type: text/html; charset=utf-8');
+    if (realpath (getcwd ().$errorcss)) {echo "<link href=\"{$errorcss}\" rel=\"stylesheet\" />";}
+    exit ("<notice><h1>404 Not Found</h1><p>The requested page (or file) could not be found.</p></notice>");
+}
+
 final class DripService
 {
     /**
-     * Render a template file, optionally wrapped by a layout.
+     * Render a template file, wrapped in a layout when one applies.
      *
      * @since  0.0.1
      * @param  string      $path       Absolute path to the `.html` template.
-     * @param  array       $data       Variables extracted into template scope.
-     * @param  string|null $layoutPath Layout file; overrides `@extends`.
-     * @param  string|null $context    Module name used by `@include`.
+     * @param  array       $data       Variables made available inside the template.
+     * @param  string|null $layoutPath Layout file; wins over `@extends`.
+     * @param  string|null $context    Module the view belongs to, when rendering from one.
      * @return string Rendered HTML.
      */
     public static function renderFile (string $path, array $data = [], ?string $layoutPath = null, ?string $context = null): string
@@ -56,13 +82,13 @@ final class DripService
     }
 
     /**
-     * Render another view from inside a template, sharing scope and sections.
+     * Render another view from inside a template, sharing its scope and sections.
      *
      * @since  0.0.1
-     * @param  string      $name    View name without extension.
-     * @param  array       $extra   Variables merged over the caller scope.
-     * @param  array       $scope   Caller scope (`get_defined_vars()`).
-     * @param  string|null $context Module name for resolution.
+     * @param  string      $name    View name, without extension.
+     * @param  array       $extra   Variables layered over the caller's.
+     * @param  array       $scope   The caller's own variables.
+     * @param  string|null $context Module the view belongs to, when rendering from one.
      * @param  array       $sections Section store, shared with the caller.
      * @return string Rendered HTML.
      */
@@ -77,13 +103,13 @@ final class DripService
     }
 
     /**
-     * Render one compiled template into the given section store.
+     * Run one compiled template, letting it fill the section store.
      *
      * @since  0.0.1
      * @param  string      $path     Absolute template path.
      * @param  array       $data     Variables for the template scope.
      * @param  array       $sections Section store (written by `@section`).
-     * @param  string|null $context  Module name for `@include`.
+     * @param  string|null $context  Module the view belongs to, for `@include`.
      * @return string Rendered HTML.
      */
     private static function render (string $path, array $data, array &$sections, ?string $context): string
@@ -94,7 +120,7 @@ final class DripService
     }
 
     /**
-     * Load a compiled template, recompiling when the source changed.
+     * Load a compiled template, recompiling when the source has changed.
      *
      * @since  0.0.1
      * @param  string $path Absolute template path.
@@ -123,12 +149,12 @@ final class DripService
     }
 
     /**
-     * Compile template source into an executable PHP file.
+     * Turn template source into a PHP file that can be required.
      *
      * @since  0.0.1
      * @param  string $source Raw template content.
-     * @param  string $path   Source path, for error messages.
-     * @return string PHP file contents returning `render` and `extends`.
+     * @param  string $path   Source path, used in error messages.
+     * @return string PHP file contents, returning `render` and `extends`.
      */
     private static function compile (string $source, string $path): string
     {
@@ -221,11 +247,11 @@ final class DripService
     }
 
     /**
-     * Apply the directive table.
+     * Replace the directives a template can use with their PHP equivalents.
      *
      * @since  0.0.1
-     * @param  string $source Template content with echoes already compiled.
-     * @return string PHP-mixed content.
+     * @param  string $source Template content, echoes already compiled.
+     * @return string Mixed PHP and HTML.
      */
     private static function directives (string $source): string
     {
@@ -305,7 +331,7 @@ final class DripService
      *
      * @since  0.0.1
      * @param  string $expression Expression text between the braces.
-     * @param  string $path       Template path for the error message.
+     * @param  string $path       Template path, used in the error message.
      * @return void
      */
     private static function guard (string $expression, string $path): void

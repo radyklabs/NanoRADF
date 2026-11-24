@@ -97,6 +97,7 @@ Release workflow (`>release`) prepares, merges, and tags in one invocation; neve
 | `>sync` | Run `>push`, update against `dev`, create and merge a PR into `dev`, then delete the merged branch. |
 | `>track` | Compare the plan against the code, update statuses and related docs, then commit and push. |
 | `>audit` | Deep audit: manual file-by-file, line-by-line review of logic, cross-file consistency/correlation, dead/junk code, security gaps, and anomalies; tools are evidence only; record findings in `docs/REPORT.md` and related docs. |
+| `>docfile [path_or_scope]` | Refine or create docblock descriptions for the specified file(s) to be human-readable and professional. Always read the actual current file state from disk first. For framework bootstrap files, standard headers are: `@package NanoRADF`, `@author RADLabs Development Team`, `@copyright Radlabs Studio (c) 1986 - 2026`, `@since 0.0.1`. Replace terse technical descriptions with clear prose that explains *what* the file does and *why*, without losing accuracy. Commit as `docs:` and push. |
 
 ## MANDATORY PRE-ACTION CHECKLIST (Binding Rule)
 
@@ -118,6 +119,8 @@ Release workflow (`>release`) prepares, merges, and tags in one invocation; neve
 - [ ] Phase 4: Tests/verification plan ready?
 
 **If any [ ] = NO → DO NOT CALL edit tool. STOP and ask user.**
+
+> **docfile command reminder:** When the user invokes `>docfile`, apply this checklist first — read the current file from disk, propose humanized docblocks that explain *what* and *why*, use standard headers (`@package NanoRADF`, `@author RADLabs Development Team`, `@copyright Radlabs Studio (c) 1986 - 2026`, `@since 0.0.1`), never skip Phase 1 even if the file was just reviewed moments ago.
 
 ### After ALL edits:
 - [ ] All test suites PASS (`smoke_check`, `assets_check`, `view_check`, `route_check`, `layout_check`, `bootstrap_probe`)

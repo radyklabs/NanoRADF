@@ -1,13 +1,19 @@
 <?php declare (strict_types=1);
 
 /**
- * Theme default configuration.
+ * The framework's default theme for each side of the application.
+ * --
+ * One name per surface, used whenever the application has not chosen something
+ * else. Override either surface in `apps/Config/ThemeConfig.php`; leaving a key
+ * out there keeps the default written here.
  *
- * - `default`: theme names per surface.
- *   - `public`: public frontend theme (served from `public/themes/<name>`)
- *   - `private`: backend theme (served from `apps/Themes/<name>`)
+ * - `public`: the theme visitors see, taken from `public/themes/<name>`.
+ * - `private`: the theme staff see, taken from `apps/Themes/<name>`.
  *
- * @since 0.0.1
+ * @package     NanoRADF
+ * @author      RADLabs Development Team
+ * @copyright   Radlabs Studio (c) 1986 - 2026
+ * @since       0.0.1
  */
 
 return [

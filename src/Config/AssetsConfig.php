@@ -1,20 +1,29 @@
 <?php declare (strict_types=1);
 
 /**
- * Asset configuration.
+ * The framework's built-in asset map.
+ * --
+ * Everything the framework knows about its own styles and scripts lives here:
+ * the short names it uses for them, the queues it fills for each surface, and
+ * the URL patterns that are allowed to reach a file on disk. Application-level
+ * additions belong in `apps/Config/AssetsConfig.php`, which is layered on top
+ * of this file.
  *
- * - `theme`: active theme name per surface. `face` serves the public
- *   frontend (`public/themes/<name>`); `bone` serves the backend
- *   (`src/Themes/<name>`).
- * - `id_registry`: symbolic asset ids mapped to filename stem under Tokens
- *   or theme root. Rendered tags carry this id as the HTML `id` attribute.
- * - `enqueue_*` / `bone_enqueue_*`: ids queued for each surface. The framework
- *   resolves each id to its masked url via `mask_urls`; no path is written here.
- * - `mask_urls`: URL pattern → disk pattern. `{*}` matches a path with any
- *   number of segments; `{face_theme_active_name}` / `{bone_theme_active_name}`
- *   expand to the active theme name. Only listed patterns are reachable.
+ * - `id_registry`: short names for files, so a queue can ask for `style`
+ *   instead of spelling out a path. The name becomes the `id` attribute of the
+ *   rendered tag.
+ * - `enqueue_*` / `bone_enqueue_*`: the names queued for the public frontend
+ *   (face) and the backend (bone). Each name is resolved to a real URL through
+ *   `mask_urls`; no filesystem path is written in the queue.
+ * - `mask_urls`: the only doors between a URL and a file on disk. `{*}`
+ *   matches any remaining path segments, and `{face_theme_active_name}` /
+ *   `{bone_theme_active_name}` stand in for the active theme name. A URL with
+ *   no matching pattern is not reachable.
  *
- * @since 0.0.1
+ * @package     NanoRADF
+ * @author      RADLabs Development Team
+ * @copyright   Radlabs Studio (c) 1986 - 2026
+ * @since       0.0.1
  */
 
 return [

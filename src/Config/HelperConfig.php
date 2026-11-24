@@ -1,12 +1,21 @@
 <?php declare (strict_types=1);
 
 /**
- * Helper registry — file stems loaded by `.starter` before the kernel.
+ * The framework's own helper registry.
+ * --
+ * Helpers are plain functions the whole application can call. This is the list
+ * the framework ships with; it is loaded before any class is autoloaded, so the
+ * functions are ready by the time your code runs. Application-level helpers go
+ * in `apps/Config/HelperConfig.php`.
  *
- * Each stem maps to `src/Helper/<stem>Helper.php`, a file that declares
- * global functions only (no classes, interfaces, traits, or enums).
+ * Each entry is a file stem: `utilities` points to
+ * `src/Helper/UtilitiesHelper.php`. A helper file holds functions only — no
+ * classes, interfaces, traits, or enums.
  *
- * @since 0.0.1
+ * @package     NanoRADF
+ * @author      RADLabs Development Team
+ * @copyright   Radlabs Studio (c) 1986 - 2026
+ * @since       0.0.1
  */
 
 return [

@@ -1,21 +1,39 @@
 <?php declare (strict_types=1);
 
 /**
- * Asset configuration.
+ * Which styles and scripts the application loads, and where they come from.
+ * --
+ * This is the application's own say over its assets. The framework ships a
+ * base set in `src/Config/AssetsConfig.php`; whatever is written here is laid
+ * on top of it, so an entry listed here replaces the base entry of the same
+ * name instead of being appended to it. Leave a key out to keep the base
+ * behaviour.
  *
- * - `theme`: active theme name per surface. `face` serves the public
- *   frontend (`public/themes/<name>`); `bone` serves the backend
- *   (`src/Themes/<name>`).
- * - `id_registry`: symbolic asset ids mapped to filename stem under Tokens
- *   or theme root. Rendered tags carry this id as the HTML `id` attribute.
- * - `enqueue_*` / `bone_enqueue_*`: ids queued for each surface. The framework
- *   resolves each id to its masked url via `mask_urls`; no path is written here.
- * - `mask_urls`: URL pattern → disk pattern. `{*}` matches a path with any
- *   number of segments; `{face_theme_active_name}` / `{bone_theme_active_name}`
- *   expand to the active theme name. Only listed patterns are reachable.
+ * - `id_registry`: short names for files, so a queue can ask for `style`
+ *   instead of spelling out a path. The name becomes the `id` attribute of
+ *   the rendered tag.
+ * - `enqueue_*` / `bone_enqueue_*`: the names queued for the public frontend
+ *   (face) and the backend (bone). Each name is resolved to a real URL through
+ *   `mask_urls`; no filesystem path is written in the queue.
+ * - `mask_urls`: the only doors between a URL and a file on disk. `{*}`
+ *   matches any remaining path segments, and `{face_theme_active_name}` /
+ *   `{bone_theme_active_name}` stand in for the active theme name. A URL with
+ *   no matching pattern is not reachable.
  *
- * @since 0.0.1
+ * @package     NanoRADF
+ * @author      RADLabs Development Team
+ * @copyright   Radlabs Studio (c) 1986 - 2026
+ * @since       0.0.1
  */
+
+if (!defined ('basepath'))
+{
+    $errorcss = '/error.css';
+    http_response_code (404);
+    header ('Content-Type: text/html; charset=utf-8');
+    if (realpath (getcwd ().$errorcss)) {echo "<link href=\"{$errorcss}\" rel=\"stylesheet\" />";}
+    exit ("<notice><h1>404 Not Found</h1><p>The requested page (or file) could not be found.</p></notice>");
+}
 
 return [
     // Face (public frontend) asset queues

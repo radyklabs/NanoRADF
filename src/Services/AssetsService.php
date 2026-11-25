@@ -301,17 +301,19 @@ final class AssetsService
     public static function url (string $name, string $surface = 'face'): string
     {
         $config = self::config ();
-        $kind   = str_contains ($name, '.css') || str_ends_with ($name, '/css') ? 'style' : 'script';
-        $registryKey = $kind === 'style' ? 'register_styles' : 'register_scripts';
-        $registry = (array) ($config[$registryKey] ?? []);
 
         // Resolve symbolic id → full mask-relative path from registry.
-        foreach ($registry as $entry)
+            // Search both registries since they are already separated by type.
+            foreach (['register_styles', 'register_scripts'] as $registryKey)
         {
-            if (isset ($entry['id']) && $entry['id'] === $name)
+                $registry = (array) ($config[$registryKey] ?? []);
+                foreach ($registry as $entry)
             {
-                $name = (string) ($entry['path'] ?? '');
-                break;
+                    if (isset ($entry['id']) && $entry['id'] === $name)
+                    {
+                        $name = (string) ($entry['path'] ?? '');
+                        break 2;
+                    }
             }
         }
 

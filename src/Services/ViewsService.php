@@ -152,8 +152,7 @@ final class ViewsService
 
         if (!is_file ($layout))
         {
-            // throw new \RuntimeException ("Layout tema '{$theme}' untuk surface '{$surface}' tidak ditemukan ({$layout}). Tema aktif harus menyediakan file index.html.");
-            throw new \RuntimeException ('theme', 500);
+                    throw new \RuntimeException ("Layout tema '{$theme}' untuk surface '{$surface}' tidak ditemukan ({$layout}). Tema aktif harus menyediakan file index.html.");
         }
 
         return $layout;

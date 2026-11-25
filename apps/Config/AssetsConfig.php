@@ -28,10 +28,13 @@ if (!defined ('basepath'))
 
 return [
     // Face (public frontend) asset queues
-    'enqueue_styles'  => ['/css/style.css'],
+    'enqueue_styles'  => ['style'],
     'enqueue_scripts' => [],
 
     // Bone (backend) asset queues
     'bone_enqueue_styles'  => [],
     'bone_enqueue_scripts' => [],
+
+    // Assets mask URL patterns.
+    'mask_urls' => [],
 ];

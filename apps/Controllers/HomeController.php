@@ -8,7 +8,9 @@
 
 namespace App\Controllers;
 
+use Throwable;
 use System\Controllers\PublicController;
+use function System\gserver;
 
 if (!defined ('basepath'))
 {
@@ -53,7 +55,7 @@ final class HomeController extends PublicController
      */
     private function page (string $line): string
     {
-        $method = htmlspecialchars ((string) ($_SERVER['REQUEST_METHOD'] ?? 'GET'), ENT_QUOTES);
+        $method = htmlspecialchars ((string) gserver ('request.method', 'GET'), ENT_QUOTES);
         $path   = htmlspecialchars ((string) gserver ('request.uri', '/'), ENT_QUOTES);
 
         return "<!doctype html><html lang=\"en\"><head><meta charset=\"utf-8\">"

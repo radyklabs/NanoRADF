@@ -8,6 +8,7 @@
 
 namespace App\Controllers;
 
+use Throwable;
 use System\Controllers\PublicController;
 use function System\genv;
 

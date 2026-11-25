@@ -10,6 +10,7 @@
 
 namespace App\Controllers;
 
+use Throwable;
 use System\Controllers\ApiController;
 
 if (!defined ('basepath'))

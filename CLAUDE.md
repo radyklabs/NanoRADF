@@ -101,6 +101,7 @@ Release workflow (`>release`) prepares, merges, and tags in one invocation; neve
 | `>track` | Compare the plan against the code, update statuses and related docs, then commit and push. |
 | `>audit` | Deep audit: manual file-by-file, line-by-line review of logic, cross-file consistency/correlation, dead/junk code, security gaps, and anomalies; tools are evidence only; record findings in `docs/REPORT.md` and related docs. |
 | `>docfile [path_or_scope]` | Refine or create docblock descriptions for the specified file(s) to be human-readable and professional. Always read the actual current file state from disk first. For framework bootstrap files, standard headers are: `@package NanoRADF`, `@author RADLabs Development Team`, `@copyright Radlabs Studio (c) 1986 - 2026`, `@since 0.0.1`. Replace terse technical descriptions with clear prose that explains *what* the file does and *why*, without losing accuracy. Commit as `docs:` and push. |
+| `>commit` | Stage and commit **all tracked file changes** (`git add -A`). Generate a detailed per-file commit message body listing every changed file with a one-line summary of what changed in that file. Use conventional commit type based on change nature (`feat:`, `fix:`, `docs:`, `refactor:`, `chore:`). Commit then push to origin. Never skip — this is the sole commit path; do not manually stage individual files. |
 
 ## MANDATORY PRE-ACTION CHECKLIST (Binding Rule)
 

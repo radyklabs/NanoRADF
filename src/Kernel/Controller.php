@@ -1,27 +1,34 @@
 <?php declare (strict_types=1);
 
+/**
+ * Controller — shared request lifecycle and response helpers for all surfaces.
+ * --
+ * Base class for every controller. Knows which surface it serves (`public`,
+ * `private`, or `api`) by looking at its own class hierarchy, provides an
+ * authorization gate, and builds responses. Controllers never echo directly;
+ * they return arrays or strings consumed by the Dispatcher.
+ *
+ * @package     NanoRADF
+ * @author      RADLabs Development Team
+ * @copyright   Radlabs Studio (c) 1986 - 2026
+ * @since       0.0.1
+ */
+
 namespace System\Kernel;
 
-use System\Services\Views;
+use System\Contracts\Interfaces\SurfaceAwareInterface;
+use System\Contracts\Traits\SurfaceResolverTrait;
+use System\Services\ViewsService;
 
-/**
- * Controller — request lifecycle and response helpers shared by every surface.
- *
- * Actions return an array contract `['status' => int, 'body' => string]` (a bare
- * string is also accepted as a 200 body) and the gateway sends headers once;
- * controllers never echo. Path params arrive positionally in
- * placeholder-declaration order.
- *
- * @since 0.0.1
- */
-class Controller
+if (!defined ('basepath'))
 {
-    /**
-     * Surface key: 'public' | 'private' | 'api'. Drives `respond()` defaults.
-     *
-     * @var string
-     */
-    protected string $surface = 'public';
+    try {exit (@require dirname (__DIR__,2).DIRECTORY_SEPARATOR.'.errors');}
+    catch (Throwable $e){$file = basename(__FILE__); exit("404 Forbidden {$file}");}
+}
+
+class Controller implements SurfaceAwareInterface
+{
+    use SurfaceResolverTrait;
 
     /**
      * Guard applied before an action: true when the request may continue.
@@ -37,19 +44,24 @@ class Controller
     }
 
     /**
-     * Build a response for the current surface. Public/private return
-     * `['status', 'body', 'headers']`; the api surface additionally accepts
-     * `json` (an array encoded into a JSON body) and always emits JSON.
+     * Build a response for the current surface.
      *
-     * @since  0.0.1
-     * @param  mixed                $body   HTML body, or data payload on the api surface.
-     * @param  int                  $status HTTP status.
-     * @param  array<string, mixed> $extra  `json` envelope, custom `headers`.
-     * @return array{status:int, body:string, headers:list<string>}
+     * Public/private surfaces return `['status', 'body', 'headers']`. The api
+     * surface additionally accepts a `json` key (data payload encoded as JSON)
+     * and always emits Content-Type: application/json.
+     *
+     * @package   NanoRADF
+     * @author    RADLabs Development Team
+     * @copyright Radlabs Studio (c) 1986 - 2026
+     * @since     0.0.1
+     * @param     mixed                $body   HTML body, or data payload on the api surface.
+     * @param     int                  $status HTTP status.
+     * @param     array<string, mixed> $extra  `json` envelope or custom `headers`.
+     * @return    array{status:int, body:string, headers:list<string>}
      */
     protected function respond (mixed $body = '', int $status = 200, array $extra = []): array
     {
-        if ($this->surface === 'api')
+        if ($this->getSurface () === 'api')
         {
             $payload = json_encode ($extra['json'] ?? ['data' => $body], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
             return ['status' => $status, 'body' => (string) $payload, 'headers' => ['Content-Type: application/json; charset=utf-8']];
@@ -59,28 +71,43 @@ class Controller
     }
 
     /**
-     * Render a Drip view for the current controller.
+     * Render a Drip view bound to the current controller's surface.
      *
      * Module controllers resolve plain names against their own `Views/` folder;
-     * app controllers resolve against `apps/Views/`.
+     * app controllers resolve against `apps/Views/`. The layout comes from the
+     * active theme for this controller's surface.
      *
-     * @since  0.0.1
-     * @param  string      $name   View name without extension (`file` or `folder.file`).
-     * @param  array       $data   Variables for the template scope.
-     * @param  string|null $layout Layout name overriding `@extends`.
-     * @return array{status:int, body:string, headers:list<string>}
+     * @package   NanoRADF
+     * @author    RADLabs Development Team
+     * @copyright Radlabs Studio (c) 1986 - 2026
+     * @since     0.0.1
+     * @param     string      $name   View name without extension (`file` or `folder.file`).
+     * @param     array       $data   Variables for the template scope.
+     * @param     string|null $layout Layout name overriding the theme layout.
+     * @return    array{status:int, body:string, headers:list<string>}
      */
     protected function view (string $name, array $data = [], ?string $layout = null): array
     {
-        return $this->respond (Views::render ($name, $data, $layout, Views::context (static::class)));
+        return $this->respond (ViewsService::render (
+            $name,
+            $data,
+            $layout,
+            ViewsService::context (static::class),
+            $this->getSurface ()
+        ));
     }
 
     /**
-     * Standard 404 outcome — body is a themed stub; Phase 6 swaps it for the
-     * error page from `src/Views/Errors/`.
+     * Standard 404 response — themed stub body.
      *
-     * @since  0.0.1
-     * @return array{status:int, body:string}
+     * Returns a minimal 404 response ready for the dispatcher to emit. Phase 6
+     * may replace this with the full Drip-rendered error page.
+     *
+     * @package   NanoRADF
+     * @author    RADLabs Development Team
+     * @copyright Radlabs Studio (c) 1986 - 2026
+     * @since     0.0.1
+     * @return    array{status:int, body:string}
      */
     protected function notFound (): array
     {

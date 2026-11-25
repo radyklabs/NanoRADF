@@ -1,0 +1,189 @@
+{
+  "last_updated": "2026-11-24T13:05:00+07:00",
+  "learnings": [
+    {
+      "id": "lesson-001",
+      "category": "rule",
+      "title": "Penamaan Config File Konsisten",
+      "description": "Semua config di apps/Config harus pakai pola *Config.php untuk konsistensi dengan gconf() resolver. Contoh: AssetsConfig.php, RoutesConfig.php, HelperConfig.php.",
+      "evidence": "apps/Config/",
+      "created_at": "2026-11-23T13:00:00+07:00"
+    },
+    {
+      "id": "lesson-002",
+      "category": "architecture",
+      "title": "Dispatcher Split: dispatchAssets vs dispatchRoute",
+      "description": "Logic routing harus dipisah jadi dua method public: dispatchAssets() (validasi URL vs mask_urls, return absolute path atau null) dan dispatchRoute() (MVC route dispatch). handle() adalah orchestrator yang memanggil keduanya secara berurutan.",
+      "evidence": "src/Kernel/Dispatcher.php",
+      "created_at": "2026-11-23T13:30:00+07:00"
+    },
+    {
+      "id": "lesson-003",
+      "category": "asset_enqueue",
+      "title": "Enqueue by ID dengan Registry",
+      "description": "Config enqueue_styles/enqueue_scripts hanya berisi ID symbolic (style, design-system, app). Framework resolve via id_registry → mask_urls → generate URL dengan id attribute di <link>/<script> tag.",
+      "evidence": "apps/Config/AssetsConfig.php",
+      "created_at": "2026-11-23T13:15:00+07:00"
+    },
+    {
+      "id": "lesson-004",
+      "category": "bugfix",
+      "title": "MIME Type Detection Cross-Platform",
+      "description": "mime_content_type() TIDAK TERSEDIA di Windows PHP default. Gunakan extension-based lookup array sebagai pengganti agar kompatibel cross-platform.",
+      "evidence": "src/Kernel/Dispatcher.php serveAsset()",
+      "created_at": "2026-11-23T13:45:00+07:00"
+    },
+    {
+      "id": "lesson-005",
+      "category": "bugfix",
+      "title": "Casing Filesystem Case-Sensitive Path",
+      "description": "Filesystem Windows case-insensitive tapi PHP autoload/resolution case-sensitive. Pastikan casing filename di config MATCH dengan actual filesystem (system.css bukan System.css).",
+      "evidence": "apps/Config/AssetsConfig.php id_registry",
+      "created_at": "2026-11-23T13:40:00+07:00"
+    },
+    {
+      "id": "lesson-006",
+      "category": "workflow",
+      "title": "Test Before Commit Wajib",
+      "description": "Selalu jalankan semua test suite (smoke, assets, view, route) SEBELUM commit. Jangan pernah skip step ini meski terlihat 'hanya edit kecil'. User sangat memperhatikan hal ini.",
+      "evidence": "tests/*.php",
+      "created_at": "2026-11-23T13:50:00+07:00"
+    },
+    {
+      "id": "lesson-007",
+      "category": "architecture",
+      "title": "Helper Autoload via Boot::initiate()",
+      "description": "Helper registry dimuat oleh Boot::autoloadHelper() yang dipanggil dari initiate(), bukan lagi oleh .starter. Ini memastikan helpers tersedia untuk semua class loading.",
+      "evidence": "src/Kernel/Boot.php",
+      "created_at": "2026-11-23T13:10:00+07:00"
+    },
+    {
+      "id": "lesson-008",
+      "category": "bugfix",
+      "title": "JANGAN gunakan git reset --hard sembarangan",
+      "description": "git reset --hard akan MENGHAPUS SEMUA perubahan working tree termasuk perubahan VALID user. Sebelum menggunakan reset, SELALU cek dulu: 1) git status, 2) git diff, 3) apakah ada file penting yang perlu dipertahankan. Jika ragu, gunakan git stash atau buat branch baru. JANGAN pernah hard reset tanpa verifikasi bahwa working tree memang dirty/tidak diinginkan.",
+      "evidence": ".starter - user menghapus var_dump(gconf('theme')) dan helper loading block dari .starter, tapi aku accidentally restore ke versi lama saat hard reset karena tidak membaca file actual terlebih dahulu",
+      "created_at": "2026-11-23T14:05:00+07:00"
+    },
+    {
+      "id": "lesson-009",
+      "category": "workflow",
+      "title": "Baca dan Pahami Dampak Sebelum Edit/Simpan",
+      "description": "RULES.md §9.1: 'Always read the base code first.' Tapi lebih dari itu — SELALU lakukan analysis mendalam: 1) Baca file actual, 2) Bandingkan dengan committed version (git diff), 3) Identifikasi perbedaan apa yang ada, 4) Pahami WHY kode berbeda (user edit? bugfix? refactor?), 5) Tentukan mana terbaru/valid vs lama/outdated, 6) Pertahankan yang valid, hapus yang tidak relevan. JANGAN tanya sebelum benar-benar paham konteks. Baru tanya jika ada ambiguity spesifik setelah analisis lengkap.",
+      "evidence": "CLAUDE.md docs/RULES.md — banyak kasus di mana saya bertanya padahal seharusnya sudah bisa simpulkan dari membaca code",
+      "created_at": "2026-11-23T14:05:00+07:00"
+    },
+    {
+      "id": "lesson-010",
+      "category": "security",
+      "title": "MIME Type Detection - Cross-Platform Compatibility",
+      "description": "mime_content_type() function TIDAK TERSEDIA di Windows PHP default (extension mbstring mungkin tidak terinstall). Gunakan extension-based lookup array sebagai pengganti yang reliable dan cross-platform.",
+      "evidence": "src/Kernel/Dispatcher.php serveAsset()",
+      "created_at": "2026-11-23T13:45:00+07:00"
+    },
+    {
+      "id": "lesson-012",
+      "category": "workflow",
+      "title": "Baca CLAUDE.md dan docs/RULES.md Sebelum Bekerja",
+      "description": "WAJIB baca CLAUDE.md dan docs/RULES.md di awal setiap session. Jangan asumsi dari memory. File-file ini berisi aturan kritis yang sering dilanggar: dev URL, PHP version, naming convention, bootstrap chain, security rules, dll. Baca ulang setiap session, bukan hanya sekali.",
+      "evidence": "CLAUDE.md, docs/RULES.md",
+      "created_at": "2026-11-23T15:35:00+07:00"
+    },
+    {
+      "id": "lesson-013",
+      "category": "workflow",
+      "title": "Jangan Edit File Tanpa Pikir Panjang",
+      "description": "Setiap edit file harus melalui analisis: 1) Baca file actual, 2) Pahami konteks dan dampak, 3) Tentukan apakah perubahan diperlukan, 4) Verifikasi dengan test. Jangan edit sembarangan hanya karena 'terlihat perlu'. Pertimbangkan: apakah ini akan break sesuatu? Apakah ada dependency lain? Apakah user sudah edit file ini?",
+      "evidence": "Multiple incidents: .starter, Dispatcher.php, config files",
+      "created_at": "2026-11-23T15:35:00+07:00"
+    },
+    {
+      "id": "lesson-014",
+      "category": "workflow",
+      "title": "Jangan Asumsi - Verifikasi dengan Kode",
+      "description": "Jangan pernah berasumsi tentang state codebase. Selalu verifikasi dengan: git status, git diff, view file, grep. Asumsi sering salah dan menyebabkan error yang tidak perlu. Jika ragu, baca file actual, jangan tebak.",
+      "evidence": "Multiple incidents where I assumed file state without reading",
+      "created_at": "2026-11-23T15:35:00+07:00"
+    },
+    {
+      "id": "lesson-015",
+      "category": "workflow",
+      "title": "Simpan Kesalahan sebagai Pengingat",
+      "description": "Setiap kesalahan yang dibuat harus dicatat di .claude/learnings.json agar tidak terulang. Ini bukan opsional - ini WAJIB. Kesalahan yang sama tidak boleh terjadi dua kali. Jika terjadi, berarti learning system gagal.",
+      "evidence": "User feedback: 'SIMPA KESALAHANMU SEBAGAI PENGINGAT! JANGAN ULANGI KESALAHAN YANG SAMA!'",
+      "created_at": "2026-11-23T15:35:00+07:00"
+    },
+    {
+      "id": "lesson-016",
+      "category": "security",
+      "title": "Security Hardening Wajib di Early Phase",
+      "description": "CSRF protection, rate limiting, dan security headers (CSP, HSTS, X-Frame-Options) HARUS diimplementasikan di early phase (Phase 2b), bukan ditunda ke phase akhir. Security gaps di early phase berbahaya karena semua layer atas bergantung pada foundation yang aman.",
+      "evidence": "Review findings: CSRF missing, rate limiting missing, security headers missing — all P0 critical",
+      "created_at": "2026-11-23T17:00:00+07:00"
+    },
+    {
+      "id": "lesson-017",
+      "category": "code_quality",
+      "title": "Dead Code Cleanup di Early Phase",
+      "description": "Dead code (unused methods, empty helpers, orphan files) HARUS dibersihkan di early phase (Phase 2c), bukan ditunda. Dead code menambah cognitive load, memperlambat review, dan berpotensi jadi security hole.",
+      "evidence": "Review findings: AssetsService::candidate(), diskPath(), rewrite() unused; ThemeHelper empty; src/Config/Theme.php orphan",
+      "created_at": "2026-11-23T17:00:00+07:00"
+    },
+    {
+      "id": "lesson-018",
+      "category": "architecture",
+      "title": "Simplifikasi Over-Engineered Code Early",
+      "description": "Code yang over-engineered (AssetsService::url() terlalu kompleks) HARUS disederhanakan segera (Phase 4b), bukan dibiarkan. Over-complexity menambah bug surface, sulit di-maintain, dan memperlambat onboarding.",
+      "evidence": "Review findings: AssetsService::url() 60+ lines, legacy ds/ fast-path, double loop, complex servesSurface()",
+      "created_at": "2026-11-23T17:00:00+07:00"
+    },
+    {
+      "id": "lesson-019",
+      "category": "config",
+      "title": "array_replace_recursive Behavior dengan Empty Array",
+      "description": "array_replace_recursive($default, $override) dengan $override['key'] = [] akan REPLACE top-level key sepenuhnya, tapi nested keys (seperti mask_urls, id_registry) akan di-MERGE (empty array tidak menghapus nested values). Enqueue lists (top-level) di-replace, mask_urls (nested) di-merge.",
+      "evidence": "apps/Config/AssetsConfig.php override behavior verified with PHP test",
+      "created_at": "2026-11-23T21:30:00+07:00"
+    },
+    {
+      "id": "lesson-020",
+      "category": "config",
+      "title": "Theme Config Separation dari AssetsConfig",
+      "description": "Theme config (face/bone theme names) dipindah ke file terpisah ThemeConfig.php (src/Config + apps/Config) agar konsisten dengan gconf() pattern. AssetsService::theme() updated untuk baca dari gconfig('theme')['default']['public'|'private'] dengan backwards-compat alias (face/bone).",
+      "evidence": "src/Config/ThemeConfig.php, apps/Config/ThemeConfig.php, AssetsService::theme()",
+      "created_at": "2026-11-23T21:45:00+07:00"
+    },
+    {
+      "id": "lesson-021",
+      "category": "performance",
+      "title": "Segment Prefix Matching vs PCRE Regex untuk Asset Resolution",
+      "description": "AssetsService::url() dan resolve() diganti dari per-request PCRE regex (preg_match per pattern) ke segment prefix matching (str_starts_with + substr). Pre-compiled pattern map di-cache per surface. O(n) string ops jauh lebih efisien dari PCRE overhead. Legacy regex() dan matchPattern() dihapus.",
+      "evidence": "AssetsService.php patternMap(), allPatterns(), anchor() replacing regex()/matchPattern()",
+      "created_at": "2026-11-23T22:00:00+07:00"
+    },
+    {
+      "id": "lesson-022",
+      "category": "security",
+      "title": "Security Headers di Dispatcher::emit()",
+      "description": "Security headers (CSP, HSTS, X-Frame-Options, X-Content-Type-Options, Referrer-Policy) diterapkan di Dispatcher::emit() via securityHeaders() method. CSP differentiated untuk JSON vs HTML responses. HSTS hanya di HTTPS. Ini memastikan SEMUA response (termasuk error pages) mendapat security headers.",
+      "evidence": "src/Kernel/Dispatcher.php securityHeaders() method",
+      "created_at": "2026-11-23T22:30:00+07:00"
+    },
+    {
+      "id": "lesson-023",
+      "category": "workflow",
+      "title": "Pre-Action Checklist Wajib Output Sebelum Edit",
+      "description": "Setiap kali akan memanggil tool edit, HARUS output PRE-ACTION CHECKLIST di response dengan semua phase (0-4) dan checkbox. Ini memastikan: user explicitly requested, file dibaca dulu, plan tertulis + dikonfirmasi, hanya file in scope, test plan ready. Jika ada [ ] = NO → STOP dan tanya user.",
+      "evidence": "CLAUDE.md MANDATORY PRE-ACTION CHECKLIST section added",
+      "created_at": "2026-11-23T21:50:00+07:00"
+    },
+    {
+      "id": "lesson-024",
+      "evidence": "CLAUDE.md:115, session 2026-11-24 concurrent-edit incident",
+      "created_at": "2026-11-24T13:05:00+07:00",
+      "category": "workflow",
+      "description": "When editing any file, always read its complete current content from disk immediately before proposing changes. Never rely on memory of prior reads or cached content. The user may be actively editing the same files in their IDE — stale assumptions lead to lost work and conflicts. This applies even to files just reviewed moments ago.",
+      "title": "Always Read Current File State Before Editing"
+    }
+  ]
+}

@@ -1,0 +1,31 @@
+/* ============================================================================
+ * 2. Space — fluid scale.
+ *
+ * Everything is a multiple of the base unit. Components use these values;
+ * layout can use direct numbers for one-off whitespace.
+ * ========================================================================== */
+
+:root {
+    --space-unit: 0.25rem;      /* 4px at the default font size */
+
+    --space-0:  0;
+    --space-1:  var(--space-unit);            /*  4px */
+    --space-2:  calc(var(--space-unit) * 2);  /*  8px */
+    --space-3:  calc(var(--space-unit) * 3);  /* 12px */
+    --space-4:  calc(var(--space-unit) * 4);  /* 16px */
+    --space-5:  calc(var(--space-unit) * 5);  /* 20px */
+    --space-6:  calc(var(--space-unit) * 6);  /* 24px */
+    --space-8:  calc(var(--space-unit) * 8);  /* 32px */
+    --space-10: calc(var(--space-unit) * 10); /* 40px */
+    --space-12: calc(var(--space-unit) * 12); /* 48px */
+    --space-16: calc(var(--space-unit) * 16); /* 64px */
+    --space-20: calc(var(--space-unit) * 20); /* 80px */
+    --space-24: calc(var(--space-unit) * 24); /* 96px */
+
+    --scroll-mt: var(--space-8);
+}
+
+/* A rhythm for vertically stacking blocks. */
+.stack > * + * {margin-block-start: var(--space-4);}
+.stack-sm > * + * {margin-block-start: var(--space-2);}
+.stack-lg > * + * {margin-block-start: var(--space-6);}

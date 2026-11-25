@@ -3,9 +3,9 @@
 /**
  * The Gateway: NanoRADF
  * --
- * Bootstrap stage 1: entry guard → constants → dotenv → helper
- * libraries → kernel hand-off, wrapped by a catch-all error path
- * that logs to storage/logs/system.log.
+ * Bootstrap entry point — validates configuration, loads environment settings, resolves helpers
+ * and kernel, then dispatches the request. Every bootstrap failure funnels through a single
+ * safe error handler that writes to `storage/logs/system.log`.
  *
  * @package     NanoRADF
  * @author      RADLabs Development Team
@@ -13,46 +13,43 @@
  * @since       0.0.1
  */
 
+namespace System;
+
+use Exception;
+use Throwable;
+use System\Kernel\Dispatcher;
+
 // Entry guard: folder names must be set by public/index.php.
 if (!isset ($application_folder)
     || !isset ($system_folder)
     || !isset ($modules_folder))
 {
-    http_response_code (404);
-    header ('Content-Type: text/html; charset=utf-8');
-    exit ("<h1>404 Not Found</h1><p>The requested page (or file) could not be found.</p>");
+    try {exit (@require realpath (__DIR__).DIRECTORY_SEPARATOR.'.errors');}
+    catch (Throwable $e) {$file = basename (__FILE__); exit ("404 Forbidden {$file}");}
 }
 
+define ('publicpath', php_sapi_name () === 'cli'
+    ? realpath (__DIR__).DIRECTORY_SEPARATOR.'public'.DIRECTORY_SEPARATOR
+    : realpath (getcwd ()).DIRECTORY_SEPARATOR);
 define ('basepath', realpath (__DIR__).DIRECTORY_SEPARATOR);
-
-$starter_key = call_user_func ('implode', '.', [basepath, 'starter']);
-if (!is_readable ($starter_key)) {$error = 'starter';}
-else {require_once $starter_key;}
 
 try
 {
-    if (isset ($error)) {throw new Exception ($error, 500);}
-    unset ($error);
-    call_user_func ([$kernel, 'initiate']);
+    $env_key = implode ('.', [basepath, 'env']);
+    if (!is_readable ($env_key)) {throw new Exception ('env', 500);}
+    
+    $starter_key = implode ('.', [basepath, 'starter']);
+    
+    if (!is_readable ($starter_key)) {throw new Exception ('starter', 500);}
+    else {require_once $starter_key;}
 
-    // Dispatch on web SAPIs; CLI stays a plain loader so tests/smoke_check.php
-    // loads without resolving routes.
-    if (php_sapi_name () !== 'cli')
-    {
-        System\Kernel\Dispatcher::handle ();
-    }
+    if (php_sapi_name () !== 'cli') {Dispatcher::handle ();}
 }
 
 // Catch-all: friendly text for bootstrap sentinels, generic/gated text otherwise,
 // plus the storage/logs/system.log entry.
 catch (Throwable $th)
 {
-    if (function_exists ('blackwall')) {blackwall ($th);}
-    
-    else
-    {
-        header ('Content-Type: text/html; charset=utf-8', true, 500);
-        echo "<link rel=\"stylesheet\" href=\"/themes/default/css/error.css\"/>";
-        exit ("<notice><h1>500 Internal System Error</h1><p>An unexpected error occurred.</p></notice>");
-    }
+    if (function_exists (__NAMESPACE__.'\blackwall')) {blackwall ($th);}
+    else {$code = 500; require realpath (__DIR__).DIRECTORY_SEPARATOR.'.errors';}
 }

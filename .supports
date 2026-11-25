@@ -1,19 +1,28 @@
 <?php declare (strict_types=1);
 
 /**
- * Global helper library — loaded first by the gateway.
+ * Shared Utility Functions
+ * --
+ * The framework's basic toolbox. A self-contained collection of pure helpers used throughout
+ * bootstrap and beyond: path joining and normalization, PSR-4 namespace conversion, environment
+ * variable access with dot-notation grouping, HTTP status lookup, and URL construction.
+ * No classes, no state, no dependencies.
  *
- * Pure functions shared across every bootstrap stage: path/namespace
- * normalisation, .env access, and HTTP utilities. Zero dependencies.
- *
- * @since 0.0.1
+ * @package     NanoRADF
+ * @author      RADLabs Development Team
+ * @copyright   Radlabs Studio (c) 1986 - 2026
+ * @since       0.0.1
  */
+
+namespace System;
+
+use Throwable;
+use Exception;
 
 if (!defined ('basepath'))
 {
-    http_response_code (404);
-    header ('Content-Type: text/html; charset=utf-8');
-    exit ("<h1>404 Not Found</h1><p>The requested page (or file) could not be found.</p>");
+	try {exit (@require realpath (__DIR__).DIRECTORY_SEPARATOR.'.errors');}
+    catch (Throwable $e) {$file = basename (__FILE__); exit ("404 Forbidden {$file}");}
 }
 
 /**
@@ -25,7 +34,6 @@ if (!defined ('basepath'))
  * @return bool True when strictly equal.
  */
 function is (mixed $value, mixed $expecting): bool { return $value === $expecting; }
-
 
 /**
  * Normalise a path or URL for web usage.
@@ -292,4 +300,119 @@ function fl (string $filename, string|bool $ext = 'php'): string
 		'php' => "{$filename}.php",
 		false => ".{$filename}",
 	][$ext] ?? "{$filename}.{$ext}";
+}
+
+/**
+ * Build a full URL from a path using configured or auto-detected base URL.
+ *
+ * Normalises the path with urlify(), then prepends the base URL from
+ * genv('app.url') or auto-detects from $_SERVER (scheme + host).
+ *
+ * @since  0.0.1
+ * @param  string $path Path relative to app root (e.g. '/cendol').
+ * @return string Absolute URL (e.g. 'http://localhost/cendol').
+ */
+function urlprettify (string $path): string
+{
+	$base = (string) genv ('app.url');
+	if ($base === '')
+	{
+		$scheme = (!empty ($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+		$host   = $_SERVER['HTTP_HOST'] ?? 'localhost';
+		$base   = $scheme . '://' . $host;
+	}
+	// Ensure proper URL structure before interlacing
+	$base = trim ($base, '/') . '/' . ltrim ($path, '/');
+	return urlify ($base);
+}
+
+/**
+ * Check if a URL is reachable via HTTP HEAD request.
+ *
+ * Uses cURL when available (preferred), falls back to get_headers()
+ * with stream context timeout. Best for remote/CDN assets.
+ * For local files, prefer is_file() + is_readable() on the
+ * filesystem path instead.
+ *
+ * @since  0.0.1
+ * @param  string $url     Absolute URL to check.
+ * @param  int    $timeout Max seconds to wait (default 2).
+ * @return bool True when HTTP 2xx/3xx.
+ */
+function url_exists (string $url, int $timeout = 2): bool
+{
+	// Prefer cURL for proper HEAD request and timeout control
+	if (function_exists ('curl_init'))
+	{
+		$ch = curl_init ($url);
+		curl_setopt_array ($ch, [
+			CURLOPT_NOBODY        => true,
+			CURLOPT_RETURNTRANSFER => true,
+			CURLOPT_TIMEOUT       => $timeout,
+			CURLOPT_CONNECTTIMEOUT => 1,
+			CURLOPT_FOLLOWLOCATION => true,
+			CURLOPT_SSL_VERIFYPEER => false,
+			CURLOPT_SSL_VERIFYHOST => false,
+		]);
+		curl_exec ($ch);
+		$code = curl_getinfo ($ch, CURLINFO_RESPONSE_CODE);
+		curl_close ($ch);
+		return $code >= 200 && $code < 400;
+	}
+
+	// Fallback: get_headers with stream context timeout
+	$ctx = stream_context_create ([
+		'http' => [
+			'method'      => 'HEAD',
+			'timeout'     => $timeout,
+			'follow_location' => 1,
+			'max_redirects'   => 5,
+			'ignore_errors'   => true,
+		],
+		'ssl' => [
+			'verify_peer'      => false,
+			'verify_peer_name' => false,
+		],
+	]);
+		$headers = @get_headers ($url, true, $ctx);
+	if ($headers === false) {return false;}
+	$status = $headers[0] ?? '';
+	return preg_match ('/^HTTP\/\d\.\d\s+(2\d\d|3\d\d)/', $status) === 1;
+}
+
+function error_css ()
+{
+	$uri = parse_url(gserver('request.uri'), PHP_URL_PATH);
+
+	// $path = '/error/';
+	if (strpos($uri, '/exception/') === 0) {
+		$file = pathinfo($uri, PATHINFO_BASENAME);
+		// $file = substr ($uri, strlen ($path));
+		// $file = 'core.css';
+		$abspath = interlace (__DIR__, '/src/Views/Styles/Errors', $file);
+		$secpath = interlace (getcwd(), 'error.css');
+		$size = filesize($abspath) + (is_readable ($secpath) ? filesize ($secpath)+1:0);
+		if (is_readable ($abspath))
+		{
+			header('Content-Type: text/css; charset=utf-8');
+			header('Content-Length: ' . $size);
+			readfile($abspath);
+		}
+		if (is_readable ($secpath)) {echo "\n"; readfile($secpath);}
+		exit;
+	}
+
+	return false; // Biarkan file lain dilayani secara normal
+}
+
+function require_file (string $required_file, string $error = ''): void
+{
+	if (!is_readable ($required_file)) {throw new Exception ($error, 500);}
+	require_once $required_file;
+}
+
+function get_required_file (string $required_file, string $error = '', mixed $default = ''): mixed
+{
+	if (!is_readable ($required_file)) {throw new Exception ($error, 500);}
+	return require $required_file ?? $default;
 }

@@ -1,0 +1,25 @@
+<?php declare(strict_types=1);
+
+if (!defined ('basepath')) define ('basepath', 404);
+
+if (!defined ('sep')) define ('sep', DIRECTORY_SEPARATOR);
+
+$common = realpath (__DIR__).sep.'.supports';
+
+if (is_readable ($common)) {require_once ($common);
+
+System\error_css();}
+
+http_response_code ($code ?? basepath);
+
+header ('Content-Type: text/html; charset=utf-8');
+
+if (isset ($th) && $th->getMessage() === 'env') {$code = 'ErrorEnv';}
+
+$pattern = [realpath (__DIR__), 'src', 'Views', 'Errors', '%s.html'];
+
+$error_pathfile = implode (sep, $pattern);
+
+include sprintf ($error_pathfile, $code ?? basepath);
+
+exit (1);

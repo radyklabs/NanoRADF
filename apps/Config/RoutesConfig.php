@@ -1,18 +1,37 @@
 <?php declare (strict_types=1);
 
 /**
- * Central route table — single source of truth for URL → handler.
+ * Every URL the application answers, and who answers it.
+ * --
+ * One table, one place to look. Each line pairs a method and path with the
+ * controller action that handles it, so adding a page means adding a line here
+ * rather than hunting through the code.
  *
- * Flat form: `'GET /hello/{name}' => \App\Controllers\HomeController::class . '::hello'`
- * Prefix group form: '/admin' => ['prefix' => '/admin', 'routes' => [ 'GET /dashboard' => ...]]
- *   — inner keys may be `METHOD /path` or bare `/path` (verb defaults to GET).
+ * Two ways to write an entry:
  *
- * `{name}` segments are required and captured as `[^/]+`; `{name:regex}`
- * narrows them. Exact routes win over parameterised ones within a method;
- * params reach the action positionally in placeholder-declaration order.
+ * - Flat, for a single address:
+ *   `'GET /hello/{name}' => 'App\Controllers\HomeController::hello'`
+ * - Grouped under a shared prefix, so the prefix is not repeated:
+ *   `'/admin' => ['prefix' => '/admin', 'routes' => ['GET /dashboard' => ...]]`
+ *   Inner keys may carry the method or leave it out, in which case GET is
+ *   assumed.
  *
- * @since 0.0.1
+ * A `{name}` part of the path is required and matches one segment;
+ * `{name:regex}` narrows what that segment may be. When two entries could
+ * match the same request, the one without placeholders wins. Captured values
+ * are handed to the action in the order they appear in the path.
+ *
+ * @package     NanoRADF
+ * @author      RADLabs Development Team
+ * @copyright   Radlabs Studio (c) 1986 - 2026
+ * @since       0.0.1
  */
+
+if (!defined ('basepath'))
+{
+    try {exit (@require dirname (__DIR__,2).DIRECTORY_SEPARATOR.'.errors');}
+    catch (Throwable $e){$file = basename(__FILE__); exit("404 Forbidden {$file}");}
+}
 
 return [
     'GET /'             => 'App\Controllers\WelcomeController::index',

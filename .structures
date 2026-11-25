@@ -1,20 +1,26 @@
 <?php declare (strict_types=1);
 
 /**
- * Path and namespace constants for every source tree.
+ * Namespace Registry
+ * --
+ * Maps directories to autoloadable namespaces and discovered during bootstrap. For every source
+ * folder that exists on disk, this file declares a path constant and its matching namespace prefix.
+ * Modules are registered conditionally based on the modules environment flag.
  *
- * Loaded by `.config` during bootstrap. For each root that exists on disk it
- * defines the `*f` directory constant and, where mapped, the `ns*` namespace
- * constant; missing directories are skipped silently.
- *
- * @since 0.0.1
+ * @package     NanoRADF
+ * @author      RADLabs Development Team
+ * @copyright   Radlabs Studio (c) 1986 - 2026
+ * @since       0.0.1
  */
+
+namespace System;
+
+use Throwable;
 
 if (!defined ('basepath'))
 {
-    http_response_code (404);
-    header ('Content-Type: text/html; charset=utf-8');
-    exit ("<h1>404 Not Found</h1><p>The requested page (or file) could not be found.</p>");
+    try {exit (@require realpath (__DIR__).DIRECTORY_SEPARATOR.'.errors');}
+    catch (Throwable $e) {$file = basename (__FILE__); exit ("404 Forbidden {$file}");}
 }
 
 // Application layer map (apps/): folder path + namespace per MVC role.
@@ -24,6 +30,7 @@ $appfs = [
     'modelfapp'         => 'nsmodelapp',
     'servicesfapp'      => 'nsservapp',
     'viewsfapp'         => false,
+    'themesfapp'        => false,
 ];
 foreach ($appfs as $f => $d)
 {
@@ -73,13 +80,12 @@ if (genv ('app.modules') === true && defined ('nsmod') && is_dir (modulesf))
 
 // Framework core map (src/): folder path + System\ namespace per role.
 $systemfs = [
-    'configf'       => false, 
-    'contractsf'    => 'nscont', 
-    'controllersf'  => 'nsctrl', 
-    'helperf'       => false, 
-    'kernelf'       => 'nskernel', 
-    'servicesf'     => 'nsserv', 
-    'themesf'       => false, 
+    'configf'       => false,
+    'contractsf'    => 'nscont',
+    'controllersf'  => 'nsctrl',
+    'helperf'       => false,
+    'kernelf'       => 'nskernel',
+    'servicesf'     => 'nsserv',
     'viewsf'        => false,
     ];
 

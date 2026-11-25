@@ -5,8 +5,65 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning: [S
 
 ## [Unreleased]
 
+### Fixed
+- `src/Views/Tokens/system.css`: broken `@import url("type.css")` → `typography.css` (file `type.css` never existed; runtime `AssetsService::resolve('/system/css/type.css')` returned null, so typography tokens never loaded in the browser).
+- `nanoradf` gateway: `publicpath` now resolves to `basepath/public/` under CLI (previously used `getcwd()`, which pointed at the project root when tests ran from there); web SAPI behavior unchanged.
+- `src/Services/AssetsService.php::url()`: symbolic id lookup now searches both `register_styles` and `register_scripts` registries instead of inferring asset kind by string-parsing the name (`str_contains('.css')` misclassified plain ids like `style`).
+
+### Changed
+- **Phase 2d — Asset register restructuring (breaking change):** Replaced flat `id_registry` key with two separate explicit arrays: `register_styles` and `register_scripts`. Each entry is a struct: `['id' => <string>, 'path' => '<mask-relative-path-with-extension>']`. Path extension is now explicit in config; auto-extension logic removed from `AssetsService::names()`. The renderer builds a `$pathToId` lookup table from registry entries directly, eliminating the previous reverse-loop lookup. Fixes long-standing `array_replace_recursive` empty-array regresi (REPORT A1/A2/A3): enqueue lists are no longer silently overwritten by framework defaults. `design-system` token (`/system/css/System.css`) now enqueued to face surface. Updated docblocks across AssetsService. All 24 asset tests, 14 view tests, route checks, and smoke checks PASS.
+- `src/Services/AssetsService.php`: removed dead code — `regex()`, `matchPattern()`, `expand()` (no callers) and the legacy `ds/` fast-path in `url()` (~110 lines).
+- `apps/Config/HelperConfig.php`: removed non-English comment; no functional change.
+
+## [Unreleased]
+
+### Fixed
+- `src/Views/Tokens/system.css`: broken `@import url("type.css")` → `typography.css` (file `type.css` never existed; runtime `AssetsService::resolve('/system/css/type.css')` returned null, so typography tokens never loaded in the browser).
+- `nanoradf` gateway: `publicpath` now resolves to `basepath/public/` under CLI (previously used `getcwd()`, which pointed at the project root when tests ran from there); web SAPI behavior unchanged.
+- `src/Services/AssetsService.php::url()`: symbolic id lookup now searches both `register_styles` and `register_scripts` registries instead of inferring asset kind by string-parsing the name (`str_contains('.css')` misclassified plain ids like `style`).
+
+### Changed
+- **Phase 2d — Asset register restructuring (breaking change):** Replaced flat `id_registry` key with two separate explicit arrays: `register_styles` and `register_scripts`. Each entry is a struct: `['id' => <string>, 'path' => '<mask-relative-path-with-extension>']`. Path extension is now explicit in config; auto-extension logic removed from `AssetsService::names()`. The renderer builds a `$pathToId` lookup table from registry entries directly, eliminating the previous reverse-loop lookup. Fixes long-standing `array_replace_recursive` empty-array regresi (REPORT A1/A2/A3): enqueue lists are no longer silently overwritten by framework defaults. `design-system` token (`/system/css/System.css`) now enqueued to face surface. Updated docblocks across AssetsService. All 24 asset tests, 14 view tests, route checks, and smoke checks PASS.
+- `src/Services/AssetsService.php`: removed dead code — `regex()`, `matchPattern()`, `expand()` (no callers) and the legacy `ds/` fast-path in `url()` (~110 lines).
+- `apps/Config/HelperConfig.php`: removed non-English comment; no functional change.
+- **Sentinelization:** 19 descriptive throws converted to sentinel keys across `ViewsService`, `DripService`, `Router`; `blackwall()` branch reordered (debug first → sentinel → generic); 19 new sentinel keys added to `.starter` with user-friendly messages. All test suites PASS.
+
+### Docs
+- `docs/PLAN.md`: Phase 2 audit — marked the Blade-shaped composer (`Layouts` ← `Patterns` ← `Components`/`Elements`) as **deferred** (scaffold exists, no composer logic); marked the optional registry `scope` key as **deferred** (not implemented; per-surface enqueue separation covers current needs); corrected stale wording (`src/Themes/admin` → `apps/Themes/admin`, `src/Helper/Utilities.php` → `UtilitiesHelper.php`, `mask_urls` location → `src/Config/AssetsConfig.php`). Dated batch-log entries left untouched as history.
+
+### Added
+- urlprettify() function in .supports: builds full URLs from paths with auto-detected or configured base URL, normalizes slashes with urlify(), and handles server/protocol detection
+
+### Docs
+- Humanized docblocks across framework bootstrap layer (public/index.php, nanoradf, .starter, .config, .structures, .supports): descriptions rewritten for readability while preserving technical accuracy; added @package/@author/@copyright standard headers consistent with existing nanoradf gateway convention.
+- `src/Kernel/` docblocks refined: Boot, Router, Dispatcher, Controller class and method descriptions rewritten in plain language; standard headers (`@package NanoRADF`, `@author RADLabs Development Team`, `@copyright Radlabs Studio (c) 1986 - 2026`, `@since 0.0.1`) applied throughout; no logic changes.
+- CLAUDE.md Phase 1 checklist enhanced: file reads must always fetch current disk state — never assume content from memory due to potential concurrent edits by user or other agents.
+- `apps/Config/` docblocks refined: AssetsConfig, HelperConfig, RoutesConfig, ThemeConfig descriptions rewritten in plain language (what each file decides and how it layers over `src/Config`); standard headers (`@package NanoRADF`, `@author RADLabs Development Team`, `@copyright Radlabs Studio (c) 1986 - 2026`, `@since 0.0.1`) applied; no logic changes.
+- `src/Config/` docblocks refined: AssetsConfig, HelperConfig, ThemeConfig descriptions rewritten in plain language (framework defaults, overridden by `apps/Config`); stale `theme` bullet removed from AssetsConfig docblock (theme config moved to ThemeConfig in Phase 2c); standard headers applied; no logic changes.
+- `src/Controllers/`, `src/Helper/`, `src/Services/` docblocks refined: controller base classes, helper functions, and AssetsService/DripService/ViewsService class and method descriptions rewritten in plain language; Drip directive list documented; standard headers (`@package NanoRADF`, `@author RADLabs Development Team`, `@copyright Radlabs Studio (c) 1986 - 2026`, `@since 0.0.1`) applied throughout; no logic changes.
+- Phase 2c — Surface resolution via class hierarchy: `SurfaceAwareInterface` + `SurfaceResolverTrait` determine surface (`public`/`private`/`api`) from controller inheritance, no mutable `$surface` property; `Controller` implements interface, `Router::run()` and `Controller::respond()` use `getSurface()`.
+- Phase 2c — Theme-based layouts: `ViewsService::render()` resolves layout from active theme only (`<theme>/index.html`), no fallback to `src/Views/Layouts/` or `apps/Views/layouts/`; explicit layout argument resolved from active theme folder; new `ViewsService::fragment()` for layout-less rendering; error pages are standalone documents; theme layouts created at `public/themes/default/index.html`, `apps/Themes/default/index.html`, `apps/Themes/admin/index.html`; `apps/Views/layouts/main.html` removed; `ThemeHelper.php` moved to `namespace System`.
+
 ### Added
 - Config file rename for naming consistency: `apps/Config/Assets.php` → `AppsConfig/AssetsConfig.php`, `apps/Config/Routes.php` → `apps/Config/RoutesConfig.php`, `apps/Config/Helper.php` → `apps/Config/HelperConfig.php` (aligns with `gconf()` stem-to-config resolution pattern used by `ConfigHelper.php`).
+- Phase 2b — Security hardening: Security headers (CSP, HSTS, X-Frame-Options, X-Content-Type-Options, Referrer-Policy) applied in `Dispatcher::emit()` via new `securityHeaders()` method; CSP differentiated for JSON vs HTML responses; HSTS only on HTTPS.
+- Phase 2c — Code quality & cleanup: Dead code removed from `AssetsService` (`candidate()`, `diskPath()`, `rewrite()`); `ThemeHelper` implemented with global `theme($surface)` function reading from `gconfig('theme')`; Theme config separated from AssetsConfig into dedicated `ThemeConfig.php` (src/Config + apps/Config); `AssetsService::theme()` updated to read from ThemeConfig with backwards-compat aliases (`face`/`bone` → `public`/`private`).
+- AssetsService simplification: `url()` and `resolve()` rewritten with segment prefix matching (O(n) string ops) replacing per-request PCRE regex; pre-compiled pattern map cached per surface; `anchor()` helper for config disk path resolution; `allPatterns()` for surface-agnostic resolution.
+- Admin theme scaffold: `apps/Themes/admin/css/style.css` and `apps/Themes/admin/js/app.js` created for bone surface asset serving.
+- Theme migration: `src/Themes/` → `apps/Themes/` (backend theme assets moved to application layer).
+- `.structures`: Added `themesfapp` constant; removed `themesf` from system map.
+- `src/Config/AssetsConfig.php`: Updated `mask_urls` bone patterns from `/src/Themes/` to `/apps/Themes/`.
+- `src/Services/AssetsService.php`: `anchor()` now handles `/apps/` prefix for theme asset resolution.
+- `src/Config/ThemeConfig.php` & `apps/Config/ThemeConfig.php`: Updated docblocks to reference `apps/Themes/`.
+- `CLAUDE.md`: Updated directory layout reference.
+
+### Changed
+- `apps/Config/AssetsConfig.php`: Restored full override with `enqueue_styles` (style, design-system), `enqueue_scripts` (app), `bone_enqueue_styles` (style), `bone_enqueue_scripts` (app); `id_registry` and `mask_urls` commented (defaults in src/Config).
+- `src/Config/ThemeConfig.php` & `apps/Config/ThemeConfig.php`: Structure aligned to `['default' => ['public' => 'default', 'private' => 'default']]` with override `['default' => ['private' => 'admin']]`.
+- `src/Helper/ThemeHelper.php`: Implemented global `theme($surface)` function with alias support.
+- `src/Services/AssetsService.php`: Removed dead methods; `theme()` reads from ThemeConfig; `url()` and `resolve()` use segment prefix matching; added `patternMap()`, `allPatterns()`, `anchor()`.
+- `src/Kernel/Dispatcher.php`: Added `securityHeaders()` called from `emit()`; security headers applied to all responses.
+- `tests/assets_check.php`: Updated bone theme expectation to 'admin'; face scripts check updated for cache-buster query string.
 - Asset enqueue via symbolic ids (`id_registry` in AssetsConfig): config now uses human-readable ids (`style`, `design-system`, `app`) that resolve to masked URLs via the id registry; render output includes `<link ... id="design-system">` and `<script ... id="app">` attributes.
 - Helper autoload moved to `Boot::autoloadHelper()`: called from `initiate()` after PSR-4 registration, using `configfapp` constant to locate `apps/Config/HelperConfig.php` stem list — fixes missing `e()` and `baseurl()` on some load paths.
 - `Dispatcher` split: `dispatchAssets()` resolves masked assets against `mask_urls` config and returns absolute file path or null; `serveAsset()` serves the resolved file with headers; `dispatchRoute()` handles MVC route matching. Entrypoint `handle()` orchestrates both stages cleanly separated.
@@ -19,7 +76,7 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning: [S
 
 ### Added
 - Phase 2 batch 3 — Pattern-based mask URL engine: `mask_urls` config uses flexible regex patterns with `{*}` path capture and `{face_theme_active_name}` / `{bone_theme_active_name}` placeholders; pattern matching in AssetsService::resolve() supersedes static slug map. Theme-aware asset serving: face routes resolve under public/themes/{theme}/, bone routes under src/Themes/{theme}/ with separate queue dedup via `$queuedFaceAssets` / `$queuedBoneAssets`.
-- Helper auto-autoload registry: new `apps/Config/Helper.php` stem list (`['uri', 'utilities']`) loaded by `.starter` after config, before kernel init, ensuring helpers are available when classes start loading. File naming convention aligned to `*Helper.php` suffix (UriHelper, UtilitiesHelper).
+- Helper auto-autoload registry: new `apps/Config/HelperConfig.php` stem list (`['uri', 'utilities']`) loaded by `.starter` after config, before kernel init, ensuring helpers are available when classes start loading. File naming convention aligned to `*Helper.php` suffix (UriHelper, UtilitiesHelper).
 - Auto head/foot injection: `Views::render()` now merges default asset tags (`head`, `foot`, `bone_head`, `bone_foot`) into template scope from AssetsService; controller no longer needs manual assignment. WelcomeController cleaned of redundant $head/$foot lines.
 - Drip directive engine extension: `@enqueueStyles` → `AssetsService::renderFaceStyles()`, `@enqueueScripts` → `AssetsService::renderFaceScripts()`, `@style` / `@script` for inline blocks (fully qualified namespace in compiled PHP).
 - Dispatcher-level asset interception: `Dispatcher::handle()` intercepts masked assets BEFORE Router dispatch; private static `asset()` method serves with proper headers (Content-Type, ETag, Cache-Control, Content-Length); no route entries needed for assets.

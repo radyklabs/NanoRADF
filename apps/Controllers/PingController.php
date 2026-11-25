@@ -1,9 +1,5 @@
 <?php declare (strict_types=1);
 
-namespace App\Controllers;
-
-use System\Controllers\ApiController;
-
 /**
  * API probe — `GET /ping` returns an ok envelope; `GET /fail/{code}` returns the
  * error envelope with the requested status. Demonstrates the api surface end to
@@ -11,6 +7,18 @@ use System\Controllers\ApiController;
  *
  * @since 0.0.1
  */
+
+namespace App\Controllers;
+
+use Throwable;
+use System\Controllers\ApiController;
+
+if (!defined ('basepath'))
+{
+    try {exit (@require dirname (__DIR__,2).DIRECTORY_SEPARATOR.'.errors');}
+    catch (Throwable $e){$file = basename(__FILE__); exit("404 Forbidden {$file}");}
+}
+
 final class PingController extends ApiController
 {
     /**

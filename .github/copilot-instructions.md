@@ -1,0 +1,1 @@
+**NON NEGOTIABLE TASK:** Always read [CLAUDE.md](../CLAUDE.md) before thinking or respond to the user chat/message.

@@ -1,8 +1,16 @@
-@extends('layouts.main')
-
-@section('content')
+<!-- Error page: standalone document, no theme layout -->
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{{$code ?? 'Error'}} — {{$title ?? 'Error'}}</title>
+    <link rel="stylesheet" href="/themes/default/css/style.css">
+</head>
+<body>
     <notice>
         <h1>{{$code ?? 'Error'}} — {{$title ?? 'An error occurred'}}</h1>
         <p>{{!$message ?? 'No details available.'}}</p>
     </notice>
-@endsection
+</body>
+</html>

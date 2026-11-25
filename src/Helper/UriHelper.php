@@ -2,24 +2,29 @@
 
 /**
  * URL helpers — global, loaded from the helper registry.
+ * --
+ * Small functions that turn a path into a full address, so templates and
+ * controllers never have to assemble a base URL by hand.
  *
- * Function-only by contract (see apps/Config/HelperConfig.php).
+ * Helper files hold functions only — no classes, interfaces, traits, or enums.
  *
- * @since 0.0.1
+ * @package     NanoRADF
+ * @author      RADLabs Development Team
+ * @copyright   Radlabs Studio (c) 1986 - 2026
+ * @since       0.0.1
  */
 
 if (!defined ('basepath'))
 {
-    http_response_code (404);
-    header ('Content-Type: text/html; charset=utf-8');
-    exit ("<h1>404 Not Found</h1><p>The requested page could not be found.</p>");
+    try {exit (@require dirname (__DIR__,2).DIRECTORY_SEPARATOR.'.errors');}
+    catch (Throwable $e){$file = basename(__FILE__); exit("404 Forbidden {$file}");}
 }
 
 /**
- * Public URL for a path.
+ * Full address for a path inside the application.
  *
  * @since  0.0.1
- * @param  string $path Path relative to the app root.
+ * @param  string $path Path relative to the application root.
  * @return string Absolute URL.
  */
 function baseurl (string $path = '/'): string

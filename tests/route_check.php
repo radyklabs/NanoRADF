@@ -13,6 +13,7 @@ chdir (dirname (__DIR__) . '/public');
 require dirname (__DIR__) . '/public/index.php';
 
 use System\Kernel\Router;
+use function System\interlace;
 
 // Probe controller loaded through the autoloader; nothing in phase-3 can mask
 // router behaviour.
@@ -21,7 +22,7 @@ if (!class_exists (RouteProbeController::class))
     eval ('namespace { final class RouteProbeController extends \System\Controllers\PublicController { public function index (): array { return ["status" => 200, "body" => "ok"]; } public function show (string $name): array { return ["status" => 200, "body" => "show ".$name]; } public function digits (string $n): array { return ["status" => 200, "body" => "num ".$n]; } } }');
 }
 
-$routesFile = interlace (appf, 'Config', 'Routes.php');
+$routesFile = interlace (appf, 'Config', 'RoutesConfig.php');
 $backup     = file_get_contents ($routesFile);
 $cluster    = '\\RouteProbeController';
 $fixture    = "<?php\nreturn [\n"

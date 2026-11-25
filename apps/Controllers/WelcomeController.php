@@ -1,14 +1,23 @@
 <?php declare (strict_types=1);
 
-namespace App\Controllers;
-
-use System\Controllers\PublicController;
-
 /**
  * Landing detector — demonstrates a routed SSR page.
  *
  * @since 0.0.1
  */
+
+namespace App\Controllers;
+
+use Throwable;
+use System\Controllers\PublicController;
+use function System\genv;
+
+if (!defined ('basepath'))
+{
+    try {exit (@require dirname (__DIR__,2).DIRECTORY_SEPARATOR.'.errors');}
+    catch (Throwable $e){$file = basename(__FILE__); exit("404 Forbidden {$file}");}
+}
+
 final class WelcomeController extends PublicController
 {
     /**
@@ -25,7 +34,7 @@ final class WelcomeController extends PublicController
             'mode'     => (string) genv ('app.mode', 'full'),
             'features' => ['dot-notation names', '@include partials', 'auto-escaping'],
             'loud'     => true,
-            'unsafe'   => '<script>alert(1)</script>',
+            'unsafe'   => '<script>alert(\'parsing successful\')</script>',
         ]);
     }
 }

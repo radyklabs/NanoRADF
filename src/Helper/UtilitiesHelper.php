@@ -1,24 +1,35 @@
 <?php declare (strict_types=1);
 
 /**
- * Escaping helpers — global, loaded from the helper registry.
+ * The escaping helpers — `e()` and `classlist()`.
+ * --
+ * `e()` makes a value safe to print in HTML, so user-supplied text can never
+ * turn into live markup. Templates rarely need it: Drip escapes `{{ }}` on its
+ * own, and calling `e()` there is rejected to prevent escaping twice. Reach for
+ * it in plain PHP that builds HTML by hand.
  *
- * Function-only by contract. Templates should rely on Drip's automatic
- * escaping instead of calling these; the compiler rejects escape calls inside
- * `{{ }}` to prevent double-escaping.
+ * `classlist()` turns a list or map of class names into a ready `class="…"`
+ * attribute, dropping the entries that are switched off.
  *
- * @since 0.0.1
+ * Helper files hold functions only — no classes, interfaces, traits, or enums.
+ *
+ * @package     NanoRADF
+ * @author      RADLabs Development Team
+ * @copyright   Radlabs Studio (c) 1986 - 2026
+ * @since       0.0.1
  */
 
 if (!defined ('basepath'))
 {
-    http_response_code (404);
-    header ('Content-Type: text/html; charset=utf-8');
-    exit ("<h1>404 Not Found</h1><p>The requested page could not be found.</p>");
+    try {exit (@require dirname (__DIR__,2).DIRECTORY_SEPARATOR.'.errors');}
+    catch (Throwable $e){$file = basename(__FILE__); exit("404 Forbidden {$file}");}
 }
 
 /**
- * Escape a value for HTML text or attribute context.
+ * Make a value safe to print in HTML text or an attribute.
+ *
+ * Null, arrays, and objects that cannot be turned into text become an empty
+ * string rather than triggering a warning.
  *
  * @since  0.0.1
  * @param  mixed $value Raw value from controller data.
@@ -33,11 +44,14 @@ function e (mixed $value): string
 }
 
 /**
- * Join class names, dropping inactive entries.
+ * Build a `class` attribute from a list or a map.
+ *
+ * A plain list keeps every name; a map keeps only the names whose value is
+ * truthy, which is how conditional classes are written.
  *
  * @since  0.0.1
- * @param  array<array-key, mixed> $classes Class map or list.
- * @return string Class attribute, or '' when empty.
+ * @param  array<array-key, mixed> $classes Class list, or name => enabled map.
+ * @return string Ready `class="…"` attribute, or '' when nothing is active.
  */
 function classlist (array $classes): string
 {

@@ -1,26 +1,34 @@
 <?php declare (strict_types=1);
 
+/**
+ * Router — matches HTTP requests against the central route table.
+ * --
+ * Resolves incoming method + path combinations to controller actions.
+ * Supports flat routes (`GET /hello/{name}`) and prefix groups
+ * (`/admin` → `['GET /dashboard' => ...]`). Parameter placeholders use
+ * `{name}` or `{name:regex}`; exact routes always win over patterns.
+ * Unhandled paths return 404, mismatched verbs return 405 with an Allow header.
+ *
+ * @package     NanoRADF
+ * @author      RADLabs Development Team
+ * @copyright   Radlabs Studio (c) 1986 - 2026
+ * @since       0.0.1
+ */
+
 namespace System\Kernel;
 
-/**
- * Router — matches a request against the central route table and resolves it
- * to a controller action.
- *
- * Table shape lives in `apps/Config/Routes.php`:
- *   - flat: `'GET /hello/{name}' => Controller::class . '::hello'`
- *   - prefix group (the string key IS the prefix; inner keys must be full
- *     `METHOD /path` entries — a bare `/stats` is rejected):
- *       '/admin' => [
- *           'GET /dashboard'   => Ctrl::class . '::index',
- *           'GET /stats/{id}'  => Ctrl::class . '::show',
- *       ]
- *
- * `{name}` is required (`[^/]+`); `{name:regex}` narrows a segment. Exact
- * routes win over parameterised ones within a method. A missing class or
- * action on a matched target is a wiring error, not a miss.
- *
- * @since 0.0.1
- */
+use RuntimeException;
+use InvalidArgumentException;
+use function System\interlace;
+use function System\fl;
+use function System\statc;
+
+if (!defined ('basepath'))
+{
+    try {exit (@require dirname (__DIR__,2).DIRECTORY_SEPARATOR.'.errors');}
+    catch (Throwable $e){$file = basename(__FILE__); exit("404 Forbidden {$file}");}
+}
+
 final class Router
 {
     private function __construct () {}
@@ -34,19 +42,20 @@ final class Router
     private static ?array $groups = null;
 
     /**
-     * Resolve a request. `['status', 'body']` for the first match; an unrouted
-     * path yields 404 (or throws when $throw is true), and a routed path under
-     * another verb yields 405 (or throws when $throw is true) with the real
-     * `Allow:` set from the table.
+     * Resolve the current HTTP request against the route table.
      *
-     * When $throw is true, unhandled 404/405 are raised as RuntimeException so
-     * the caller (Dispatcher) can render a themed error page.
+     * Returns an array with `status`, `body`, and optional `headers`. On 404/405,
+     * throws a RuntimeException so the Dispatcher can render themed error pages.
+     * HEAD requests are served as GET candidates with body stripped afterward.
      *
-     * @since  0.0.1
-     * @param  string $method  HTTP method (upper-cased here).
-     * @param  string $path    Request path without query string.
-     * @param  bool   $throw   Throw on 404/405 instead of returning?
-     * @return array{status:int, body:string}
+     * @package   NanoRADF
+     * @author    RADLabs Development Team
+     * @copyright Radlabs Studio (c) 1986 - 2026
+     * @since     0.0.1
+     * @param     string $method HTTP method (upper-cased).
+     * @param     string $path   Request path without query string.
+     * @param     bool   $throw  Throw on 404/405 instead of returning?
+     * @return    array{status:int, body:string, headers:list<string>}
      */
     public static function dispatch (string $method, string $path, bool $throw = false): array
     {
@@ -74,21 +83,27 @@ final class Router
         if ($allowed !== [])
         {
             if (!headers_sent ()) {header ('Allow: '.implode (', ', $allowed));}
-            if ($throw) {throw new \RuntimeException ("{$method} {$path} → 405");}
+            if ($throw) {throw new RuntimeException ("{$method} {$path} → 405");}
             return ['status' => 405, 'body' => '<h1>405 '.statc (405).'</h1><p>The request method is not allowed for this route.</p>'];
         }
 
-        if ($throw) {throw new \RuntimeException ("{$method} {$path} → 404");}
+        if ($throw) {throw new RuntimeException ("{$method} {$path} → 404");}
         return ['status' => 404, 'body' => '<h1>404 '.statc (404).'</h1><p>The requested page could not be found.</p>'];
     }
 
     /**
-     * Match only — null when no route matches.
+     * Match only — returns null when no route matches the given method + path.
      *
-     * @since  0.0.1
-     * @param  string $method HTTP method.
-     * @param  string $path   Request path.
-     * @return array{status:int, body:string}|null
+     * Exact routes are checked first; parameterised routes follow. Parameters
+     * are decoded before being passed to the controller action.
+     *
+     * @package   NanoRADF
+     * @author    RADLabs Development Team
+     * @copyright Radlabs Studio (c) 1986 - 2026
+     * @since     0.0.1
+     * @param     string $method HTTP method.
+     * @param     string $path   Request path.
+     * @return    array{status:int, body:string, headers:list<string>}|null
      */
     public static function match (string $method, string $path): ?array
     {
@@ -119,21 +134,28 @@ final class Router
     }
 
     /**
-     * Load and compile the route table.
+     * Load, compile, and cache the route table from apps/Config/RoutesConfig.php.
      *
-     * @since  0.0.1
-     * @return array<string, list<array{0:string, 1:string, 2:list<string>}>>
+     * Parses both flat entries (`'GET /hello/{name}' => Ctrl::method`) and prefix
+     * groups (`'/admin' => ['GET /dashboard' => ...]`). Malformed entries throw at
+     * boot time, not on the first hit. Results are cached in `$groups` per process.
+     *
+     * @package   NanoRADF
+     * @author    RADLabs Development Team
+     * @copyright Radlabs Studio (c) 1986 - 2026
+     * @since     0.0.1
+     * @return    array<string, list<array{0:string, 1:string, 2:list<string>}>>
      */
     public static function table (): array
     {
         if (self::$groups !== null) {return self::$groups;}
 
-        $file = interlace (appf, 'Config', 'Routes.php');
+        $file = interlace (configfapp, fl ('RoutesConfig'));
         $raw  = is_readable ($file) ? require $file : [];
 
         if (!is_array ($raw))
         {
-            @trigger_error ('apps/Config/Routes.php must return an array.', E_USER_WARNING);
+            @trigger_error ('apps/Config/RoutesConfig.php must return an array.', E_USER_WARNING);
             $raw = [];
         }
 
@@ -181,22 +203,28 @@ final class Router
 
         if (!in_array (strtoupper (trim ($verb)), ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS'], true))
         {
-            throw new \InvalidArgumentException ("Route key '{$key}' must start with an HTTP verb (e.g. 'GET /').");
+                    throw new InvalidArgumentException ('route_config', 500);
         }
 
         if (trim ($path) === '' || trim ($path)[0] !== '/')
         {
-            throw new \InvalidArgumentException ("Route key '{$key}': path part must start with '/'.");
+                    throw new InvalidArgumentException ('route_config', 500);
         }
 
         return [trim ($verb), trim ($path)];
     }
 
     /**
-     * Re-read the table (explicit rebuild helper).
+     * Rebuild the compiled route table by clearing the cache.
      *
-     * @since  0.0.1
-     * @return void
+     * Use after modifying RoutesConfig.php during development. Does not reload
+     * the config file — only resets the in-memory compiled form.
+     *
+     * @package   NanoRADF
+     * @author    RADLabs Development Team
+     * @copyright Radlabs Studio (c) 1986 - 2026
+     * @since     0.0.1
+     * @return    void
      */
     public static function flush (): void
     {
@@ -263,12 +291,12 @@ final class Router
     {
         if (!is_string ($target) || substr_count ($target, '::') !== 1)
         {
-            throw new \InvalidArgumentException ("Route {$method} {$pattern}: target must be \"Controller::class::action\".");
+                    throw new InvalidArgumentException ('route_config', 500);
         }
 
         if ($pattern === '' || $pattern[0] !== '/')
         {
-            throw new \InvalidArgumentException ("Route {$method} {$pattern}: path must start with '/'.");
+                    throw new InvalidArgumentException ('route_config', 500);
         }
 
             self::parseTarget ($target); // fail-loud for bad class/action
@@ -284,12 +312,12 @@ final class Router
                 // `#` is the delimiter; a literal `#` inside a rule must be escaped.
                 if (str_contains ($rule, '#') && !str_contains ($rule, '\#'))
                 {
-                    throw new \InvalidArgumentException ("Route {$method} {$pattern}: regex fragment '{{$name}}' may not contain '#'.");
+                                    throw new InvalidArgumentException ('route_config', 500);
                 }
 
                 if (@preg_match ("~^(?:{$rule})$~u", 'x') === false)
                 {
-                    throw new \InvalidArgumentException ("Route {$method} {$pattern}: invalid regex fragment '{{$name}:{$rule}}'.");
+                                    throw new InvalidArgumentException ('route_config', 500);
                 }
 
                         // Canonical group name avoids collisions between sibling routes
@@ -305,7 +333,7 @@ final class Router
 
         if (!is_string ($regexp))
         {
-            throw new \InvalidArgumentException ("Route {$method} {$pattern}: could not parse path.");
+                    throw new InvalidArgumentException ('route_config', 500);
         }
 
         return ['~^'.$regexp.'$~u', $target, $names];
@@ -349,12 +377,12 @@ final class Router
 
         if ($action === null || $action === '' || !class_exists ($class))
         {
-            throw new \RuntimeException ("Route target class not exist: {$target}");
+                    throw new RuntimeException ('route_target', 500);
         }
 
         if (!method_exists ($class, $action))
         {
-            throw new \RuntimeException ("Route target method '{$action}' not exist on {$class}.");
+                    throw new RuntimeException ('route_target', 500);
         }
 
         return [$class, $action];
@@ -378,14 +406,16 @@ final class Router
         // private/api controllers.
         if ($controller instanceof Controller && !$controller->authorize ())
         {
-                $body = $controller->surface === 'api'
+                $isApi = $controller->getSurface () === 'api';
+
+                $body = $isApi
                     ? json_encode (['ok' => false, 'error' => 'unauthenticated'], JSON_UNESCAPED_SLASHES)
                     : '<h1>403 Forbidden</h1><p>You are not allowed to access this page.</p>';
 
                 return [
-                    'status'  => $controller->surface === 'api' ? 401 : 403,
+                    'status'  => $isApi ? 401 : 403,
                     'body'    => $body,
-                    'headers' => $controller->surface === 'api' ? ['Content-Type: application/json; charset=utf-8'] : [],
+                    'headers' => $isApi ? ['Content-Type: application/json; charset=utf-8'] : [],
                 ];
         }
 
@@ -421,12 +451,12 @@ final class Router
 
         if (!class_exists ($class))
         {
-            throw new \RuntimeException ("Route target class not found: {$target}");
+                    throw new RuntimeException ('route_target', 500);
         }
 
         if ($action === '' || !method_exists ($class, $action))
         {
-            throw new \RuntimeException ("Route action '{$action}' not exist on {$class}.");
+                    throw new RuntimeException ('route_target', 500);
         }
 
         return [$class, $action];

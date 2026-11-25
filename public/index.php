@@ -3,10 +3,14 @@
 /**
  * Web entry point — folder configuration and gateway hand-off.
  * --
- * Sets the three source-root names, then requires the project-root
- * `nanoradf` gateway. No other logic here.
+ * Defines the application roots (apps, src, modules), then delegates
+ * bootstrapping to the `nanoradf` gateway. This file stays minimal:
+ * no business logic, only paths.
  *
- * @since 0.0.1
+ * @package     NanoRADF
+ * @author      RADLabs Development Team
+ * @copyright   Radlabs Studio (c) 1986 - 2026
+ * @since       0.0.1
  */
 
 /**

@@ -1,28 +1,44 @@
 <?php declare (strict_types=1);
 
+/**
+ * Kernel bootstrap — PSR-4 autoloader and helper initializer.
+ * --
+ * The framework's bootstrapping anchor. Registers the single shared autoloader.
+ * Also loads application helpers from config before the autoloader
+ * accepts any class. Safe to call repeatedly.
+ *
+ * @package     NanoRADF
+ * @author      RADLabs Development Team
+ * @copyright   Radlabs Studio (c) 1986 - 2026
+ * @since       0.0.1
+ */
+
 namespace System\Kernel;
 
-use Exception;
+use function System\interlace;
+use function System\fl;
+use function System\require_file;
+use function System\get_required_file;
 
 if (!defined ('basepath'))
 {
-    http_response_code (404);
-    header ('Content-Type: text/html; charset=utf-8');
-    exit ("<h1>404 Not Found</h1><p>The requested page (or file) could not be found.</p>");
+    try {exit (@require dirname (__DIR__,2).DIRECTORY_SEPARATOR.'.errors');}
+    catch (Throwable $e){$file = basename(__FILE__); exit("404 Forbidden {$file}");}
 }
 
-/**
- * Kernel bootstrap — one-shot autoloader registration.
- *
- * @since 0.0.1
- */
 final class Boot
 {
     /**
-     * Register the PSR-4 autoloader. Idempotent: safe to call repeatedly.
+     * Register the PSR-4 autoloader if not yet done.
      *
-     * @since  0.0.1
-     * @return void
+     * Calling multiple times is safe — the autoloader runs exactly once per process.
+     * Helper files are loaded first so they are available to classes that follow.
+     *
+     * @package   NanoRADF
+     * @author    RADLabs Development Team
+     * @copyright Radlabs Studio (c) 1986 - 2026
+     * @since     0.0.1
+     * @return    void
      */
     public static function initiate ()
     {
@@ -36,17 +52,23 @@ final class Boot
     }
 
     /**
-     * PSR-4 autoloader registration — two roots, always active (D6/D9):
+     * PSR-4 autoloader — resolves classes from their namespace to disk paths.
      *
-     *   System\X\Y        → <root>/src/X/Y.php
-     *   App\X\Y           → <root>/apps/X/Y.php
-     *   Modules\Name\Y    → <root>/modules/Name/Y.php
+     * Three autoload roots are always active:
+     *   `System\…`  → src/
+     *   `App\…`     → apps/
+     *   `Modules\…` → modules/
      *
-     * Prefixes come from the global namespace constants defined in `.config`:
-     * `nssys` ("System"), `nsapp` ("App"), `nsmod` ("Modules"). `app.modules`
-     * gates only the per-module folder/namespace templates in `.structures`.
+     * Only `app.modules=true` in the environment activates module sub-folders.
+     * A missing file simply falls through — no error is thrown, allowing lazy
+     * discovery of optional classes.
      *
-     * @since 0.0.1
+     * @package   NanoRADF
+     * @author    RADLabs Development Team
+     * @copyright Radlabs Studio (c) 1986 - 2026
+     * @since     0.0.1
+     * @param     string $class Fully qualified class name.
+     * @return    void
      */
     public static function autoloader (string $class): void
     {
@@ -54,50 +76,50 @@ final class Boot
 
         if (str_starts_with ($class, nssys))
         {
-            $system_file = interlace (systemf, substr ($class, strlen (nssys)) . '.php');
-            if (is_readable ($system_file))
-            {
-                require_once $system_file;
-            }
-
+            require_file (interlace (systemf, fl (substr ($class, strlen (nssys)))));
             return;
         }
 
         if (str_starts_with ($class, nsapp))
         {
-            $app_file = interlace (appf, substr ($class, strlen (nsapp)) . '.php');
-            if (is_readable ($app_file))
-            {
-                require_once $app_file;
-            }
-
+            require_file (interlace (appf, fl (substr ($class, strlen (nsapp)))));
             return;
         }
 
         if (str_starts_with ($class, nsmod))
         {
-            $app_file = interlace (modulesf, substr ($class, strlen (nsmod)) . '.php');
-            if (is_readable ($app_file))
-            {
-                require_once $app_file;
-            }
-
+            require_file (interlace (modulesf, fl (substr ($class, strlen (nsmod)))));
             return;
         }
     }
 
+    /**
+     * Load helper files declared by the application config.
+     *
+     * Reads helpers from both src/Config (system level) and apps/Config (app level),
+     * requiring each file so utility functions are available before any class loads.
+     * Missing helpers throw a sentinel error caught by the gateway's blackwall handler.
+     *
+     * @package   NanoRADF
+     * @author    RADLabs Development Team
+     * @copyright Radlabs Studio (c) 1986 - 2026
+     * @since     0.0.1
+     * @return    void
+     */
     private static function autoloadHelper (): void
     {
         $stems       = [];
-
-        $helper_config = interlace (configfapp, fl ('HelperConfig'));
-        if (is_readable ($helper_config)) {$stems = (array) require $helper_config;}
-
+        $stems = (array) get_required_file (interlace (configf, fl ('HelperConfig')), 'helper', []);
         foreach ($stems as $stem)
         {
-            $file = interlace (helperf, fl ("{$stem}Helper"));
-            if (!is_readable ($file)) {throw new Exception ('helper', 500);}
-            require_once $file;
+            require_file (interlace (helperf, fl ("{$stem}Helper")));
+        }
+
+        $stemsapp       = [];
+        $stemsapp = (array) get_required_file (interlace (configfapp, fl ('HelperConfig')), 'helperapp', []);
+        foreach ($stemsapp as $stemapp)
+        {
+            require_file (interlace (helperfapp, fl ("{$stemapp}Helper")));
         }
     }
 }

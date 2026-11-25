@@ -1,7 +1,7 @@
 <?php declare(strict_types=1);
 
 /**
- * Phase 0b layout smoke check (decision D7: test files live in /tests).
+ * Phase 0b layout smoke check (decision D7: tests live in /tests).
  * Run from anywhere: php tests/layout_check.php
  *
  * Backs up .env, toggles app.modules=true / false, boots the real web entry

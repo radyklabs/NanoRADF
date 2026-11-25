@@ -11,6 +11,8 @@
 chdir (dirname (__DIR__) . '/public');
 require dirname (__DIR__) . '/public/index.php';
 
+use function System\genv;
+
 $const = fn (string $c): string => defined ($c) ? (string) constant ($c) : 'UNDEF';
 
 printf ("mode=%s\n", var_export (genv ('app.modules'), true));

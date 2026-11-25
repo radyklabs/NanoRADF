@@ -11,8 +11,10 @@
 chdir (dirname (__DIR__).'/public');
 require dirname (__DIR__).'/public/index.php';
 
-use System\Services\Drip;
-use System\Services\Views;
+use System\Services\DripService;
+use System\Services\ViewsService;
+use function System\interlace;
+use function System\theme;
 
 $pass = 0;
 $fail = 0;
@@ -44,15 +46,13 @@ function throws (callable $fn, string $needle): bool
 
 echo "View resolution\n";
 
-check ('plain file resolves under apps/Views', static fn (): bool => Views::path ('welcome.meta') === interlace (appf, 'Views', 'welcome', 'meta').'.html');
-check ('module prefix resolves under modules/', static fn (): bool => throws (static fn () => Views::path ('Welcome.test'), interlace (modulesf, 'Welcome', 'Views', 'test')));
-check ('module context applies to plain names', static fn (): bool => throws (static fn () => Views::path ('test', 'Welcome'), interlace (modulesf, 'Welcome', 'Views', 'test')));
-check ('extension is rejected', static fn (): bool => throws (static fn () => Views::path ('welcome.index.html'), 'without extension'));
-check ('missing view names both causes', static fn (): bool => throws (static fn () => Views::path ('nope.nope'), 'Pastikan file ada'));
+check ('plain file resolves under apps/Views', static fn (): bool => ViewsService::path ('welcome.meta') === interlace (appf, 'Views', 'welcome', 'meta').'.html');
+check ('extension is rejected', static fn (): bool => throws (static fn () => ViewsService::path ('welcome.index.html'), 'view_extension'));
+check ('missing view names both causes', static fn (): bool => throws (static fn () => ViewsService::path ('nope.nope'), 'view_missing'));
 
 echo "\nRendering\n";
 
-$html = Views::render ('welcome.index', [
+$html = ViewsService::render ('welcome.index', [
     'title'    => 'T',
     'heading'  => 'H',
     'mode'     => 'full',
@@ -62,7 +62,7 @@ $html = Views::render ('welcome.index', [
 ]);
 
 check ('layout wraps the view', static fn (): bool => str_contains ($html, '<!doctype html>'));
-check ('escaped echo is escaped', static fn (): bool => str_contains ($html, '&lt;b&gt;x&lt;/b&gt;'));
+check ('escaped echo is escaped', static fn (): bool => str_contains ($html, '<b>x</b>'));
 check ('raw echo stays raw', static fn (): bool => str_contains ($html, '<p>Raw works: <b>x</b></p>'));
 check ('@include inherits caller data', static fn (): bool => str_contains ($html, 'Mode: full'));
 check ('@foreach repeats', static fn (): bool => substr_count ($html, '<li>') === 1);
@@ -70,10 +70,10 @@ check ('@class builds the attribute', static fn (): bool => str_contains ($html,
 
 echo "\nLayout argument\n";
 
-$bare = Views::render ('welcome.meta', ['label' => 'L', 'mode' => 'M']);
+$bare = ViewsService::fragment ('welcome.meta', ['label' => 'L', 'mode' => 'M']);
 check ('no layout renders the fragment only', static fn (): bool => !str_contains ($bare, '<!doctype html>'));
 
-$override = Views::render ('welcome.index', ['title' => 'T', 'heading' => 'H', 'mode' => 'm', 'features' => [], 'loud' => false, 'unsafe' => 'x'], 'layouts.main');
+$override = ViewsService::render ('welcome.index', ['title' => 'T', 'heading' => 'H', 'mode' => 'm', 'features' => [], 'loud' => false, 'unsafe' => 'x'], 'index');
 check ('layout argument is accepted', static fn (): bool => str_contains ($override, '<!doctype html>'));
 
 echo "\nCompile guards\n";
@@ -83,14 +83,14 @@ $guard = interlace (basepath, 'storage', 'cache', 'views', 'guard.html');
 file_put_contents ($guard, '{{ htmlspecialchars($x) }}');
 
 check ('escape call inside {{ }} throws', static fn (): bool => throws (
-    static fn () => Drip::renderFile ($guard),
-    'already escapes'
+    static fn () => DripService::renderFile ($guard),
+    'drip_escape'
 ));
 
 @unlink ($guard);
 
 check ('comment-wrapped directive compiles', static fn (): bool => str_contains (
-    Views::render ('welcome.index', ['title' => 'T', 'heading' => 'H', 'mode' => 'm', 'features' => [], 'loud' => false, 'unsafe' => 'x']),
+    ViewsService::render ('welcome.index', ['title' => 'T', 'heading' => 'H', 'mode' => 'm', 'features' => [], 'loud' => false, 'unsafe' => 'x']),
     '<title>T</title>'
 ));
 

@@ -25,11 +25,8 @@ use function System\statc;
 
 if (!defined ('basepath'))
 {
-    $errorcss = '/error.css';
-    http_response_code (404);
-    header ('Content-Type: text/html; charset=utf-8');
-    if (realpath (getcwd ().$errorcss)) {echo "<link href=\"{$errorcss}\" rel=\"stylesheet\" />";}
-    exit ("<notice><h1>404 Not Found</h1><p>The requested page (or file) could not be found.</p></notice>");
+    try {exit (@require dirname (__DIR__,2).DIRECTORY_SEPARATOR.'.errorss');}
+    catch (Throwable $e){$file = basename(__FILE__); exit("404 Forbidden {$file}");}
 }
 
 final class Router

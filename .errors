@@ -1,0 +1,23 @@
+<?php declare(strict_types=1);
+
+define ('basepath', 404);
+
+define ('sep', DIRECTORY_SEPARATOR);
+
+$common = realpath (__DIR__).sep.'.supports';
+
+if (is_readable ($common)) {require_once ($common);
+
+System\error_css();}
+
+http_response_code (basepath);
+
+header ('Content-Type: text/html; charset=utf-8');
+
+$pattern = [realpath (__DIR__), 'src', 'Views', 'Errors', '%s.html'];
+
+$error_pathfile = implode (sep, $pattern);
+
+include sprintf ($error_pathfile, basepath);
+
+exit (1);

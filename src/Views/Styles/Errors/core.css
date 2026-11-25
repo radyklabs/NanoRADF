@@ -45,6 +45,7 @@ notice, trace {
 
 notice h1 {
     margin: 0;
+    color: #4F5B2A;
 }
 
 notice p {
@@ -85,6 +86,7 @@ trace num {
     font-weight: 600;
     min-width: 28px;
     text-align: right;
+    color: #9A7E3B;
 }
 
 trace err {

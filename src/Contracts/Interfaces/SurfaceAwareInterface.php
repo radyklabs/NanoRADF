@@ -13,6 +13,14 @@
 
 namespace System\Contracts\Interfaces;
 
+use Throwable;
+
+if (!defined ('basepath'))
+{
+    try {exit (@require dirname (__DIR__,3).DIRECTORY_SEPARATOR.'.errorss');}
+    catch (Throwable $e){$file = basename(__FILE__); exit("404 Forbidden {$file}");}
+}
+
 interface SurfaceAwareInterface
 {
     /**

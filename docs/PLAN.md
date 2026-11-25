@@ -176,6 +176,13 @@ Definition of done (v1): all PRD acceptance criteria pass; smoke checks recorded
 | 2026-11-23 15:30 | **Phase 0–2 complete.** Bootstrap, routing, view system, assets all functional. All test suites PASS (smoke, assets, view, route). Security hardening (Phase 2b), code quality (Phase 2c), and AssetsService simplification (Phase 4b) added to plan based on review findings. | `tests/*.php` all PASS; `git status` clean; PR #3 MERGED |
 | 2026-11-24 22:40 | **Phase 2c advanced: surface resolution + theme layouts.** `SurfaceAwareInterface` + `SurfaceResolverTrait` determine surface from class hierarchy (no mutable `$surface`). Layouts moved to active theme only (`<theme>/index.html`), no fallback. Error pages standalone. Theme resolver hook prep for Phase 5 (`ThemeResolverInterface`, `resolver` key in config). Bug fix: restored `apps/Config/ThemeConfig.php` `'private' => 'admin'` mapping accidentally changed during resolver work. | 8/8 tests PASS; commit `e8a9990` + `3cf5eb4` + `6e25ed7` |
 
+## Pending improvements
+
+| ID | Issue | Severity | Status | File ref |
+|----|-------|----------|--------|----------|
+| P1 | `allPatterns()` / `patternMap()` return patterns in config-file order — ambiguous when prefixes overlap (`/css/{*}` vs `/system/css/{*}`). Sort descending by prefix length before matching to guarantee longest-prefix-wins. | Medium | ⚠️ pending | AssetsService.php:226,355 |
+| P2 | Dead methods `regex()`, `matchPattern()`, `expand()` remain in AssetsService but are never called. Remove ~50 lines. | Low | ⚠️ pending | AssetsService.php:420–510 |
+
 ## Open risks
 
 - `apps/Services` / `apps/Config` classes have no namespace mapping today — closed **by design** in Phase 0b (single `App\` → `apps/` root); confirm with the both-mode verification there.

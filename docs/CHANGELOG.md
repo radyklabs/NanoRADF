@@ -5,6 +5,9 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning: [S
 
 ## [Unreleased]
 
+### Analysis
+- Mask URL pattern review: current `{*}` wildcard + theme placeholder approach confirmed as best practice (O(n) string ops, no PCRE per-request). `/css/...` vs `/assets/css/...` distinction intentional (face via webroot `public/themes/`, bone via app layer `apps/Themes/`). Alternatives like `:f` notation evaluated but rejected due to ambiguity overhead. Pending fixes documented in PLAN.md as P1 (pattern sort order) and P2 (dead code removal).
+
 ### Added
 - urlprettify() function in .supports: builds full URLs from paths with auto-detected or configured base URL, normalizes slashes with urlify(), and handles server/protocol detection
 

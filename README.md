@@ -24,6 +24,7 @@ Minimal PHP framework with **two selectable modes**: a server-side rendered **fr
 
 - PHP 8.1+ (developed on 8.3.36 via LocalWP)
 - Apache/nginx with URL rewriting, **docroot = `public/`**
+- Dev URL: **http://localhost** (or your configured vhost)
 
 ## Request flow
 

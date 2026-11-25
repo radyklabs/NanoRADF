@@ -23,5 +23,4 @@ if (!defined ('basepath'))
     catch (Throwable $e){$file = basename(__FILE__); exit("404 Forbidden {$file}");}
 }
 
-// Ku pindah ke src/Config/HelperConfig.php sebagai nilai default
 return [];

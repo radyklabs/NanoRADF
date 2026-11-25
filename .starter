@@ -147,7 +147,8 @@ function blackwall (Throwable $th)
         'helperapp', 'theme',
         'layout_name', 'view_empty', 'view_extension', 'view_segment', 'view_missing',
         'drip_read', 'drip_escape', 'drip_write',
-        'route_config', 'route_target'
+            'route_config', 'route_target',
+            'env'
         ];
     $known    = in_array ($th->getMessage (), $sentinel, true);
     $code     = $th->getCode () !== 0 ? $th->getCode () : 500;
@@ -185,6 +186,7 @@ function blackwall (Throwable $th)
             'drip_write'    => 'The compiled template could not be written.',
             'route_config'  => 'Route configuration is invalid.',
             'route_target'  => 'Route target class or method does not exist.',
+                        'env'           => 'The environment file (.env) could not be found. Please create it from .env.sample.',
         ][$th->getMessage ()];
     }
 

@@ -35,6 +35,9 @@ define ('basepath', realpath (__DIR__).DIRECTORY_SEPARATOR);
 
 try
 {
+    $env_key = implode ('.', [basepath, 'env']);
+    if (!is_readable ($env_key)) {throw new Exception ('env', 500);}
+    
     $starter_key = implode ('.', [basepath, 'starter']);
     
     if (!is_readable ($starter_key)) {throw new Exception ('starter', 500);}

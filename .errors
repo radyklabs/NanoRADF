@@ -14,6 +14,8 @@ http_response_code ($code ?? basepath);
 
 header ('Content-Type: text/html; charset=utf-8');
 
+if (isset ($th) && $th->getMessage() === 'env') {$code = 'ErrorEnv';}
+
 $pattern = [realpath (__DIR__), 'src', 'Views', 'Errors', '%s.html'];
 
 $error_pathfile = implode (sep, $pattern);

@@ -140,6 +140,7 @@ if (version_compare (PHP_VERSION, PHP_MIN_VERSION, "<")) {$error = 'phpmin';}
  */
 function blackwall (Throwable $th)
 {
+    var_dump($th);
     $trace_section = '';
     $sentinel = [
         'starter', 'phpmin', 'common', 'config',
@@ -157,7 +158,7 @@ function blackwall (Throwable $th)
     $heading = [
         403 => 'Forbidden',
         404	=> 'Not Found',
-        500	=> 'Internal System Error',
+        500	=> 'Internal Server Error',
     ][$status] ?? 'Internal System Error';
 
     if (is_debug()) {$message = $th->getMessage ().' in '.$th->getFile ().':'.$th->getLine ();}
@@ -186,7 +187,7 @@ function blackwall (Throwable $th)
             'drip_write'    => 'The compiled template could not be written.',
             'route_config'  => 'Route configuration is invalid.',
             'route_target'  => 'Route target class or method does not exist.',
-                        'env'           => 'The environment file (.env) could not be found. Please create it from .env.sample.',
+            'env'           => 'The environment file (.env) could not be found. Please create it from .env.sample.',
         ][$th->getMessage ()];
     }
 

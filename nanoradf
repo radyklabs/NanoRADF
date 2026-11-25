@@ -28,7 +28,9 @@ if (!isset ($application_folder)
     catch (Throwable $e) {$file = basename (__FILE__); exit ("404 Forbidden {$file}");}
 }
 
-define ('publicpath', realpath (getcwd ()).DIRECTORY_SEPARATOR);
+define ('publicpath', php_sapi_name () === 'cli'
+    ? realpath (__DIR__).DIRECTORY_SEPARATOR.'public'.DIRECTORY_SEPARATOR
+    : realpath (getcwd ()).DIRECTORY_SEPARATOR);
 define ('basepath', realpath (__DIR__).DIRECTORY_SEPARATOR);
 
 try

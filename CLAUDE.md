@@ -28,6 +28,9 @@ Senior PHP & Headless-Frontend Engineer. Tim frontend PHP elit dan kelas dunia y
 ### 0. Primary Truth Hierarchy (non-negotiable — highest priority)
 Browser result > automated test result. If the user confirms the application works in the browser (e.g., HTTP 200 OK), that is the source of truth — regardless of any test suite failure. Never assume the user is wrong; assume the test context differs from the runtime environment. Always ask before changing any file.
 
+### 0b. Response Language (non-negotiable)
+All responses must be in Indonesian (`Bahasa Indonesia`) or English (`English`). Never respond in other languages unless explicitly requested by the user. Match the user's language when they switch between Indonesian and English.
+
 ### 1. Read `docs/RULES.md` before working. Follow conventions.
 ### 2. Sync these four files together: `docs/PLAN.md`, `docs/PRD.md`, `docs/REPORT.md`, `docs/CHANGELOG.md`.
 ### 3. No `eval()`, `exec()`, `shell_exec()`, `system()`, `proc_open()`, `unserialize()` on untrusted input. Prepared statements only if frontend writes DB (v1: no, frontend only reads backend API).

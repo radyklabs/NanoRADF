@@ -99,6 +99,17 @@ Definition of done (v1): all PRD acceptance criteria pass; smoke checks recorded
 - **2026-11-23:** All items completed. Dead code removed, ThemeHelper implemented, ThemeConfig separated, AssetsService::theme() updated.
 - **2026-11-24 Phase 2c follow-up:** Surface resolution moved to class hierarchy (`SurfaceAwareInterface` + `SurfaceResolverTrait`, no mutable `$surface`); layouts moved to active theme only (`<theme>/index.html`, no fallback); error pages standalone; `apps/Views/layouts/` removed; theme layouts created for `public/themes/default`, `apps/Themes/default`, `apps/Themes/admin`.
 
+### Phase 2d — Asset register restructuring ✅
+- **Depends on:** Phase 2c. **Owner:** main thread. **Priority:** P1 (High). Breaking change.
+- Replace flat `id_registry` array with two explicit arrays: `register_styles` and `register_scripts`.
+- New format per entry: `['id' => <string>, 'path' => '<mask-relative-path-with-extension>']`. Optional `scope` key defaults to both face and bone.
+- When `id` is omitted, derive default id from basename (e.g. `/css/style.css` → `style`).
+- Path extension must be present in config — remove auto-extension logic from `AssetsService::names()`.
+- Render: build `$pathToId` lookup table directly from registry entries (eliminate reverse-loop lookup).
+- Enqueue lists (`enqueue_styles`, `bone_enqueue_styles`, etc.) keep current string-keyed form — values are now full masked paths, not symbolic ids.
+- Fix long-standing `array_replace_recursive` empty-array regresi (REPORT A1/A2/A3): enqueue lists properly layered over framework defaults.
+- Files: `src/Config/AssetsConfig.php`, `apps/Config/AssetsConfig.php`, `src/Services/AssetsService.php`, `tests/assets_check.php`.
+
 ### Phase 3 — Welcome module end-to-end ⚠️
 - **Depends on:** Phase 2, 2b, 2c. **Owner:** main thread.
 - Fill `modules/Welcome/` (Manifest, Config, Controller, Model, Service, Views) and register its route.
@@ -162,7 +173,7 @@ Definition of done (v1): all PRD acceptance criteria pass; smoke checks recorded
 | 3 | 1 | Phase 0b done |
 | 4 | 2 | Phase 1 done |
 | 5 | 2b, 2c | Phase 2 done (parallel: security + cleanup) |
-| 6 | 3, 4 | Phase 2b / 2c done (parallel: module + headless) |
+| 6 | 2d, 3 | Phase 2d asset register restructuring + Phase 3 Welcome module |
 | 7 | 4b | Phase 4 done |
 | 8 | 5 | Phase 4b done |
 | 9 | 6 | Phases 3 + 4 done |

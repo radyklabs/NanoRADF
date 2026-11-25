@@ -8,6 +8,9 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning: [S
 ### Analysis
 - Mask URL pattern review: current `{*}` wildcard + theme placeholder approach confirmed as best practice (O(n) string ops, no PCRE per-request). `/css/...` vs `/assets/css/...` distinction intentional (face via webroot `public/themes/`, bone via app layer `apps/Themes/`). Alternatives like `:f` notation evaluated but rejected due to ambiguity overhead. Pending fixes documented in PLAN.md as P1 (pattern sort order) and P2 (dead code removal).
 
+### Changed
+- **Phase 2d — Asset register restructuring (breaking change):** Replaced flat `id_registry` key with two separate explicit arrays: `register_styles` and `register_scripts`. Each entry is a struct: `['id' => <string>, 'path' => '<mask-relative-path-with-extension>']`. Path extension is now explicit in config; auto-extension logic removed from `AssetsService::names()`. The renderer builds a `$pathToId` lookup table from registry entries directly, eliminating the previous reverse-loop lookup. Fixes long-standing `array_replace_recursive` empty-array regresi (REPORT A1/A2/A3): enqueue lists are no longer silently overwritten by framework defaults. `design-system` token (`/system/css/System.css`) now enqueued to face surface. Updated docblocks across AssetsService.
+
 ### Added
 - urlprettify() function in .supports: builds full URLs from paths with auto-detected or configured base URL, normalizes slashes with urlify(), and handles server/protocol detection
 

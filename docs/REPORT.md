@@ -171,5 +171,4 @@ D1–D5 recorded in `docs/PLAN.md` → Decision log (dev URL, `sql/local.sql` ig
 
 **Remediation plan for open findings:**
 - V1/V2: Update `tests/view_check.php` expectations to match `app.modules=true` behavior, or set `app.modules=false` for those assertions.
-- A1–A8: Populate `apps/Config/AssetsConfig.php` enqueue lists to match test expectations, or update test expectations to match current empty config.
-- A9: Fix test assertion to `e('<b>') === '<b>'`.
+- A1–A8: **Phase 2d — Asset register restructuring**: Replace flat `id_registry` with explicit `register_styles`/`register_scripts` arrays (entries: `{id, path}`). This fixes the `array_replace_recursive` empty-array regresi by separating register config from enqueue config. Enqueue lists will be properly layered. Fix A9 assertion to `e('<b>') === '&lt;b&gt;'`.

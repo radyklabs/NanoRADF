@@ -290,23 +290,29 @@ final class AssetsService
     /**
      * URL for a queued asset name, masked through the configured patterns.
      *
-     * Accepts symbolic ids (looked up in `id_registry`) or raw paths. The
-     * result carries a cache buster from the file's mtime.
+     * Accepts symbolic ids (looked up in `register_styles`/`register_scripts`)
+     * or raw paths. The result carries a cache buster from the file's mtime.
      *
      * @since  0.0.1
-     * @param  string $name    Asset id or path, e.g. `style`, `design-system`, `css/style.css`.
+     * @param  string $name    Asset id or path, e.g. `style`, `app`, `/css/style.css`.
      * @param  string $surface `face` for the frontend, `bone` for the backend.
      * @return string URL with a cache buster.
      */
     public static function url (string $name, string $surface = 'face'): string
     {
         $config = self::config ();
-        $registry = (array) ($config['id_registry'] ?? []);
+        $kind   = str_contains ($name, '.css') || str_ends_with ($name, '/css') ? 'style' : 'script';
+        $registryKey = $kind === 'style' ? 'register_styles' : 'register_scripts';
+        $registry = (array) ($config[$registryKey] ?? []);
 
         // Resolve symbolic id → full mask-relative path from registry.
-        if (isset ($registry[$name]))
+        foreach ($registry as $entry)
         {
-            $name = (string) $registry[$name];
+            if (isset ($entry['id']) && $entry['id'] === $name)
+            {
+                $name = (string) ($entry['path'] ?? '');
+                break;
+            }
         }
 
         // Fast-path for legacy ds/ tokens prefix.
@@ -505,7 +511,7 @@ final class AssetsService
      * Render a queue of names into tags.
      *
      * @since  0.0.1
-     * @param  list<string> $names  Asset names.
+     * @param  list<string> $names  Asset names (full masked paths).
      * @param  string       $surface 'face' or 'bone'.
      * @param  string       $kind   'style' or 'script'.
      * @return string HTML.
@@ -513,19 +519,22 @@ final class AssetsService
     private static function render (array $names, string $surface, string $kind): string
     {
         $html      = '';
-        $registry  = (array) (self::config ()['id_registry'] ?? []);
+        $registry  = (array) (self::config ()[($kind === 'style' ? 'register_styles' : 'register_scripts')] ?? []);
+
+        // Build path-to-id lookup table from registry entries.
+        $pathToId = [];
+        foreach ($registry as $entry)
+        {
+            $path = trim ((string) ($entry['path'] ?? ''));
+            if ($path === '') {continue;}
+            $id = $entry['id'] ?? basename ($path, '.'.pathinfo ($path, PATHINFO_EXTENSION));
+            $pathToId[ltrim ($path, '/')] = (string) $id;
+        }
 
         foreach ($names as $name)
         {
             $url = self::url ($name, $surface);
-
-            // Look up original id from registry to use as tag id attribute.
-            $tagId = '';
-            foreach ($registry as $id => $stem)
-            {
-                $expected = str_contains ((string) $stem, '.') ? (string) $stem : ((string) $stem).($kind === 'style' ? '.css' : '.js');
-                if ($expected === $name) {$tagId = $id; break;}
-            }
+            $tagId = $pathToId[ltrim ((string) $name, '/')] ?? '';
 
             if ($kind === 'style')
             {
@@ -548,21 +557,32 @@ final class AssetsService
     /**
      * Build the queued names for a surface: config list first, then runtime adds.
      *
-     * Config entries may be symbolic ids (looked up in `id_registry`) or raw
-     * paths. A raw path already containing a dot stays as-is; an id is expanded
-     * to `<registry_entry>.<ext>`.
+     * Config and runtime entries are plain strings — either full masked paths
+     * (with extension) or symbolic ids resolved via `register_*`. No implicit
+     * extension appending: paths must be complete.
      *
      * @since  0.0.1
-     * @param  array            $config  Config list (mixed ids / paths).
+     * @param  array            $config  Config list (paths or symbolic ids).
      * @param  string           $surface 'face' or 'bone'.
      * @param  string           $kind    'style' or 'script'.
-     * @param  array<string, mixed> $all     Full config (for id_registry lookup).
-     * @return list<string> Names with extensions.
+     * @param  array<string, mixed> $all     Full config (for register_* lookup).
+     * @return list<string> Names as plain paths.
      */
     private static function names (array $config, string $surface, string $kind, array $all): array
     {
-        $ext      = $kind === 'style' ? '.css' : '.js';
-        $registry = (array) ($all['id_registry'] ?? []);
+        $registryKey = $kind === 'style' ? 'register_styles' : 'register_scripts';
+        $registry = (array) ($all[$registryKey] ?? []);
+        
+        // Build id-to-path lookup from registry.
+        $idToPath = [];
+        foreach ($registry as $entry)
+        {
+            if (isset ($entry['id']) && isset ($entry['path']))
+            {
+                $idToPath[(string) $entry['id']] = ltrim ((string) $entry['path'], '/');
+            }
+        }
+
         $merged   = array_values (array_filter ([...$config, ...(self::$queue[$surface][$kind.'s'] ?? [])], 'is_string'));
         $out      = [];
 
@@ -571,21 +591,8 @@ final class AssetsService
             $item = trim ((string) $item);
             if ($item === '') {continue;}
 
-            // Registry entries carry mask-relative stem without extension; append ext directly.
-            if (isset ($registry[$item]))
-            {
-                $resolved = (string) $registry[$item] . $ext;
-            }
-
-            elseif (str_contains ($item, '.'))
-            {
-                $resolved = ltrim ($item, '/');
-            }
-
-            else
-            {
-                $resolved = ltrim ($item, '/').$ext;
-            }
+            // Resolve symbolic id to path, otherwise use as-is.
+            $resolved = $idToPath[$item] ?? ltrim ($item, '/');
 
             if (!in_array ($resolved, $out, true)) {$out[] = $resolved;}
         }

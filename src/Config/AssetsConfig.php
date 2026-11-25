@@ -4,17 +4,20 @@
  * The framework's built-in asset map.
  * --
  * Everything the framework knows about its own styles and scripts lives here:
- * the short names it uses for them, the queues it fills for each surface, and
- * the URL patterns that are allowed to reach a file on disk. Application-level
- * additions belong in `apps/Config/AssetsConfig.php`, which is layered on top
- * of this file.
+ * the registries it uses for each surface, the queues it fills for each
+ * surface, and the URL patterns that are allowed to reach a file on disk.
+ * Application-level additions belong in `apps/Config/AssetsConfig.php`, which
+ * is layered on top of this file.
  *
- * - `id_registry`: short names for files, so a queue can ask for `style`
- *   instead of spelling out a path. The name becomes the `id` attribute of the
- *   rendered tag.
- * - `enqueue_*` / `bone_enqueue_*`: the names queued for the public frontend
- *   (face) and the backend (bone). Each name is resolved to a real URL through
- *   `mask_urls`; no filesystem path is written in the queue.
+ * - `register_styles` / `register_scripts`: explicit asset entries with an
+ *   `id` attribute and a full masked `path` (including extension). A missing
+ *   `id` falls back to the basename without extension. Entries are merged
+ *   from `apps/Config` on top of this file.
+ * - `enqueue_styles` / `bone_enqueue_styles` / `enqueue_scripts` /
+ *   `bone_enqueue_scripts`: paths queued for the public frontend (face) and
+ *   the backend (bone). Values are plain strings — symbolic ids are resolved
+ *   via `register_*` before reaching this list. No filesystem path is written
+ *   in the queue; `mask_urls` translates them on demand.
  * - `mask_urls`: the only doors between a URL and a file on disk. `{*}`
  *   matches any remaining path segments, and `{face_theme_active_name}` /
  *   `{bone_theme_active_name}` stand in for the active theme name. A URL with
@@ -33,20 +36,22 @@ if (!defined ('basepath'))
 }
 
 return [
-    // Symbolic ids that become the `<link ... id="...">` / `<script ... id="...">`.
-    // Values are the path relative to the matching mask-url domain (without leading '/').
-    // The mask engine finds the owning pattern and rewrites accordingly.
-    'id_registry' => [
-        'style'         => 'css/style',
-        'design-system' => 'system/css/System',
-        'app'           => 'js/app',
+    // Framework asset registries. Each entry carries `id` (the HTML attribute)
+    // and `path` (full mask-relative path including extension). Omit `id` to
+    // derive it from the basename automatically.
+    'register_styles'  => [
+        ['id' => 'style',         'path' => '/css/style.css'],
+        ['id' => 'design-system', 'path' => '/system/css/System.css'],
+    ],
+    'register_scripts' => [
+        ['id' => 'app', 'path' => '/js/app.js'],
     ],
 
-    // Face (public frontend) asset queues
+    // Face (public frontend) asset queues — populated by apps/Config.
     'enqueue_styles'  => [],
     'enqueue_scripts' => [],
 
-    // Bone (backend) asset queues
+    // Bone (backend) asset queues — populated by apps/Config.
     'bone_enqueue_styles'  => [],
     'bone_enqueue_scripts' => [],
 

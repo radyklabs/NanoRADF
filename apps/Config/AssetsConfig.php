@@ -9,13 +9,10 @@
  * name instead of being appended to it. Leave a key out to keep the base
  * behaviour.
  *
- * - `enqueue_*` / `bone_enqueue_*`: the names queued for the public frontend
- *   (face) and the backend (bone). Each name is resolved to a real URL through
- *   `mask_urls`; no filesystem path is written in the queue.
- * - `mask_urls`: the only doors between a URL and a file on disk. `{*}`
- *   matches any remaining path segments, and `{face_theme_active_name}` /
- *   `{bone_theme_active_name}` stand in for the active theme name. A URL with
- *   no matching pattern is not reachable.
+ * - `enqueue_*` / `bone_enqueue_*`: the paths queued for the public frontend
+ *   (face) and the backend (bone). Values are full masked paths with extension.
+ * - `register_styles` / `register_scripts`: additional entries layered over the
+ *   framework defaults, overriding entries with the same `id` when provided.
  *
  * @package     NanoRADF
  * @author      RADLabs Development Team
@@ -31,13 +28,10 @@ if (!defined ('basepath'))
 
 return [
     // Face (public frontend) asset queues
-    'enqueue_styles'  => ['style'],
+    'enqueue_styles'  => ['/css/style.css'],
     'enqueue_scripts' => [],
 
     // Bone (backend) asset queues
     'bone_enqueue_styles'  => [],
     'bone_enqueue_scripts' => [],
-
-    // Assets mask URL patterns.
-    'mask_urls' => [],
 ];

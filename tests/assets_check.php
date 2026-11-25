@@ -51,7 +51,7 @@ check ('face scripts queue empty', static fn (): bool => AssetsService::scripts 
 check ('bone styles queue empty', static fn (): bool => AssetsService::styles ('bone') === []);
 check ('runtime enqueue is deduped', function (): bool
 {
-    AssetsService::enqueueStyle ('css/style');
+    AssetsService::enqueueStyle ('css/style.css');
     return AssetsService::styles ('face') === ['css/style.css'];
 });
 

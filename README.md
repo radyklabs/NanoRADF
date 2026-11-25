@@ -1,6 +1,7 @@
 # NanoRADF
 
 ![PHP Version](https://img.shields.io/badge/PHP-8.1%2B-8892BF?logo=php&logoColor=white)
+![Version](https://img.shields.io/badge/Version-0.0.1-blue)
 ![Phase](https://img.shields.io/badge/Phase-2%20Complete-brightgreen)
 ![License](https://img.shields.io/badge/License-MIT-blue)
 ![Tests](https://img.shields.io/badge/Tests-Passing-brightgreen)
@@ -50,10 +51,12 @@ docs/     RULES · PLAN · PRD · REPORT · CHANGELOG
 
 Autoload map (two roots, always active): `System\...` → `src/...`, `App\...` → `apps/...`, `Modules\...` → `modules/...`. `app.modules=true` registers the per-module folder/namespace templates under `modules/<Name>/`; `false`/absent leaves both roots resolving but templates unregistered.
 
-## Getting started
+## Getting Started
 
-1. Point the LocalWP site docroot at `public/` → open http://nanoradfw.local.
-2. Copy `.env` values as needed (gitignored; `app.env=local` by default; debug disclosure via `is_debug()`, driven by `app.debug`).
+**Quick start for local development:**
+
+1. Point your web server docroot at `public/` → open **http://localhost** (or your configured vhost).
+2. Duplicate `.env.sample` to `.env` and adjust values as needed (gitignored; `app.env=local` by default; debug disclosure via `is_debug()`, driven by `app.debug`).
 3. Read [docs/RULES.md](docs/RULES.md) before changing code — especially the boot smoke check for the bootstrap dotfiles.
 
 ## License

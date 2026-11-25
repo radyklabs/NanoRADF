@@ -5,8 +5,18 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning: [S
 
 ## [Unreleased]
 
+### Fixed
+- `src/Views/Tokens/system.css`: broken `@import url("type.css")` → `typography.css` (file `type.css` never existed; runtime `AssetsService::resolve('/system/css/type.css')` returned null, so typography tokens never loaded in the browser).
+- `nanoradf` gateway: `publicpath` now resolves to `basepath/public/` under CLI (previously used `getcwd()`, which pointed at the project root when tests ran from there); web SAPI behavior unchanged.
+- `src/Services/AssetsService.php::url()`: symbolic id lookup now searches both `register_styles` and `register_scripts` registries instead of inferring asset kind by string-parsing the name (`str_contains('.css')` misclassified plain ids like `style`).
+
 ### Changed
 - **Phase 2d — Asset register restructuring (breaking change):** Replaced flat `id_registry` key with two separate explicit arrays: `register_styles` and `register_scripts`. Each entry is a struct: `['id' => <string>, 'path' => '<mask-relative-path-with-extension>']`. Path extension is now explicit in config; auto-extension logic removed from `AssetsService::names()`. The renderer builds a `$pathToId` lookup table from registry entries directly, eliminating the previous reverse-loop lookup. Fixes long-standing `array_replace_recursive` empty-array regresi (REPORT A1/A2/A3): enqueue lists are no longer silently overwritten by framework defaults. `design-system` token (`/system/css/System.css`) now enqueued to face surface. Updated docblocks across AssetsService. All 24 asset tests, 14 view tests, route checks, and smoke checks PASS.
+- `src/Services/AssetsService.php`: removed dead code — `regex()`, `matchPattern()`, `expand()` (no callers) and the legacy `ds/` fast-path in `url()` (~110 lines).
+- `apps/Config/HelperConfig.php`: removed non-English comment; no functional change.
+
+### Docs
+- `docs/PLAN.md`: Phase 2 audit — marked the Blade-shaped composer (`Layouts` ← `Patterns` ← `Components`/`Elements`) as **deferred** (scaffold exists, no composer logic); marked the optional registry `scope` key as **deferred** (not implemented; per-surface enqueue separation covers current needs); corrected stale wording (`src/Themes/admin` → `apps/Themes/admin`, `src/Helper/Utilities.php` → `UtilitiesHelper.php`, `mask_urls` location → `src/Config/AssetsConfig.php`). Dated batch-log entries left untouched as history.
 
 ### Added
 - urlprettify() function in .supports: builds full URLs from paths with auto-detected or configured base URL, normalizes slashes with urlify(), and handles server/protocol detection

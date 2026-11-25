@@ -317,22 +317,6 @@ final class AssetsService
             }
         }
 
-        // Fast-path for legacy ds/ tokens prefix.
-        if (str_starts_with ($name, 'ds/'))
-        {
-                $patternMap = self::patternMap ($surface);
-                foreach ($patternMap as $prefix => $cfg)
-            {
-                    if (str_starts_with ($name, $prefix))
-                {
-                        $tail = substr ($name, strlen ($prefix));
-                        $url = $cfg['url_prefix'].$tail;
-                        return $url.'?v='.self::version ($name, $surface);
-                }
-            }
-            return '/'.$name;
-        }
-
             $patternMap = self::patternMap ($surface);
         $prefix = $surface === 'bone' ? 'assets/' : '';
             $tail = '/'.ltrim ($prefix.$name, '/');
@@ -414,100 +398,6 @@ final class AssetsService
         if (str_contains ($disk, '{bone_theme_active_name}')) {return $surface === 'bone';}
         return false;
     }
-
-    /**
-     * Turn a URL pattern into a regex that captures the `{*}` tail.
-     *
-     * @since  0.0.1
-     * @param  string $pattern Pattern such as `/css/{*}`.
-     * @return string Regex with delimiters, or '' when the pattern is static.
-     */
-    private static function regex (string $pattern): string
-    {
-        $quoted = preg_quote ($pattern, '~');
-
-        // `{*}` is the wildcard marker; rebuild it after quoting.
-        $quoted = str_replace (['\{', '\}', '\*'], ['{', '}', '*'], $quoted);
-
-        $out = '';
-        $i   = 0;
-        $len = strlen ($quoted);
-
-        while ($i < $len)
-        {
-            if ($quoted[$i] === '{' && $quoted[$i + 1] === '*' && $quoted[$i + 2] === '}')
-            {
-                $out .= '(?P<s>.+)';
-                $i   += 3;
-                continue;
-            }
-
-            $out .= $quoted[$i];
-            $i++;
-        }
-
-        return '~^'.$out.'$~';
-    }
-
-    /**
-     * Test a URL against a pattern and capture the `{*}` tail.
-     *
-     * @since  0.0.1
-     * @param  string $pattern URL pattern.
-     * @param  string $url     URL to test.
-     * @return array{s:string}|null Captured tail, or null when no match.
-     */
-    private static function matchPattern (string $pattern, string $url): ?array
-    {
-        $regex = self::regex ($pattern);
-
-        if ($regex === '') {return null;}
-
-        if (preg_match ($regex, $url, $m) === 1) {return ['s' => (string) ($m['s'] ?? '')];}
-
-        return null;
-    }
-
-    /**
-     * Expand a disk pattern with captured values and theme placeholders.
-     *
-     * @since  0.0.1
-     * @param  string               $disk Disk pattern.
-     * @param  array{s:string}|null $match Captured tail.
-     * @return string|null Absolute-ish path, or null when expansion fails.
-     */
-    private static function expand (string $disk, ?array $match): ?string
-    {
-        $value = (string) ($match['s'] ?? '');
-
-        if (str_contains ($value, '..')) {return null;}
-
-        $disk = str_replace (['{*}', '{face_theme_active_name}', '{bone_theme_active_name}'], [$value, self::theme ('face'), self::theme ('bone')], $disk);
-
-        if ($disk === '') {return null;}
-
-        $segments = explode ('/', ltrim ($disk, '/'));
-        $resolved = [];
-
-        foreach ($segments as $segment)
-        {
-            if ($segment === '') {continue;}
-
-            if ($segment === '..') {return null;}
-
-            if ($segment === 'public' && count ($resolved) === 0) {array_push ($resolved, realpath (publicpath)); continue;}
-            if ($segment === 'src' && count ($resolved) === 0)     {array_push ($resolved, realpath (systemf)); continue;}
-
-            $resolved[] = $segment;
-        }
-
-        if ($resolved === []) {return null;}
-
-        $path = implode (sep, $resolved);
-
-        return realpath ($path) ?: $path;
-    }
-
 
     /**
      * Render a queue of names into tags.

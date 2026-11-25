@@ -24,28 +24,20 @@ if (!isset ($application_folder)
     || !isset ($system_folder)
     || !isset ($modules_folder))
 {
-    try {exit (@require realpath (__DIR__).DIRECTORY_SEPARATOR.'.errorss');}
+    try {exit (@require realpath (__DIR__).DIRECTORY_SEPARATOR.'.errors');}
     catch (Throwable $e) {$file = basename (__FILE__); exit ("404 Forbidden {$file}");}
 }
 
 define ('publicpath', realpath (getcwd ()).DIRECTORY_SEPARATOR);
 define ('basepath', realpath (__DIR__).DIRECTORY_SEPARATOR);
 
-$starter_key = call_user_func ('implode', '.', [basepath, 'starter']);
-if (!is_readable ($starter_key)) {$error = 'starter';}
-else {require_once $starter_key;}
-
 try
 {
-    // throw new Exception ('jancuk', 500);
-    if (isset ($error)) {throw new Exception ($error, 500);}
-    unset ($error, $starter_key);
+    $starter_key = implode ('.', [basepath, 'starter']);
+    
+    if (!is_readable ($starter_key)) {throw new Exception ('starter', 500);}
+    else {require_once $starter_key;}
 
-    call_user_func ([$kernel, $init]);
-    unset ($kernel, $init);
-
-    // Dispatch on web SAPIs; CLI stays a plain loader so tests/smoke_check.php
-    // loads without resolving routes.
     if (php_sapi_name () !== 'cli') {Dispatcher::handle ();}
 }
 
@@ -54,5 +46,5 @@ try
 catch (Throwable $th)
 {
     if (function_exists (__NAMESPACE__.'\blackwall')) {blackwall ($th);}
-    else {require realpath (__DIR__).DIRECTORY_SEPARATOR.'.errors';}
+    else {$code = 500; require realpath (__DIR__).DIRECTORY_SEPARATOR.'.errors';}
 }

@@ -18,10 +18,12 @@ namespace System\Kernel;
 use Exception;
 use function System\interlace;
 use function System\fl;
+use function System\require_file;
+use function System\get_required_file;
 
 if (!defined ('basepath'))
 {
-    try {exit (@require dirname (__DIR__,2).DIRECTORY_SEPARATOR.'.errorss');}
+    try {exit (@require dirname (__DIR__,2).DIRECTORY_SEPARATOR.'.errors');}
     catch (Throwable $e){$file = basename(__FILE__); exit("404 Forbidden {$file}");}
 }
 
@@ -75,22 +77,19 @@ final class Boot
 
         if (str_starts_with ($class, nssys))
         {
-            $system_file = interlace (systemf, fl (substr ($class, strlen (nssys))));
-            if (is_readable ($system_file)) {require_once $system_file;}
+            require_file (interlace (systemf, fl (substr ($class, strlen (nssys)))));
             return;
         }
 
         if (str_starts_with ($class, nsapp))
         {
-            $app_file = interlace (appf, fl (substr ($class, strlen (nsapp))));
-            if (is_readable ($app_file)) {require_once $app_file;}
+            require_file (interlace (appf, fl (substr ($class, strlen (nsapp)))));
             return;
         }
 
         if (str_starts_with ($class, nsmod))
         {
-            $app_file = interlace (modulesf, fl (substr ($class, strlen (nsmod))));
-            if (is_readable ($app_file)) {require_once $app_file;}
+            require_file (interlace (modulesf, fl (substr ($class, strlen (nsmod)))));
             return;
         }
     }
@@ -110,29 +109,18 @@ final class Boot
      */
     private static function autoloadHelper (): void
     {
-        $helper_key = 'Helper';
         $stems       = [];
-
-        $helper_config = interlace (configf, fl ("{$helper_key}Config"));
-        if (is_readable ($helper_config)) {$stems = (array) require $helper_config;}
-
+        $stems = (array) get_required_file (interlace (configf, fl ('HelperConfig')), 'helper', []);
         foreach ($stems as $stem)
         {
-            $file = interlace (helperf, fl ("{$stem}{$helper_key}"));
-            if (!is_readable ($file)) {throw new Exception ('helper', 500);}
-            require_once $file;
+            require_file (interlace (helperf, fl ("{$stem}Helper")));
         }
 
         $stemsapp       = [];
-
-        $helperapp_config = interlace (configfapp, fl ("{$helper_key}Config"));
-        if (is_readable ($helperapp_config)) {$stemsapp = (array) require $helperapp_config;}
-
+        $stemsapp = (array) get_required_file (interlace (configfapp, fl ('HelperConfig')), 'helperapp', []);
         foreach ($stemsapp as $stemapp)
         {
-            $fileapp = interlace (helperfapp, fl ("{$stemapp}{$helper_key}"));
-            if (!is_readable ($fileapp)) {throw new Exception ('helperapp', 500);}
-            require_once $fileapp;
+            require_file (interlace (helperfapp, fl ("{$stemapp}Helper")));
         }
     }
 }

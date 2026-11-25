@@ -17,10 +17,11 @@
 namespace System;
 
 use Throwable;
+use Exception;
 
 if (!defined ('basepath'))
 {
-	try {exit (@require realpath (__DIR__).DIRECTORY_SEPARATOR.'.errorss');}
+	try {exit (@require realpath (__DIR__).DIRECTORY_SEPARATOR.'.errors');}
     catch (Throwable $e) {$file = basename (__FILE__); exit ("404 Forbidden {$file}");}
 }
 
@@ -402,4 +403,16 @@ function error_css ()
 	}
 
 	return false; // Biarkan file lain dilayani secara normal
+}
+
+function require_file (string $required_file, string $error = ''): void
+{
+	if (!is_readable ($required_file)) {throw new Exception ($error, 500);}
+	require_once $required_file;
+}
+
+function get_required_file (string $required_file, string $error = '', mixed $default = ''): mixed
+{
+	if (!is_readable ($required_file)) {throw new Exception ($error, 500);}
+	return require $required_file ?? $default;
 }

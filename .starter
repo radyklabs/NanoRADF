@@ -17,10 +17,11 @@
 namespace System;
 
 use Throwable;
+use Exception;
 
 if (!defined ('basepath'))
 {
-    try {exit (@require realpath (__DIR__).DIRECTORY_SEPARATOR.'.errorss');}
+    try {exit (@require realpath (__DIR__).DIRECTORY_SEPARATOR.'.errors');}
     catch (Throwable $e) {$file = basename (__FILE__); exit ("404 Forbidden {$file}");}
 }
 
@@ -210,6 +211,12 @@ function blackwall (Throwable $th)
         error_log ("[{$status}] {$message}", 3, "{$log_dir}/{$log_file}");
     }
     else {error_log ("[{$status}] {$message}");}
+    
+    if (!function_exists ('error_css'))
+    {
+        $common = realpath (__DIR__).sep.'.supports';
+        if (is_readable ($common)) {require_once ($common);}
+    }
     error_css();
     header ('Content-Type: text/html; charset=utf-8', true, $status);
     echo "<link rel=\"stylesheet\" href=\"/exception/core.css\"/>";
@@ -218,17 +225,9 @@ function blackwall (Throwable $th)
 }
 
 // Helper library (interlace, genv, …); failure → $error='common'.
-if (!isset ($error))
-{
-    $common_key = implode ('.', [basepath, 'supports']);
-    if (!is_readable ($common_key)) {$error = 'common';}
-    else {require_once $common_key;}
-}
+$common_key = implode ('.', [basepath, 'supports']);
+if (!is_readable ($common_key)) {throw new Exception ('common', 500);}
+require_once $common_key;
 
 // Bootstrap config (roots, structures, kernel); failure → $error='config'.
-if (!isset ($error))
-{
-    $configuration_key = interlace (basepath, fl ('config', false));
-    if (!is_readable ($configuration_key)) {$error = 'config';}
-    else {require_once $configuration_key;}
-}
+require_file (interlace (basepath, fl ('config', false)), 'config');

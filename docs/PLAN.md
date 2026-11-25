@@ -99,7 +99,7 @@ Definition of done (v1): all PRD acceptance criteria pass; smoke checks recorded
 - **2026-11-23:** All items completed. Dead code removed, ThemeHelper implemented, ThemeConfig separated, AssetsService::theme() updated.
 - **2026-11-24 Phase 2c follow-up:** Surface resolution moved to class hierarchy (`SurfaceAwareInterface` + `SurfaceResolverTrait`, no mutable `$surface`); layouts moved to active theme only (`<theme>/index.html`, no fallback); error pages standalone; `apps/Views/layouts/` removed; theme layouts created for `public/themes/default`, `apps/Themes/default`, `apps/Themes/admin`.
 
-### Phase 2d — Asset register restructuring ✅
+### Phase 2d — Asset register restructuring ⚠️
 - **Depends on:** Phase 2c. **Owner:** main thread. **Priority:** P1 (High). Breaking change.
 - Replace flat `id_registry` array with two explicit arrays: `register_styles` and `register_scripts`.
 - New format per entry: `['id' => <string>, 'path' => '<mask-relative-path-with-extension>']`. Optional `scope` key defaults to both face and bone.

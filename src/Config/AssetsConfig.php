@@ -41,7 +41,7 @@ return [
     // derive it from the basename automatically.
     'register_styles'  => [
         ['id' => 'style',         'path' => '/css/style.css'],
-        ['id' => 'design-system', 'path' => '/system/css/System.css'],
+        ['id' => 'design-system', 'path' => '/system/css/system.css'],
     ],
     'register_scripts' => [
         ['id' => 'app', 'path' => '/js/app.js'],

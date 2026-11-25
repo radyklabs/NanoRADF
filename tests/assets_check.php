@@ -72,7 +72,7 @@ echo "\nResolution\n";
 
 check ('masked face css resolves', static fn (): bool => AssetsService::resolve ('/css/style.css')['mime'] === 'text/css; charset=utf-8');
 check ('masked face js resolves', static fn (): bool => AssetsService::resolve ('/js/app.js')['mime'] === 'text/javascript; charset=utf-8');
-check ('masked tokens resolve', static fn (): bool => AssetsService::resolve ('/system/css/System.css')['mime'] === 'text/css; charset=utf-8');
+check ('masked tokens resolve', static fn (): bool => AssetsService::resolve ('/system/css/system.css')['mime'] === 'text/css; charset=utf-8');
 check ('masked bone css resolves', static fn (): bool => AssetsService::resolve ('/assets/css/style.css')['mime'] === 'text/css; charset=utf-8');
 check ('unknown pattern returns null', static fn (): bool => AssetsService::resolve ('/nope/style.css') === null);
 check ('traversal is rejected', static fn (): bool => AssetsService::resolve ('/css/../../../nanoradf') === null);

@@ -203,12 +203,12 @@ final class Router
 
         if (!in_array (strtoupper (trim ($verb)), ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS'], true))
         {
-            throw new InvalidArgumentException ("Route key '{$key}' must start with an HTTP verb (e.g. 'GET /').");
+                    throw new InvalidArgumentException ('route_config', 500);
         }
 
         if (trim ($path) === '' || trim ($path)[0] !== '/')
         {
-            throw new InvalidArgumentException ("Route key '{$key}': path part must start with '/'.");
+                    throw new InvalidArgumentException ('route_config', 500);
         }
 
         return [trim ($verb), trim ($path)];
@@ -291,12 +291,12 @@ final class Router
     {
         if (!is_string ($target) || substr_count ($target, '::') !== 1)
         {
-            throw new InvalidArgumentException ("Route {$method} {$pattern}: target must be \"Controller::class::action\".");
+                    throw new InvalidArgumentException ('route_config', 500);
         }
 
         if ($pattern === '' || $pattern[0] !== '/')
         {
-            throw new InvalidArgumentException ("Route {$method} {$pattern}: path must start with '/'.");
+                    throw new InvalidArgumentException ('route_config', 500);
         }
 
             self::parseTarget ($target); // fail-loud for bad class/action
@@ -312,12 +312,12 @@ final class Router
                 // `#` is the delimiter; a literal `#` inside a rule must be escaped.
                 if (str_contains ($rule, '#') && !str_contains ($rule, '\#'))
                 {
-                    throw new InvalidArgumentException ("Route {$method} {$pattern}: regex fragment '{{$name}}' may not contain '#'.");
+                                    throw new InvalidArgumentException ('route_config', 500);
                 }
 
                 if (@preg_match ("~^(?:{$rule})$~u", 'x') === false)
                 {
-                    throw new InvalidArgumentException ("Route {$method} {$pattern}: invalid regex fragment '{{$name}:{$rule}}'.");
+                                    throw new InvalidArgumentException ('route_config', 500);
                 }
 
                         // Canonical group name avoids collisions between sibling routes
@@ -333,7 +333,7 @@ final class Router
 
         if (!is_string ($regexp))
         {
-            throw new InvalidArgumentException ("Route {$method} {$pattern}: could not parse path.");
+                    throw new InvalidArgumentException ('route_config', 500);
         }
 
         return ['~^'.$regexp.'$~u', $target, $names];
@@ -377,12 +377,12 @@ final class Router
 
         if ($action === null || $action === '' || !class_exists ($class))
         {
-            throw new RuntimeException ("Route target class not exist: {$target}");
+                    throw new RuntimeException ('route_target', 500);
         }
 
         if (!method_exists ($class, $action))
         {
-            throw new RuntimeException ("Route target method '{$action}' not exist on {$class}.");
+                    throw new RuntimeException ('route_target', 500);
         }
 
         return [$class, $action];
@@ -451,12 +451,12 @@ final class Router
 
         if (!class_exists ($class))
         {
-            throw new RuntimeException ("Route target class not found: {$target}");
+                    throw new RuntimeException ('route_target', 500);
         }
 
         if ($action === '' || !method_exists ($class, $action))
         {
-            throw new RuntimeException ("Route action '{$action}' not exist on {$class}.");
+                    throw new RuntimeException ('route_target', 500);
         }
 
         return [$class, $action];

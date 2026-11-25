@@ -15,7 +15,6 @@
 
 namespace System\Kernel;
 
-use Exception;
 use function System\interlace;
 use function System\fl;
 use function System\require_file;

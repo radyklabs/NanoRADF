@@ -144,7 +144,10 @@ function blackwall (Throwable $th)
     $sentinel = [
         'starter', 'phpmin', 'common', 'config',
         'structure', 'boot', 'kernel', 'init', 'helper',
-        'helperapp', 'theme'
+        'helperapp', 'theme',
+        'layout_name', 'view_empty', 'view_extension', 'view_segment', 'view_missing',
+        'drip_read', 'drip_escape', 'drip_write',
+        'route_config', 'route_target'
         ];
     $known    = in_array ($th->getMessage (), $sentinel, true);
     $code     = $th->getCode () !== 0 ? $th->getCode () : 500;
@@ -153,27 +156,37 @@ function blackwall (Throwable $th)
     $heading = [
         403 => 'Forbidden',
         404	=> 'Not Found',
-        500	=> 'Internal Server Error',
+        500	=> 'Internal System Error',
     ][$status] ?? 'Internal System Error';
 
-    if ($known)
+    if (is_debug()) {$message = $th->getMessage ().' in '.$th->getFile ().':'.$th->getLine ();}
+
+    elseif ($known)
     {
         $message = [
-            'starter'   => 'The starter file could not be found. Please reinstall the framework.',
-            'phpmin'    => 'This version of PHP is not supported. Please upgrade to a newer release.',
-            'common'    => 'The common library could not be loaded. Please check the installation.',
-            'config'    => 'The configuration file could not be found. Please check the installation.',
-            'structure' => 'The framework directories could not be registered. Please check the installation.',
-            'boot'      => 'The kernel could not be started. Please check the installation.',
-            'kernel'    => 'The application could not be started. Please try again later.',
-            'init'      => 'The initiation could not be started. Please try again later.',
-            'helper'    => 'The registered helper file could not be loaded. Please check the installation.',
-            'helperapp' => 'Yours registered helper file could not be loaded. Please check the installation.',
-            'theme'     => 'Theme not found.',
+            'starter'       => 'The starter file could not be found. Please reinstall the framework.',
+            'phpmin'        => 'This version of PHP is not supported. Please upgrade to a newer release.',
+            'common'        => 'The common library could not be loaded. Please check the installation.',
+            'config'        => 'The configuration file could not be found. Please check the installation.',
+            'structure'     => 'The framework directories could not be registered. Please check the installation.',
+            'boot'          => 'The kernel could not be started. Please check the installation.',
+            'kernel'        => 'The application could not be started. Please try again later.',
+            'init'          => 'The initiation could not be started. Please try again later.',
+            'helper'        => 'The registered helper file could not be loaded. Please check the installation.',
+            'helperapp'     => 'Yours registered helper file could not be loaded. Please check the installation.',
+            'theme'         => 'Theme not found.',
+            'layout_name'   => 'The named layout was not found in the active theme.',
+            'view_empty'    => 'View name must not be empty.',
+            'view_extension'=> 'View name must not include the extension.',
+            'view_segment'  => 'View name contains an invalid segment.',
+            'view_missing'  => 'View not found. Pastikan file ada dan pastikan menggunakan file html.',
+            'drip_read'     => 'The template could not be read.',
+            'drip_escape'   => 'Escape function inside {{ }} — {{ }} already escapes.',
+            'drip_write'    => 'The compiled template could not be written.',
+            'route_config'  => 'Route configuration is invalid.',
+            'route_target'  => 'Route target class or method does not exist.',
         ][$th->getMessage ()];
     }
-
-    elseif (is_debug()) {$message = $th->getMessage ().' in '.$th->getFile ().':'.$th->getLine ();}
 
     else {$message = 'An unexpected error occurred. Please contact the Administrator.';}
 

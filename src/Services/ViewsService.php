@@ -96,7 +96,7 @@ final class ViewsService
 
         if (!is_file ($path))
         {
-            throw new \RuntimeException ("Layout '{$layout}' tidak ditemukan di tema '{$theme}' ({$path}). Tema aktif harus menyediakan file layout ini.");
+                    throw new \RuntimeException ('layout_name', 500);
         }
 
         return $path;
@@ -185,12 +185,12 @@ final class ViewsService
 
         if ($name === '')
         {
-            throw new \InvalidArgumentException ('View name must not be empty.');
+                    throw new \InvalidArgumentException ('view_empty', 500);
         }
 
         if (preg_match ('/\.html?$/i', $name))
         {
-            throw new \InvalidArgumentException ("View \"{$name}\": pass the name without extension (\"file\" or \"folder.file\"); .html is appended automatically.");
+                    throw new \InvalidArgumentException ('view_extension', 500);
         }
 
         $segments = explode ('.', $name);
@@ -199,7 +199,7 @@ final class ViewsService
         {
             if (!preg_match ('/^[A-Za-z0-9_-]+$/', $segment))
             {
-                throw new \InvalidArgumentException ("View \"{$name}\": invalid segment \"{$segment}\".");
+                            throw new \InvalidArgumentException ('view_segment', 500);
             }
         }
 
@@ -252,6 +252,6 @@ final class ViewsService
      */
     private static function missing (string $name, string $path): \RuntimeException
     {
-        return new \RuntimeException ("View \"{$name}\" not found ({$path}). Pastikan file ada dan pastikan menggunakan file html.");
+            return new \RuntimeException ('view_missing', 500);
     }
 }

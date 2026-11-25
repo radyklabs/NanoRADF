@@ -133,7 +133,7 @@ final class DripService
 
             if ($source === false)
             {
-                throw new \RuntimeException ("Drip: cannot read template {$path}.");
+                            throw new \RuntimeException ('drip_read', 500);
             }
 
             self::write ($cache, self::compile ($source, $path));
@@ -335,9 +335,7 @@ final class DripService
     {
         if (preg_match ('/(?<![\w$>:\\\\])(htmlspecialchars|htmlentities|e)\s*\(/', $expression, $m))
         {
-            throw new \RuntimeException (
-                "Drip: {$m[1]}() inside {{ }} in {$path} — {{ }} already escapes. Remove the call, or use {{! !}} for raw output."
-            );
+                    throw new \RuntimeException ('drip_escape', 500);
         }
     }
 
@@ -376,7 +374,7 @@ final class DripService
         if (@file_put_contents ($temp, $content) === false || !@rename ($temp, $path))
         {
             @unlink ($temp);
-            throw new \RuntimeException ("Drip: cannot write compiled template {$path}.");
+                    throw new \RuntimeException ('drip_write', 500);
         }
     }
 }

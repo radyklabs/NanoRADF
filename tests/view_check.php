@@ -47,8 +47,8 @@ function throws (callable $fn, string $needle): bool
 echo "View resolution\n";
 
 check ('plain file resolves under apps/Views', static fn (): bool => ViewsService::path ('welcome.meta') === interlace (appf, 'Views', 'welcome', 'meta').'.html');
-check ('extension is rejected', static fn (): bool => throws (static fn () => ViewsService::path ('welcome.index.html'), 'without extension'));
-check ('missing view names both causes', static fn (): bool => throws (static fn () => ViewsService::path ('nope.nope'), 'Pastikan file ada'));
+check ('extension is rejected', static fn (): bool => throws (static fn () => ViewsService::path ('welcome.index.html'), 'view_extension'));
+check ('missing view names both causes', static fn (): bool => throws (static fn () => ViewsService::path ('nope.nope'), 'view_missing'));
 
 echo "\nRendering\n";
 
@@ -84,7 +84,7 @@ file_put_contents ($guard, '{{ htmlspecialchars($x) }}');
 
 check ('escape call inside {{ }} throws', static fn (): bool => throws (
     static fn () => DripService::renderFile ($guard),
-    'already escapes'
+    'drip_escape'
 ));
 
 @unlink ($guard);

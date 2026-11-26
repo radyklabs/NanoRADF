@@ -32,7 +32,7 @@ Browser result > automated test result. If the user confirms the application wor
 All responses must be in Indonesian (`Bahasa Indonesia`) or English (`English`). Never respond in other languages unless explicitly requested by the user. Match the user's language when they switch between Indonesian and English.
 
 ### 1. Read `docs/RULES.md` before working. Follow conventions.
-### 2. Sync these four files together: `docs/PLAN.md`, `docs/PRD.md`, `docs/REPORT.md`, `docs/CHANGELOG.md`.
+### 2. Sync these five files together: `docs/PLAN.md`, `docs/PRD.md`, `docs/REPORT.md`, `docs/CHANGELOG.md`, `README.md`. When `docs/PLAN.md` is updated, `README.md` must also be updated to reflect current phase status.
 ### 3. No `eval()`, `exec()`, `shell_exec()`, `system()`, `proc_open()`, `unserialize()` on untrusted input. Prepared statements only if frontend writes DB (v1: no, frontend only reads backend API).
 ### 4. Validate every backend input; escape every output (XSS via `htmlspecialchars`).
 ### 5. Secrets only in `.env` (never committed). JWT secret stays backend-side; frontend stores access/refresh tokens only in session.
@@ -43,7 +43,7 @@ All responses must be in Indonesian (`Bahasa Indonesia`) or English (`English`).
 Always read `docs/RULES.md` before working on this repository and follow its conventions.
 Local environment configuration lives in `.env` (gitignored, never commit). This project does not use `docs/CONFIG.md` / `docs/CONFIG.sample.md`; do not create them.
 
-**Files tracked for sync:** `docs/PLAN.md`, `docs/PRD.md`, `docs/REPORT.md`, `docs/CHANGELOG.md`.
+**Files tracked for sync:** `docs/PLAN.md`, `docs/PRD.md`, `docs/REPORT.md`, `docs/CHANGELOG.md`, `README.md`.
 
 ## Debugging Principle (non-negotiable)
 

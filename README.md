@@ -2,7 +2,7 @@
 
 ![PHP Version](https://img.shields.io/badge/PHP-8.1%2B-8892BF?logo=php&logoColor=white)
 ![Version](https://img.shields.io/badge/Version-0.0.1-blue)
-![Phase](https://img.shields.io/badge/Phase-2%20Complete-brightgreen)
+![Phase](https://img.shields.io/badge/Phase-4b%20Complete-brightgreen)
 ![License](https://img.shields.io/badge/License-MIT-blue)
 ![Tests](https://img.shields.io/badge/Tests-Passing-brightgreen)
 ![Dependencies](https://img.shields.io/badge/Dependencies-Zero-orange)
@@ -15,10 +15,10 @@ Minimal PHP framework with **two selectable modes**: a server-side rendered **fr
 
 ## Status
 
-**Phase 2 Complete.** Bootstrap, routing, view system (Drip), assets, security headers, and sentinelized error handling all functional. All test suites PASS (smoke, assets 24/24, view 14/14, route 15/15, layout).
+**Phase 4b Complete.** Bootstrap, routing, view system (Drip), assets, security headers, sentinelized error handling, headless API mode, server-to-server HTTP client, and AssetsService internal refactor all functional. All test suites PASS (smoke, assets 24/24, view 14/14, route 15/15, layout).
 
-- **Completed Phases:** 0, 1, 2, 2b, 2c, 2d
-- **Pending Phases:** 3 (Welcome module), 4 (Headless mode), 4b (AssetsService SRP refactor), 5 (Auth/session), 6 (Polish/docs), 7 (Audit/release)
+- **Completed Phases:** 0, 1, 2, 2b, 2c, 2d, 3 (Welcome module), 4 (Headless mode), 4b (AssetsService internal refactor)
+- **Pending Phases:** 5 (Auth/session), 6 (Polish/docs), 7 (Audit/release)
 - **Deferred:** Blade-shaped composer (`Layouts` ← `Patterns` ← `Components`/`Elements`), registry `scope` key for per-surface filtering
 
 ## Requirements
@@ -27,17 +27,17 @@ Minimal PHP framework with **two selectable modes**: a server-side rendered **fr
 - Apache/nginx with URL rewriting, **docroot = `public/`**
 - Dev URL: **http://localhost** (or your configured vhost)
 
-## Request flow
+## Implemented Features (Phases 0–4b Complete)
 
-```text
-public/index.php          entry: folder names ($application_folder, $modules_folder, $system_folder), $debug
-  └─ public/nanoradf   gateway: basepath/publicpath/sep, error gate
-       └─ .config         loads .supports (helpers) + .structures (paths/namespaces)
-            └─ src/Kernel/Boot.php   initiate() + PSR-4 autoloader
-                 └─ Router → Controller → View     (Phase 1–2 complete)
-```
-
-**Currently working:** Router, Drip template engine, AssetsService (mask_url), security headers (CSP/HSTS/X-Frame), sentinelized error handling, theme-based layouts.
+- **Router** — PSR-4 autoloaded, module registry via `ModulesConfig.php`, API routes gated by `app.mode` (face/bone/full)
+- **Drip template engine** — `src/Services/DripService.php`, file-based rendering with data injection
+- **AssetsService** — Single class with internal sections (Config, Pattern Cache, Resolution, URL Generation, Rendering, Queue Management, Helpers, Serving); `mask_urls` config with `{*}` wildcards and theme placeholders; segment prefix matching (no per-request regex)
+- **Security headers** — X-Content-Type-Options, X-Frame-Options, Referrer-Policy always; HSTS on HTTPS; CSP differentiated for JSON vs HTML
+- **Sentinelized error handling** — 404/405/500 render themed error pages via Drip; debug detail only when `is_debug()` true
+- **Theme-based layouts** — `ThemeConfig.php` with `default.public`/`default.private`; `face`/`bone` aliases; `ThemeHelper::resolve()`
+- **Headless API mode** — `app.mode=bone|full` enables `/api` prefix group; `ApiController` with `json()`, `ok()`, `error()`, `notFound()`, `unauthorized()`, `forbidden()`, `validationError()`, `serverError()` helpers
+- **Server-to-server HTTP client** — `HttpService` (cURL primary, stream fallback); exponential backoff retry; JSON validation; configurable via `gconfig('http')`
+- **AssetsService internal refactor** — `serveAsset()` with conditional GET (ETag + If-Modified-Since → 304); `Dispatcher::dispatchAssets()` delegates to `AssetsService::serveAsset()`
 
 ## Layout
 

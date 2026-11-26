@@ -216,6 +216,14 @@ final class Router
             $raw = [];
         }
 
+                // 3. API route groups (from apps/Config/RoutesConfig.php /api prefix) — only when app.mode=bone or full
+                $appMode = \System\genv ('app.mode', 'full');
+                if (in_array ($appMode, ['bone', 'full'], true))
+                {
+                    // API routes are already merged from RoutesConfig.php /api prefix group
+                    // No additional file needed — they're part of the main route table
+                }
+
         $compiled = [];
         foreach ($raw as $key => $value)
         {

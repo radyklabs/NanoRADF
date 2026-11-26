@@ -1,0 +1,16 @@
+@section('content')
+    <div class="welcome-container">
+        <h1>{{$title}}</h1>
+        <p class="lead">{{$description}}</p>
+
+        <dl class="module-info">
+            <dt>Module</dt>
+            <dd>{{$module_name}}</dd>
+
+            <dt>Version</dt>
+            <dd>{{$version}}</dd>
+        </dl>
+
+        <p><a href="/welcome" class="btn btn--secondary">← Back to Welcome</a></p>
+    </div>
+@endsection

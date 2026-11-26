@@ -1,0 +1,28 @@
+@section('content')
+    <div class="welcome-container">
+        <h1>{{$title}}</h1>
+
+        @if($features !== [])
+            <ul class="features-config">
+                @foreach($features as $key => $value)
+                    <li>
+                        <strong>{{$key}}</strong>:
+                        @if(is_bool($value))
+                            @if($value)
+                                <span class="badge badge--enabled">Enabled</span>
+                            @else
+                                <span class="badge badge--disabled">Disabled</span>
+                            @endif
+                        @else
+                            <code>{{$value}}</code>
+                        @endif
+                    </li>
+                @endforeach
+            </ul>
+        @else
+            <p class="note">No feature flags configured.</p>
+        @endif
+
+        <p><a href="/welcome" class="btn btn--secondary">← Back to Welcome</a></p>
+    </div>
+@endsection

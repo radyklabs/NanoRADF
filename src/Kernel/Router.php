@@ -22,6 +22,7 @@ use InvalidArgumentException;
 use function System\interlace;
 use function System\fl;
 use function System\statc;
+use function System\genv;
 
 if (!defined ('basepath'))
 {
@@ -134,7 +135,8 @@ final class Router
     }
 
     /**
-     * Load, compile, and cache the route table from apps/Config/RoutesConfig.php.
+         * Load, compile, and cache the route table from apps/Config/RoutesConfig.php
+         * and all enabled modules' Config/RoutesConfig.php.
      *
      * Parses both flat entries (`'GET /hello/{name}' => Ctrl::method`) and prefix
      * groups (`'/admin' => ['GET /dashboard' => ...]`). Malformed entries throw at
@@ -150,12 +152,35 @@ final class Router
     {
         if (self::$groups !== null) {return self::$groups;}
 
-        $file = interlace (configfapp, fl ('RoutesConfig'));
-        $raw  = is_readable ($file) ? require $file : [];
+            $raw = [];
+
+            // 1. Main app routes (apps/Config/RoutesConfig.php)
+            $appFile = interlace (configfapp, fl ('RoutesConfig'));
+            if (is_readable ($appFile))
+            {
+                $appRoutes = require $appFile;
+                if (is_array ($appRoutes)) {$raw = array_merge ($raw, $appRoutes);}
+            }
+
+            // 2. Module routes (modules/*/Config/RoutesConfig.php) — only when app.modules=true
+            if (genv ('app.modules') === true && defined ('modulesf') && is_dir (modulesf))
+            {
+                $moduleDirs = glob (interlace (modulesf, '*'), GLOB_ONLYDIR);
+                foreach ($moduleDirs as $moduleDir)
+                {
+                    $moduleName = basename ($moduleDir);
+                    $moduleConfig = interlace ($moduleDir, 'Config', 'RoutesConfig.php');
+                    if (is_readable ($moduleConfig))
+                    {
+                        $moduleRoutes = require $moduleConfig;
+                        if (is_array ($moduleRoutes)) {$raw = array_merge ($raw, $moduleRoutes);}
+                    }
+                }
+            }
 
         if (!is_array ($raw))
         {
-            @trigger_error ('apps/Config/RoutesConfig.php must return an array.', E_USER_WARNING);
+                @trigger_error ('Route config must return an array.', E_USER_WARNING);
             $raw = [];
         }
 

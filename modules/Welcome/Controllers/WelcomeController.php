@@ -12,6 +12,7 @@
 namespace Modules\Welcome\Controllers;
 
 use System\Controllers\PublicController;
+use function gconfig;
 use Modules\Welcome\Services\WelcomeService;
 
 final class WelcomeController extends PublicController
@@ -27,5 +28,38 @@ final class WelcomeController extends PublicController
         $data = $service->prepareData();
 
         return $this->view('welcome.index', $data, null, 'Welcome');
+    }
+
+    /**
+     * `/welcome/about` — shows module information page.
+     *
+     * @return array{status:int, body:string, headers:list<string>}
+     */
+    public function about (): array
+    {
+        $config = gconfig('welcome', []);
+
+        return $this->view('welcome.about', [
+            'title'       => 'About — Welcome Module',
+            'module_name' => $config['name'] ?? 'Welcome',
+            'description' => $config['description'] ?? '',
+            'version'     => '0.0.1',
+        ], null, 'Welcome');
+    }
+
+    /**
+     * `/welcome/features` — lists available features from config.
+     *
+     * @return array{status:int, body:string, headers:list<string>}
+     */
+    public function features (): array
+    {
+        $config = gconfig('welcome', []);
+        $features = $config['features'] ?? [];
+
+        return $this->view('welcome.features', [
+            'title'    => 'Features — Welcome Module',
+            'features' => $features,
+        ], null, 'Welcome');
     }
 }

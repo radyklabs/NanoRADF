@@ -31,6 +31,7 @@ Design mandate: minimal, small, light, fast. Zero runtime dependencies.
 | FR-4 | Base controllers for the three surfaces: `PublicController`, `PrivateController`, `ApiController`. | ✅ done (Phase 1 scaffolding; auth rules land in Phase 5) |
 | FR-5 | Blade-shaped server-side view composition from the role taxonomy + module view classes. | ⚠️ planned (Phase 2) || FR-6 | Modular HMVC — only when `app.modules=true`: `Manifest.json` + Config/Controllers/Model/Services/Views under `modules/<Name>/` (project root), wired into routing. | ⚠️ planned (Phase 3) |
 | FR-7 | Server-to-server HTTP client frontend → headless backend with status + schema validation. | ⚠️ planned (Phase 4) |
+| FR-7a | HTTP client service (`System\Services\HttpService`) with cURL primary, stream fallback, retry, JSON validation. | ⚠️ planned (Phase 4) |
 | FR-8 | Session-based auth token storage (`$_SESSION` only) with hardened cookie flags. | ⚠️ planned (Phase 5) |
 | FR-9 | Environment config via `.env` loaded into the process env by `.starter` (`putenv` + `$_ENV`), dot-notation typed access via `genv()` (getenv-backed). | ✅ done |
 | FR-10 | Error handling: generic 500 in prod, gated detail in local/dev, always `error_log`. | ✅ done (entry gateway) |

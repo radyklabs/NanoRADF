@@ -9,6 +9,12 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning: [S
 - **Phase 3 — Welcome module end-to-end:** Complete HMVC module implementation at `modules/Welcome/` with Manifest.json, Config/WelcomeConfig.php, Controllers/WelcomeController.php, Model/WelcomeModel.php, Services/WelcomeService.php, Views/welcome/index.html, Views/welcome/meta.html. Route registered in `apps/Config/RoutesConfig.php` as `GET /welcome => Modules\Welcome\Controllers\WelcomeController::index`.
 - `src/Services/ViewsService.php`: added `use function System\genv;` import to fix undefined-function error when resolving module views.
 
+### Changed
+- **Naming convention for Phase 4/4b services:** All new services in `src/Services/` follow strict `*Service.php` convention:
+  - HTTP client: `HttpService` (not `HttpClient`)
+  - Asset SRP split: `AssetConfigService`, `AssetResolverService`, `AssetUrlGeneratorService`, `AssetRendererService`, `AssetServerService`
+  - Config files: `HttpConfig.php` (not `HttpClientConfig.php`)
+
 ### Fixed
 - `src/Views/Tokens/system.css`: broken `@import url("type.css")` → `typography.css` (file `type.css` never existed; runtime `AssetsService::resolve('/system/css/type.css')` returned null, so typography tokens never loaded in the browser).
 - `nanoradf` gateway: `publicpath` now resolves to `basepath/public/` under CLI (previously used `getcwd()`, which pointed at the project root when tests ran from there); web SAPI behavior unchanged.

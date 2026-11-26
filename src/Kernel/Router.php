@@ -170,13 +170,13 @@ final class Router
                 {
                     $moduleName = basename ($moduleDir);
 
-                                // Check Manifest.json for enabled/internal_only flags
+                                // Check Manifest.json for access control
+                                // access: "public" (default), "internal", "both", "disabled"
                                 $manifestFile = interlace ($moduleDir, 'Manifest.json');
                                 $manifest = is_readable ($manifestFile) ? json_decode (file_get_contents ($manifestFile), true) : [];
-                                $enabled = $manifest['enabled'] ?? true;
-                                $internalOnly = $manifest['internal_only'] ?? false;
+                                $access = $manifest['access'] ?? 'public';
 
-                                if (!$enabled) {continue;} // Skip disabled modules entirely
+                                if ($access === 'disabled') {continue;} // Skip disabled modules entirely
 
                     $moduleConfig = interlace ($moduleDir, 'Config', 'RoutesConfig.php');
                     if (is_readable ($moduleConfig))
@@ -184,9 +184,18 @@ final class Router
                         $moduleRoutes = require $moduleConfig;
                                     if (is_array ($moduleRoutes))
                                     {
-                                        // If internal_only, prefix routes with /_internal/ to prevent public access
-                                        if ($internalOnly)
+                                        // Build routes based on access mode
+                                        $finalRoutes = [];
+
+                                        if ($access === 'public' || $access === 'both')
                                         {
+                                            // Public routes as-is
+                                            $finalRoutes = array_merge($finalRoutes, $moduleRoutes);
+                                        }
+
+                                        if ($access === 'internal' || $access === 'both')
+                                        {
+                                            // Internal routes prefixed with /_internal/
                                             $prefixed = [];
                                             foreach ($moduleRoutes as $key => $value)
                                             {
@@ -202,9 +211,10 @@ final class Router
                                                     $prefixed[$verb.' /_internal'.$path] = $value;
                                                 }
                                             }
-                                            $moduleRoutes = $prefixed;
+                                            $finalRoutes = array_merge($finalRoutes, $prefixed);
                                         }
-                                        $raw = array_merge ($raw, $moduleRoutes);
+
+                                        $raw = array_merge ($raw, $finalRoutes);
                                     }
                     }
                 }

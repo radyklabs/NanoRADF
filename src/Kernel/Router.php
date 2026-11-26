@@ -169,11 +169,43 @@ final class Router
                 foreach ($moduleDirs as $moduleDir)
                 {
                     $moduleName = basename ($moduleDir);
+
+                                // Check Manifest.json for enabled/internal_only flags
+                                $manifestFile = interlace ($moduleDir, 'Manifest.json');
+                                $manifest = is_readable ($manifestFile) ? json_decode (file_get_contents ($manifestFile), true) : [];
+                                $enabled = $manifest['enabled'] ?? true;
+                                $internalOnly = $manifest['internal_only'] ?? false;
+
+                                if (!$enabled) {continue;} // Skip disabled modules entirely
+
                     $moduleConfig = interlace ($moduleDir, 'Config', 'RoutesConfig.php');
                     if (is_readable ($moduleConfig))
                     {
                         $moduleRoutes = require $moduleConfig;
-                        if (is_array ($moduleRoutes)) {$raw = array_merge ($raw, $moduleRoutes);}
+                                    if (is_array ($moduleRoutes))
+                                    {
+                                        // If internal_only, prefix routes with /_internal/ to prevent public access
+                                        if ($internalOnly)
+                                        {
+                                            $prefixed = [];
+                                            foreach ($moduleRoutes as $key => $value)
+                                            {
+                                                if (is_string ($key) && is_array ($value) && str_starts_with ($key, '/'))
+                                                {
+                                                    // Prefix group
+                                                    $prefixed['/_internal'.$key] = $value;
+                                                }
+                                                else
+                                                {
+                                                    // Flat route
+                                                    [$verb, $path] = self::splitKey ((string) $key);
+                                                    $prefixed[$verb.' /_internal'.$path] = $value;
+                                                }
+                                            }
+                                            $moduleRoutes = $prefixed;
+                                        }
+                                        $raw = array_merge ($raw, $moduleRoutes);
+                                    }
                     }
                 }
             }

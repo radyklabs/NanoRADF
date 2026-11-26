@@ -138,9 +138,9 @@ Definition of done (v1): all PRD acceptance criteria pass; smoke checks recorded
 - **Depends on:** Phase 1 (parallel-safe with Phase 2–3). **Owner:** main thread.
 - `ApiController` conventions: JSON envelope `{ok, data}` / `{ok:false, error}`, proper HTTP status codes, consistent error shape.
 - Backend route group under `/api` prefix (e.g., `/api/v1/users`, `/api/v1/posts`).
-- Frontend→backend PHP HTTP client (`System\Services\HttpClient` or similar):
+- Frontend→backend PHP HTTP client (`System\Services\HttpService`):
   - cURL primary, stream context fallback.
-  - Timeout, retry, circuit breaker config via `gconfig('http_client')`.
+  - Timeout, retry, circuit breaker config via `gconfig('http')`.
   - Validate HTTP status (2xx only) + JSON schema (required keys, types) before rendering.
   - No browser `fetch` for data — all SSR data fetched server-side.
 - Base URL for backend from `gconfig('app.backend_url')` or `genv('app.backend_url')`.
@@ -149,12 +149,12 @@ Definition of done (v1): all PRD acceptance criteria pass; smoke checks recorded
 ### Phase 4b — AssetsService refactor (SRP) ⚠️
 - **Depends on:** Phase 4. **Owner:** main thread. **Priority:** P2 (Medium).
 - Current `AssetsService` (~21 KB, 600+ lines) does too much: config, enqueue, URL masking, resolution, rendering, serving, pattern caching, versioning, MIME lookup.
-- Split into focused classes:
-  - `AssetConfig` — read/merge config (`gconfig('assets')`), expose `id_registry`, `enqueue_*`, `mask_urls`.
-  - `AssetResolver` — `resolve(string $url): ?array{file,mime}` using segment prefix matching + cached pattern map; `anchor()` for disk path.
-  - `AssetUrlGenerator` — `url(string $name, string $surface): string` with cache-buster; uses `AssetResolver` internally.
-  - `AssetRenderer` — `renderFaceStyles()`, `renderBoneScripts()`, etc.; builds `<link>`/`<script>` tags with `id` from registry.
-  - `AssetServer` — `serveAsset(string $file, bool $head)` — MIME, headers, streaming (used by `Dispatcher::dispatchAssets()`).
+- Split into focused classes (strict `*Service.php` naming convention in `src/Services/`):
+  - `AssetConfigService` — read/merge config (`gconfig('assets')`), expose registries, enqueue lists, mask_urls, theme().
+  - `AssetResolverService` — `resolve(string $url): ?array{file,mime}` using segment prefix matching + cached pattern map; `anchor()` for disk path.
+  - `AssetUrlGeneratorService` — `url(string $name, string $surface): string` with cache-buster; uses `AssetResolverService` internally.
+  - `AssetRendererService` — `renderFaceStyles()`, `renderBoneScripts()`, etc.; builds `<link>`/`<script>` tags with `id` from registry.
+  - `AssetServerService` — `serveAsset(string $file, bool $head)` — MIME, headers, streaming, conditional GET (304) (used by `Dispatcher::dispatchAssets()`).
 - `AssetsService` becomes a thin facade delegating to the above; backward-compatible static methods preserved.
 - Remove legacy `ds/` fast-path in `url()`.
 - Verification: All asset tests pass; each class < 150 lines; single responsibility clear; no circular deps.

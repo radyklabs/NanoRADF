@@ -13,11 +13,12 @@ if (!defined ('basepath'))
     catch (Throwable $e){$file = basename (__FILE__); exit("404 Forbidden {$file}");}
 }
 
-function gconfig (string $config): array
+function gconfig (string $config, array $default = []): array
 {
-    $resolve = ucfirst (strtolower ($config));
+    // Convert snake_case to PascalCase for config file naming (e.g., http -> Http, http_client -> HttpClient)
+    $resolve = str_replace (' ', '', ucwords (str_replace (['-', '_'], ' ', strtolower ($config))));
     $confpath = interlace (configf, fl ("{$resolve}Config"));
-    $merged = is_readable ($confpath) ? require $confpath : [];
+    $merged = is_readable ($confpath) ? require $confpath : $default;
     $confapppath = interlace (configfapp, fl ("{$resolve}Config"));
     if (is_readable ($confapppath))
     {

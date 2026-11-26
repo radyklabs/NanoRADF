@@ -2,6 +2,17 @@
 
 Dated findings, scans, and audit entries. Evidence only — nothing is claimed fixed until the fix plus verification is recorded here.
 
+## 2026-11-26 — Naming convention decision for Phase 4/4b services
+
+- **Decision:** All new services in `src/Services/` must follow strict `*Service.php` naming convention (matching existing `AssetsService.php`, `DripService.php`, `ViewsService.php`).
+- **Applied to Phase 4/4b:**
+  - HTTP client: `HttpService` (not `HttpClient`)
+  - Config file: `HttpConfig.php` (not `HttpClientConfig.php`)
+  - Asset SRP split: `AssetConfigService`, `AssetResolverService`, `AssetUrlGeneratorService`, `AssetRendererService`, `AssetServerService`
+- **Config naming:** `gconfig('http')` → `HttpConfig.php` (PascalCase via fixed `gconfig()` snake_case→PascalCase conversion)
+- **Rationale:** Consistency with existing `src/Services/` convention (`AssetsService`, `DripService`, `ViewsService`). Single-word class names like `Http` are ambiguous; `HttpService` is explicit.
+- **Documentation updated:** `docs/PLAN.md` (Phase 4/4b), `docs/PRD.md` (FR-7a), `docs/CHANGELOG.md` ([Unreleased]).
+
 ## 2026-11-20 — Baseline scan & kernel autoloader fix
 
 - **Branch / commit:** `main` (pre-change state: single `Initial commit`, working tree untracked).

@@ -40,4 +40,19 @@ return [
     'GET /page/{line}'              => 'App\Controllers\HomeController::page',
     'GET /ping'                     => 'App\Controllers\PingController::index',
     'GET /status/{code:[45]\d\d}'   => 'App\Controllers\PingController::fail',
+
+    // API routes — only loaded when app.mode is 'bone' or 'full'
+    '/api' => [
+        'GET /v1/health'     => 'App\Controllers\Api\HealthController::index',
+        'GET /v1/users'      => 'App\Controllers\Api\UserController::list',
+        'GET /v1/users/{id}' => 'App\Controllers\Api\UserController::show',
+        'POST /v1/users'     => 'App\Controllers\Api\UserController::create',
+        'PUT /v1/users/{id}' => 'App\Controllers\Api\UserController::update',
+        'DELETE /v1/users/{id}' => 'App\Controllers\Api\UserController::delete',
+        'GET /v1/posts'      => 'App\Controllers\Api\PostController::list',
+        'GET /v1/posts/{id}' => 'App\Controllers\Api\PostController::show',
+        'POST /v1/posts'     => 'App\Controllers\Api\PostController::create',
+        'PUT /v1/posts/{id}' => 'App\Controllers\Api\PostController::update',
+        'DELETE /v1/posts/{id}' => 'App\Controllers\Api\PostController::delete',
+    ],
 ];

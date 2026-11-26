@@ -148,7 +148,7 @@ function blackwall (Throwable $th)
         'helperapp', 'theme', 'layout_name', 'view_empty',
         'view_extension', 'view_segment', 'view_missing',
         'drip_read', 'drip_escape', 'drip_write',
-        'route_config', 'route_target',
+            'route_config', 'route_target', 'module_name_mismatch', 'module_manifest_missing',
         ];
     $known    = in_array ($th->getMessage (), $sentinel, true);
     $code     = $th->getCode () !== 0 ? $th->getCode () : 500;
@@ -186,6 +186,8 @@ function blackwall (Throwable $th)
             'drip_write'    => 'The compiled template could not be written.',
             'route_config'  => 'Route configuration is invalid.',
             'route_target'  => 'Route target class or method does not exist.',
+                        'module_name_mismatch' => 'Module name mismatch: ModulesConfig.php key does not match Manifest.json name (case-sensitive).',
+                        'module_manifest_missing' => 'Module enabled in ModulesConfig.php but Manifest.json not found.',
         ][$th->getMessage ()];
     }
 

@@ -178,6 +178,27 @@ final class Router
 
                                     if (!$enabled || $access !== 'public') {continue;}
 
+                                                // Validate module name matches Manifest.json (case-sensitive)
+                                                $manifestFile = interlace (modulesf, $moduleName, 'Manifest.json');
+                                                if (!is_readable ($manifestFile))
+                                                {
+                                                    throw new \RuntimeException (
+                                                        'module_manifest_missing',
+                                                        500
+                                                    );
+                                                }
+
+                                                $manifest = json_decode (file_get_contents ($manifestFile), true);
+                                                $manifestName = $manifest['name'] ?? '';
+
+                                                if ($manifestName !== $moduleName)
+                                                {
+                                                    throw new \RuntimeException (
+                                                        'module_name_mismatch',
+                                                        500
+                                                    );
+                                                }
+
                                     $moduleDir = interlace (modulesf, $moduleName);
                                     $moduleConfig = interlace ($moduleDir, 'Config', 'RoutesConfig.php');
                                     if (is_readable ($moduleConfig))

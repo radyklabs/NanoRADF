@@ -1,7 +1,7 @@
 {
     "name": "Welcome",
     "version": "0.0.1",
-    "access": "both",
+    "access": "public",
     "description": "Default welcome module — SSR demo with Drip templates.",
     "author": "RADLabs Development Team",
     "namespace_prefix": "Modules\\Welcome\\"

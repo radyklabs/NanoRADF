@@ -163,58 +163,27 @@ final class Router
             }
 
             // 2. Module routes (modules/*/Config/RoutesConfig.php) — only when app.modules=true
+                        // Uses explicit registry from apps/Config/ModulesConfig.php
             if (genv ('app.modules') === true && defined ('modulesf') && is_dir (modulesf))
             {
-                $moduleDirs = glob (interlace (modulesf, '*'), GLOB_ONLYDIR);
-                foreach ($moduleDirs as $moduleDir)
+                            $modulesConfigFile = interlace (configfapp, fl ('ModulesConfig'));
+                            $modulesRegistry = is_readable ($modulesConfigFile) ? require $modulesConfigFile : [];
+
+                            if (is_array ($modulesRegistry))
                 {
-                    $moduleName = basename ($moduleDir);
-
-                                // Check Manifest.json for access control
-                                // access: "public" (default), "internal", "both", "disabled"
-                                $manifestFile = interlace ($moduleDir, 'Manifest.json');
-                                $manifest = is_readable ($manifestFile) ? json_decode (file_get_contents ($manifestFile), true) : [];
-                                $access = $manifest['access'] ?? 'public';
-
-                                if ($access === 'disabled') {continue;} // Skip disabled modules entirely
-
-                    $moduleConfig = interlace ($moduleDir, 'Config', 'RoutesConfig.php');
-                    if (is_readable ($moduleConfig))
+                                foreach ($modulesRegistry as $moduleName => $moduleMeta)
                     {
-                        $moduleRoutes = require $moduleConfig;
-                                    if (is_array ($moduleRoutes))
+                                    $enabled = $moduleMeta['enabled'] ?? false;
+                                    $access  = $moduleMeta['access'] ?? 'public';
+
+                                    if (!$enabled || $access !== 'public') {continue;}
+
+                                    $moduleDir = interlace (modulesf, $moduleName);
+                                    $moduleConfig = interlace ($moduleDir, 'Config', 'RoutesConfig.php');
+                                    if (is_readable ($moduleConfig))
                                     {
-                                        // Build routes based on access mode
-                                        $finalRoutes = [];
-
-                                        if ($access === 'public' || $access === 'both')
-                                        {
-                                            // Public routes as-is
-                                            $finalRoutes = array_merge($finalRoutes, $moduleRoutes);
-                                        }
-
-                                        if ($access === 'internal' || $access === 'both')
-                                        {
-                                            // Internal routes prefixed with /_internal/
-                                            $prefixed = [];
-                                            foreach ($moduleRoutes as $key => $value)
-                                            {
-                                                if (is_string ($key) && is_array ($value) && str_starts_with ($key, '/'))
-                                                {
-                                                    // Prefix group
-                                                    $prefixed['/_internal'.$key] = $value;
-                                                }
-                                                else
-                                                {
-                                                    // Flat route
-                                                    [$verb, $path] = self::splitKey ((string) $key);
-                                                    $prefixed[$verb.' /_internal'.$path] = $value;
-                                                }
-                                            }
-                                            $finalRoutes = array_merge($finalRoutes, $prefixed);
-                                        }
-
-                                        $raw = array_merge ($raw, $finalRoutes);
+                                        $moduleRoutes = require $moduleConfig;
+                                        if (is_array ($moduleRoutes)) {$raw = array_merge ($raw, $moduleRoutes);}
                                     }
                     }
                 }

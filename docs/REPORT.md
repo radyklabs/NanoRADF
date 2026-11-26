@@ -57,6 +57,30 @@ nsapp=App · nsmod=Modules · app_resolve=YES · mod_resolve=YES · mod_template
 
 **D9→D10 correction (user + audit):** module HMVC at project-root `modules/`; `apps/` always the main MVC. `.config` registers `modulesf`; `.structures` defines namespaces `nsapp`/`nsmod`; `Boot::autoloader` resolves two roots (`App\…`→`apps/`, `Modules\…`→`modules/`). `app.modules` gates only the per-module templates.
 
+### Phase 3 completion — 2026-11-26 (Welcome module end-to-end)
+
+- **Branch:** `dev` (from `38ad1c8`).
+- **Scope:** `modules/Welcome/` (all 8 files), `apps/Config/RoutesConfig.php`, `src/Services/ViewsService.php`.
+- **Tools:** PHP 8.3.36 CLI, all test suites (`smoke_check.php`, `route_check.php`, `view_check.php`, `assets_check.php`, `layout_check.php`), manual render probe.
+- **Changes:**
+  1. Populated `modules/Welcome/Manifest.json` with identity, enabled flag, registration metadata.
+  2. Created `modules/Welcome/Config/WelcomeConfig.php` — module config mergeable via `gconfig()`.
+  3. Created `modules/Welcome/Controllers/WelcomeController.php` — extends `PublicController`, `index()` action for `/welcome`.
+  4. Created `modules/Welcome/Model/WelcomeModel.php` — data access (static data for v1, read-only vs headless API in Phase 4).
+  5. Created `modules/Welcome/Services/WelcomeService.php` — business logic orchestrator.
+  6. Created `modules/Welcome/Views/welcome/index.html` — Drip template using theme layout with `@include('welcome.meta')`.
+  7. Created `modules/Welcome/Views/welcome/meta.html` — partial for mode display.
+  8. Registered route in `apps/Config/RoutesConfig.php`: `'GET /welcome' => 'Modules\Welcome\Controllers\WelcomeController::index'`.
+  9. Fixed `src/Services/ViewsService.php`: added `use function System\genv;` import (missing, caused `Call to undefined function System\Services\genv()` when resolving module views).
+  10. Fixed `@include('meta')` → `@include('welcome.meta')` in welcome template (module context requires full path).
+
+- **Verification:**
+  - All test suites PASS: smoke (exit 0), route (15/15), view (14/14), assets (24/24), layout (PASS).
+  - Render probe: `Modules\Welcome\Controllers\WelcomeController::index()` returns HTTP 200, full HTML body (1363 chars) with theme layout (`public/themes/default/index.html`), Drip directives working (`@include`, `@foreach`, `@class`, `{{ }}` escaping, `{{! !}}` raw).
+  - Module autoload: `Modules\Welcome\Controllers\WelcomeController` resolves via `nsmod` → `modules/` root.
+  - Route dispatch: `/welcome` dispatches to module controller; removing route yields 404.
+  - Context resolution: `ViewsService::context('Modules\Welcome\Controllers\WelcomeController')` returns `Welcome`.
+
 ### Findings
 
 | # | Class | Severity | Location | Finding | Status |

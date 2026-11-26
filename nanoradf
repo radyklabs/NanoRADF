@@ -28,22 +28,26 @@ if (!isset ($application_folder)
     catch (Throwable $e) {$file = basename (__FILE__); exit ("404 Forbidden {$file}");}
 }
 
-define ('publicpath', php_sapi_name () === 'cli'
-    ? realpath (__DIR__).DIRECTORY_SEPARATOR.'public'.DIRECTORY_SEPARATOR
-    : realpath (getcwd ()).DIRECTORY_SEPARATOR);
-define ('basepath', realpath (__DIR__).DIRECTORY_SEPARATOR);
+$sep = DIRECTORY_SEPARATOR;
+
+function is_cli (): bool {return php_sapi_name () === 'cli';}
+
+$basepath = realpath (__DIR__).$sep;
+define ('basepath', $basepath);
+
+$publicpath = is_cli () ? "{$basepath}public{$sep}" : getcwd().$sep;
+define ('publicpath', $publicpath);
 
 try
 {
-    $env_key = implode ('.', [basepath, 'env']);
+    $env_key = "{$basepath}.env";
     if (!is_readable ($env_key)) {throw new Exception ('env', 500);}
     
-    $starter_key = implode ('.', [basepath, 'starter']);
-    
+    $starter_key = "{$basepath}.starter";
     if (!is_readable ($starter_key)) {throw new Exception ('starter', 500);}
     else {require_once $starter_key;}
 
-    if (php_sapi_name () !== 'cli') {Dispatcher::handle ();}
+    if (!is_cli ()) {Dispatcher::handle ();}
 }
 
 // Catch-all: friendly text for bootstrap sentinels, generic/gated text otherwise,
@@ -51,5 +55,5 @@ try
 catch (Throwable $th)
 {
     if (function_exists (__NAMESPACE__.'\blackwall')) {blackwall ($th);}
-    else {$code = 500; require realpath (__DIR__).DIRECTORY_SEPARATOR.'.errors';}
+    else {$code = 500; require "{$basepath}.errors";}
 }

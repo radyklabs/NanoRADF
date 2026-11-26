@@ -27,7 +27,7 @@ if (!defined ('basepath'))
 
 // Framework version + path constants.
 define ('appversion', '0.0.1');
-define ('sep', DIRECTORY_SEPARATOR);
+define ('sep', $sep ?? DIRECTORY_SEPARATOR);
 
 /**
  * Load `.env` into the process environment.
@@ -42,7 +42,7 @@ define ('sep', DIRECTORY_SEPARATOR);
  * @since  0.0.1
  * @return void
  */
-$env_file = implode ('.', [basepath, 'env']);
+$env_file = $env_key ?? implode ('.', [basepath, 'env']);
 
 if (is_file ($env_file) && is_readable ($env_file))
 {
@@ -77,7 +77,7 @@ if (is_file ($env_file) && is_readable ($env_file))
     }
 }
 
-unset ($env_file);
+unset ($env_file, $sep, $basepath, $publicpath, $env_key);
 
 /** 
  * Error reporting profile.
@@ -145,11 +145,10 @@ function blackwall (Throwable $th)
     $sentinel = [
         'starter', 'phpmin', 'common', 'config',
         'structure', 'boot', 'kernel', 'init', 'helper',
-        'helperapp', 'theme',
-        'layout_name', 'view_empty', 'view_extension', 'view_segment', 'view_missing',
+        'helperapp', 'theme', 'layout_name', 'view_empty',
+        'view_extension', 'view_segment', 'view_missing',
         'drip_read', 'drip_escape', 'drip_write',
-            'route_config', 'route_target',
-            'env'
+        'route_config', 'route_target',
         ];
     $known    = in_array ($th->getMessage (), $sentinel, true);
     $code     = $th->getCode () !== 0 ? $th->getCode () : 500;
@@ -187,7 +186,6 @@ function blackwall (Throwable $th)
             'drip_write'    => 'The compiled template could not be written.',
             'route_config'  => 'Route configuration is invalid.',
             'route_target'  => 'Route target class or method does not exist.',
-            'env'           => 'The environment file (.env) could not be found. Please create it from .env.sample.',
         ][$th->getMessage ()];
     }
 
@@ -233,10 +231,11 @@ function blackwall (Throwable $th)
         $common = realpath (__DIR__).sep.'.supports';
         if (is_readable ($common)) {require_once ($common);}
     }
+
     error_css();
     header ('Content-Type: text/html; charset=utf-8', true, $status);
+    
     echo "<link rel=\"stylesheet\" href=\"/exception/core.css\"/>";
-    // if (realpath (publicpath.'error.css')) {echo "<link rel=\"stylesheet\" href=\"/error.css\"/>";}
     exit ("<notice><h1>{$status} {$heading}</h1><p>{$message}</p></notice>{$trace_section}{$footer}");
 }
 

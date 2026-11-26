@@ -111,7 +111,18 @@ Definition of done (v1): all PRD acceptance criteria pass; smoke checks recorded
 - Files: `src/Config/AssetsConfig.php`, `apps/Config/AssetsConfig.php`, `src/Services/AssetsService.php`, `tests/assets_check.php`.
 - **2026-11-25:** Phase 2d executed — replaced `id_registry` with explicit `register_styles`/`register_scripts` arrays. Removed auto-extension logic from `names()`. Renderer now uses direct `$pathToId` lookup table. All 24 asset tests, 14 view tests, route tests, and smoke checks PASS. Fix resolves REPORT A1-A8 regression.
 
-### Phase 3 — Welcome module end-to-end ⚠️
+### Phase 3 — Welcome module end-to-end ✅
+- **Depends on:** Phase 2, 2b, 2c. **Owner:** main thread.
+- Fill `modules/Welcome/` (Manifest, Config, Controller, Model, Service, Views) and register its route.
+  - `modules/Welcome/Manifest.json` — identity, enabled flag, registration metadata.
+  - `modules/Welcome/Config/WelcomeConfig.php` — module config (mergeable via `gconfig()`).
+  - `modules/Welcome/Controllers\WelcomeController.php` — extends `PublicController`, actions for `/welcome`.
+  - `modules/Welcome/Model/WelcomeModel.php` — data access (read-only vs headless API in Phase 4).
+  - `modules/Welcome/Services/WelcomeService.php` — business logic.
+  - `modules/Welcome/Views/welcome.index.html` — Drip template using theme layout.
+- Register route in `apps/Config/RoutesConfig.php`: `'GET /welcome' => 'Modules\Welcome\Controllers\WelcomeController::index'`.
+- Verification: `/welcome` over HTTP renders through the view composer with theme layout; removing the module route yields 404; module context resolution works (`ViewsService::context()` returns `Welcome`).
+- **2026-11-26 fix:** Added `use function System\genv;` to `src/Services/ViewsService.php` to resolve undefined-function error when resolving module views. Fixed `@include('meta', ...)` → `@include('welcome.meta', ...)` in welcome template.
 - **Depends on:** Phase 2, 2b, 2c. **Owner:** main thread.
 - Fill `modules/Welcome/` (Manifest, Config, Controller, Model, Service, Views) and register its route.
   - `modules/Welcome/Manifest.json` — identity, enabled flag, registration metadata.
@@ -186,6 +197,7 @@ Definition of done (v1): all PRD acceptance criteria pass; smoke checks recorded
 
 | Date | Result | Evidence |
 |------|--------|----------|
+| 2026-11-26 09:05 | **Phase 3 complete — Welcome module end-to-end.** All `modules/Welcome/` files populated (Manifest.json, Config/WelcomeConfig.php, Controllers/WelcomeController.php, Model/WelcomeModel.php, Services/WelcomeService.php, Views/welcome/index.html, Views/welcome/meta.html). Route registered in `apps/Config/RoutesConfig.php`. Fix: added missing `use function System\genv;` in `src/Services/ViewsService.php` for module-view resolution. Fix: `@include('meta')` → `@include('welcome.meta')` in welcome template. All tests PASS (smoke, route 15/15, view 14/14, assets 24/24, layout). `/welcome` renders 200 OK with theme layout via Drip engine. | `tests/smoke_check.php`, `route_check.php`, `view_check.php`, `assets_check.php`, `layout_check.php` all PASS; render_probe confirmed 200 + full HTML body |
 | 2026-11-26 01:36 | **Phase 2 complete + sentinelization.** All Phase 2 sub-phases (2, 2b, 2c, 2d) complete. 19 descriptive throws converted to sentinel keys with reordered `blackwall()` branch (debug first). All test suites PASS (smoke, assets 24, view 14, route 15, layout). Working tree clean at `38ad1c8`. | `tests/*.php` all PASS; `git status` clean |
 | 2026-11-25 22:40 | **Phase 2c advanced: surface resolution + theme layouts.** `SurfaceAwareInterface` + `SurfaceResolverTrait` determine surface from class hierarchy (no mutable `$surface`). Layouts moved to active theme only (`<theme>/index.html`), no fallback. Error pages standalone. Theme resolver hook prep for Phase 5 (`ThemeResolverInterface`, `resolver` key in config). Bug fix: restored `apps/Config/ThemeConfig.php` `'private' => 'admin'` mapping accidentally changed during resolver work. | 8/8 tests PASS; commit `e8a9990` + `3cf5eb4` + `6e25ed7` |
 | 2026-11-24 22:40 | **Phase 2c advanced: surface resolution + theme layouts.** `SurfaceAwareInterface` + `SurfaceResolverTrait` determine surface from class hierarchy (no mutable `$surface`). Layouts moved to active theme only (`<theme>/index.html`), no fallback. Error pages standalone. Theme resolver hook prep for Phase 5 (`ThemeResolverInterface`, `resolver` key in config). Bug fix: restored `apps/Config/ThemeConfig.php` `'private' => 'admin'` mapping accidentally changed during resolver work. | 8/8 tests PASS; commit `e8a9990` + `3cf5eb4` + `6e25ed7` |

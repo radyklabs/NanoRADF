@@ -39,6 +39,6 @@ return [
     'GET /hello/{name}' => 'App\Controllers\HomeController::hello',
     'GET /page/{line}'  => 'App\Controllers\HomeController::page',
     'GET /ping'         => 'App\Controllers\PingController::index',
-    'GET /welcome'      => 'App\Controllers\WelcomeController::index',
+    'GET /welcome'      => 'Modules\Welcome\Controllers\WelcomeController::index',
     'GET /status/{code:[45]\d\d}' => 'App\Controllers\PingController::fail',
 ];

@@ -109,7 +109,7 @@ foreach ($systemfs as $f => $d)
 }
 
 // View taxonomy roles (src/Views/<role>): path constants only, no namespace.
-$viewfs = ['components', 'elements', 'errors', 'layouts', 'patterns', 'scripts', 'tokens'];
+$viewfs = ['components', 'elements', 'errors', 'layouts', 'patterns', 'scripts', 'styles', 'tokens'];
 foreach ($viewfs as $f)
 {
     $dir = ucfirst ($f);

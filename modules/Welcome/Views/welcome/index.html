@@ -1,0 +1,21 @@
+@section('content')
+    <div class="welcome-container">
+        <h1>{{$title}}</h1>
+        <p class="lead">Rendered by the Drip Template Engine.</p>
+
+        @include('welcome.meta', ['label' => 'Mode'])
+
+        @if($features !== [])
+            <ul class="features-list">
+                @foreach($features as $feature)
+                    <li>{{$feature}}</li>
+                @endforeach
+            </ul>
+        @else
+            <p class="note">No features listed.</p>
+        @endif
+
+        <p @class(['note', 'note--loud' => $loud])>Escaping works: {{$unsafe}}</p>
+        <p>Raw output: {{!$unsafe!}}</p>
+    </div>
+@endsection

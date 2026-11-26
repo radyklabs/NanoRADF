@@ -28,6 +28,7 @@
 namespace System\Services;
 
 use function System\interlace;
+use function System\genv;
 
 if (!defined ('basepath'))
 {

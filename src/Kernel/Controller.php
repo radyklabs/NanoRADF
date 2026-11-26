@@ -22,8 +22,8 @@ use System\Services\ViewsService;
 
 if (!defined ('basepath'))
 {
-    try {exit (@require dirname (__DIR__,2).DIRECTORY_SEPARATOR.'.errors');}
-    catch (Throwable $e){$file = basename(__FILE__); exit("404 Forbidden {$file}");}
+    try {exit (@require dirname (__DIR__, 2).DIRECTORY_SEPARATOR.'.errors');}
+    catch (Throwable $e){$file = basename (__FILE__); exit("404 Forbidden {$file}");}
 }
 
 class Controller implements SurfaceAwareInterface

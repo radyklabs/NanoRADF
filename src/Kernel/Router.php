@@ -26,8 +26,8 @@ use function System\genv;
 
 if (!defined ('basepath'))
 {
-    try {exit (@require dirname (__DIR__,2).DIRECTORY_SEPARATOR.'.errors');}
-    catch (Throwable $e){$file = basename(__FILE__); exit("404 Forbidden {$file}");}
+    try {exit (@require dirname (__DIR__, 2).DIRECTORY_SEPARATOR.'.errors');}
+    catch (Throwable $e){$file = basename (__FILE__); exit("404 Forbidden {$file}");}
 }
 
 final class Router
@@ -152,67 +152,67 @@ final class Router
     {
         if (self::$groups !== null) {return self::$groups;}
 
-            $raw = [];
+        $raw = [];
 
-            // 1. Main app routes (apps/Config/RoutesConfig.php)
-            $appFile = interlace (configfapp, fl ('RoutesConfig'));
-            if (is_readable ($appFile))
+        // 1. Main app routes (apps/Config/RoutesConfig.php)
+        $appFile = interlace (configfapp, fl ('RoutesConfig'));
+        if (is_readable ($appFile))
+        {
+            $appRoutes = require $appFile;
+            if (is_array ($appRoutes)) {$raw = array_merge ($raw, $appRoutes);}
+        }
+
+        // 2. Module routes (modules/*/Config/RoutesConfig.php) — only when app.modules=true
+                    // Uses explicit registry from apps/Config/ModulesConfig.php
+        if (genv ('app.modules') === true && defined ('modulesf') && is_dir (modulesf))
+        {
+            $modulesConfigFile = interlace (configfapp, fl ('ModulesConfig'));
+            $modulesRegistry = is_readable ($modulesConfigFile) ? require $modulesConfigFile : [];
+
+            if (is_array ($modulesRegistry))
             {
-                $appRoutes = require $appFile;
-                if (is_array ($appRoutes)) {$raw = array_merge ($raw, $appRoutes);}
+                foreach ($modulesRegistry as $moduleName => $moduleMeta)
+                {
+                    $enabled = $moduleMeta['enabled'] ?? false;
+                    $access  = $moduleMeta['access'] ?? 'public';
+
+                    if (!$enabled || $access !== 'public') {continue;}
+
+                    // Validate module name matches Manifest.json (case-sensitive)
+                    $manifestFile = interlace (modulesf, $moduleName, 'Manifest.json');
+                    if (!is_readable ($manifestFile))
+                    {
+                        throw new \RuntimeException (
+                            'module_manifest_missing',
+                            500
+                        );
+                    }
+
+                    $manifest = json_decode (file_get_contents ($manifestFile), true);
+                    $manifestName = $manifest['name'] ?? '';
+
+                    if ($manifestName !== $moduleName)
+                    {
+                        throw new \RuntimeException (
+                            'module_name_mismatch',
+                            500
+                        );
+                    }
+
+                    $moduleDir = interlace (modulesf, $moduleName);
+                    $moduleConfig = interlace ($moduleDir, 'Config', 'RoutesConfig.php');
+                    if (is_readable ($moduleConfig))
+                    {
+                        $moduleRoutes = require $moduleConfig;
+                        if (is_array ($moduleRoutes)) {$raw = array_merge ($raw, $moduleRoutes);}
+                    }
+                }   
             }
-
-            // 2. Module routes (modules/*/Config/RoutesConfig.php) — only when app.modules=true
-                        // Uses explicit registry from apps/Config/ModulesConfig.php
-            if (genv ('app.modules') === true && defined ('modulesf') && is_dir (modulesf))
-            {
-                            $modulesConfigFile = interlace (configfapp, fl ('ModulesConfig'));
-                            $modulesRegistry = is_readable ($modulesConfigFile) ? require $modulesConfigFile : [];
-
-                            if (is_array ($modulesRegistry))
-                                                        {
-                                foreach ($modulesRegistry as $moduleName => $moduleMeta)
-                                                            {
-                                    $enabled = $moduleMeta['enabled'] ?? false;
-                                    $access  = $moduleMeta['access'] ?? 'public';
-
-                                    if (!$enabled || $access !== 'public') {continue;}
-
-                                                                // Validate module name matches Manifest.json (case-sensitive)
-                                                                $manifestFile = interlace (modulesf, $moduleName, 'Manifest.json');
-                                                                if (!is_readable ($manifestFile))
-                                                                {
-                                                                    throw new \RuntimeException (
-                                                                        'module_manifest_missing',
-                                                                        500
-                                                                    );
-                                                                }
-
-                                                                $manifest = json_decode (file_get_contents ($manifestFile), true);
-                                                                $manifestName = $manifest['name'] ?? '';
-
-                                                                if ($manifestName !== $moduleName)
-                                                                {
-                                                                    throw new \RuntimeException (
-                                                                        'module_name_mismatch',
-                                                                        500
-                                                                    );
-                                                                }
-
-                                    $moduleDir = interlace (modulesf, $moduleName);
-                                    $moduleConfig = interlace ($moduleDir, 'Config', 'RoutesConfig.php');
-                                    if (is_readable ($moduleConfig))
-                                    {
-                                        $moduleRoutes = require $moduleConfig;
-                                        if (is_array ($moduleRoutes)) {$raw = array_merge ($raw, $moduleRoutes);}
-                                    }
-                                                            }
-                                                        }
-                                                    }
+        }
 
         if (!is_array ($raw))
         {
-                @trigger_error ('Route config must return an array.', E_USER_WARNING);
+            @trigger_error ('Route config must return an array.', E_USER_WARNING);
             $raw = [];
         }
 

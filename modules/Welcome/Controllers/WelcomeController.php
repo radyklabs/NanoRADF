@@ -11,9 +11,16 @@
 
 namespace Modules\Welcome\Controllers;
 
+use Throwable;
 use System\Controllers\PublicController;
-use function gconfig;
 use Modules\Welcome\Services\WelcomeService;
+use function gconfig;
+
+if (!defined ('basepath'))
+{
+    try {exit (@require dirname (__DIR__, 3).DIRECTORY_SEPARATOR.'.errors');}
+    catch (Throwable $e){$file = basename (__FILE__); exit("404 Forbidden {$file}");}
+}
 
 final class WelcomeController extends PublicController
 {

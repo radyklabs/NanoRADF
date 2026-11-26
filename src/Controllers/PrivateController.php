@@ -18,14 +18,13 @@
 
 namespace System\Controllers;
 
+use Throwable;
 use System\Kernel\Controller as BaseController;
 
 if (!defined ('basepath'))
 {
-    try {exit (@require dirname (__DIR__,2).DIRECTORY_SEPARATOR.'.errors');}
-    catch (Throwable $e){$file = basename(__FILE__); exit("404 Forbidden {$file}");}
+    try {exit (@require dirname (__DIR__, 2).DIRECTORY_SEPARATOR.'.errors');}
+    catch (Throwable $e){$file = basename (__FILE__); exit("404 Forbidden {$file}");}
 }
 
-class PrivateController extends BaseController
-{
-}
+class PrivateController extends BaseController {}

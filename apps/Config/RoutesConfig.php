@@ -29,15 +29,15 @@
 
 if (!defined ('basepath'))
 {
-    try {exit (@require dirname (__DIR__,2).DIRECTORY_SEPARATOR.'.errors');}
-    catch (Throwable $e){$file = basename(__FILE__); exit("404 Forbidden {$file}");}
+    try {exit (@require dirname (__DIR__, 2).DIRECTORY_SEPARATOR.'.errors');}
+    catch (Throwable $e){$file = basename (__FILE__); exit("404 Forbidden {$file}");}
 }
 
 return [
-    'GET /'             => 'App\Controllers\WelcomeController::index',
-    'GET /home'         => 'App\Controllers\HomeController::index',
-    'GET /hello/{name}' => 'App\Controllers\HomeController::hello',
-    'GET /page/{line}'  => 'App\Controllers\HomeController::page',
-    'GET /ping'         => 'App\Controllers\PingController::index',
-    'GET /status/{code:[45]\d\d}' => 'App\Controllers\PingController::fail',
+    'GET /'                         => 'App\Controllers\WelcomeController::index',
+    'GET /home'                     => 'App\Controllers\HomeController::index',
+    'GET /hello/{name}'             => 'App\Controllers\HomeController::hello',
+    'GET /page/{line}'              => 'App\Controllers\HomeController::page',
+    'GET /ping'                     => 'App\Controllers\PingController::index',
+    'GET /status/{code:[45]\d\d}'   => 'App\Controllers\PingController::fail',
 ];

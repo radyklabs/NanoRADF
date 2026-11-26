@@ -170,34 +170,34 @@ final class Router
                             $modulesRegistry = is_readable ($modulesConfigFile) ? require $modulesConfigFile : [];
 
                             if (is_array ($modulesRegistry))
-                {
+                                                        {
                                 foreach ($modulesRegistry as $moduleName => $moduleMeta)
-                    {
+                                                            {
                                     $enabled = $moduleMeta['enabled'] ?? false;
                                     $access  = $moduleMeta['access'] ?? 'public';
 
                                     if (!$enabled || $access !== 'public') {continue;}
 
-                                                // Validate module name matches Manifest.json (case-sensitive)
-                                                $manifestFile = interlace (modulesf, $moduleName, 'Manifest.json');
-                                                if (!is_readable ($manifestFile))
-                                                {
-                                                    throw new \RuntimeException (
-                                                        'module_manifest_missing',
-                                                        500
-                                                    );
-                                                }
+                                                                // Validate module name matches Manifest.json (case-sensitive)
+                                                                $manifestFile = interlace (modulesf, $moduleName, 'Manifest.json');
+                                                                if (!is_readable ($manifestFile))
+                                                                {
+                                                                    throw new \RuntimeException (
+                                                                        'module_manifest_missing',
+                                                                        500
+                                                                    );
+                                                                }
 
-                                                $manifest = json_decode (file_get_contents ($manifestFile), true);
-                                                $manifestName = $manifest['name'] ?? '';
+                                                                $manifest = json_decode (file_get_contents ($manifestFile), true);
+                                                                $manifestName = $manifest['name'] ?? '';
 
-                                                if ($manifestName !== $moduleName)
-                                                {
-                                                    throw new \RuntimeException (
-                                                        'module_name_mismatch',
-                                                        500
-                                                    );
-                                                }
+                                                                if ($manifestName !== $moduleName)
+                                                                {
+                                                                    throw new \RuntimeException (
+                                                                        'module_name_mismatch',
+                                                                        500
+                                                                    );
+                                                                }
 
                                     $moduleDir = interlace (modulesf, $moduleName);
                                     $moduleConfig = interlace ($moduleDir, 'Config', 'RoutesConfig.php');
@@ -206,9 +206,9 @@ final class Router
                                         $moduleRoutes = require $moduleConfig;
                                         if (is_array ($moduleRoutes)) {$raw = array_merge ($raw, $moduleRoutes);}
                                     }
-                    }
-                }
-            }
+                                                            }
+                                                        }
+                                                    }
 
         if (!is_array ($raw))
         {

@@ -102,9 +102,7 @@ final class Dispatcher
     /**
      * Serve a resolved asset file with appropriate HTTP headers.
      *
-     * Sets Content-Type from file extension (with Windows-compatible MIME lookup),
-     * Cache-Control, and ETag. For HEAD requests, sends headers only; otherwise
-     * streams the file content directly.
+         * Delegates to AssetsService::serveAsset() for MIME, headers, streaming, and conditional GET.
      *
      * @package   NanoRADF
      * @author    RADLabs Development Team
@@ -116,30 +114,7 @@ final class Dispatcher
      */
     private static function serveAsset (string $file, bool $head): void
     {
-        // Determine MIME type from file extension (mime_content_type may not be available on Windows).
-        $ext      = strtolower (pathinfo ($file, PATHINFO_EXTENSION));
-        $mimes    = [
-            'css'  => 'text/css; charset=utf-8',
-            'js'   => 'text/javascript; charset=utf-8',
-            'json' => 'application/json; charset=utf-8',
-            'svg'  => 'image/svg+xml',
-            'png'  => 'image/png',
-            'jpg'  => 'image/jpeg',
-            'jpeg' => 'image/jpeg',
-            'webp' => 'image/webp',
-            'woff' => 'font/woff',
-            'woff2'=> 'font/woff2',
-            'ttf'  => 'font/ttf',
-            'ico'  => 'image/x-icon',
-        ];
-        $mime     = $mimes[$ext] ?? 'application/octet-stream';
-
-        header ("Content-Type: {$mime}");
-        header ('Cache-Control: public, max-age=3600');
-        header ('ETag: "'.md5_file ($file).'"');
-        header ('Content-Length: '.filesize ($file));
-
-        if (!$head) {readfile ($file);}
+            AssetsService::serveAsset ($file, $head);
     }
 
     /**

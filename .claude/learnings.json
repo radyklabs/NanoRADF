@@ -1,5 +1,5 @@
 {
-  "last_updated": "2026-11-27T01:51:00+07:00",
+  "last_updated": "2026-11-27T02:30:00+07:00",
   "learnings": [
     {
       "id": "lesson-001",
@@ -184,6 +184,14 @@
       "category": "workflow",
       "description": "When editing any file, always read its complete current content from disk immediately before proposing changes. Never rely on memory of prior reads or cached content. The user may be actively editing the same files in their IDE — stale assumptions lead to lost work and conflicts. This applies even to files just reviewed moments ago.",
       "title": "Always Read Current File State Before Editing"
+    },
+    {
+      "id": "lesson-025",
+      "evidence": "Phase 4b AssetsService refactor — blindly followed PLAN.md's 5-class split without re-thinking; created 5 *Service.php classes where 2-3 would suffice; duplicated patternCache across Resolver/UrlGenerator; stateless AssetServerService shouldn't be a service at all",
+      "created_at": "2026-11-26T23:26:00+07:00",
+      "category": "architecture",
+      "description": "PLAN.md is a PLAN, not implementation. During implementation, MUST re-think: evaluate if plan's class count/structure is optimal for PHP 8.1+, performance, and maintainability. Don't blindly execute plan — question class count, state duplication, stateless classes as services, cache duplication. Best practice: fewer classes with clear single responsibility, shared state where logical, stateless helpers not services. Plan is a starting point; implementation is where engineering judgment applies.",
+      "title": "PLAN is a Plan, Not Implementation — Re-Think During Implementation"
     },
     {
       "id": "lesson-026",

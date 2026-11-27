@@ -165,10 +165,11 @@ Definition of done (v1): all PRD acceptance criteria pass; smoke checks recorded
 - **Deferred:** `DatabaseThemeResolver` — interface registered in `ThemeResolverInterface`; implementation tracked in Phase 6 as `theme-resolver` task.
 - Verification: token never appears in client storage (grep); unauthenticated private route rejected (auth_check §6); nonce check blocks forged POST (auth_check §5); theme resolver overrides config when registered (deferred).
 
-### Phase 6 — Errors, polish, docs sync ⚠️
+### Phase 6 — Errors, polish, docs sync ✅
 - **Depends on:** Phase 3, 4. **Owner:** main thread.
 - **Error pages:** `Router::dispatch()` non-throw mode now uses conditional error body — CLI: inline markup; web: themed via `DripService::renderFile()` (same as `Dispatcher::errorPage()`). `Router::errorBody()` private method added (D22).
 - **Theme folder naming:** Unchanged — `public/themes/` (lowercase) and `apps/Themes/` (capital) are intentionally consistent with their respective environments and purposes. No rename needed.
+- **Done (2026-11-27):** all items complete.
 - Verification: 404/500 render themed pages in web context, inline in CLI; docs cross-reference check (no dangling file refs).
 
 ### Phase 7 — Audit & release readiness ⚠️
@@ -188,7 +189,7 @@ Definition of done (v1): all PRD acceptance criteria pass; smoke checks recorded
 | 6 | 2d, 3 | Phase 2d asset register restructuring + Phase 3 Welcome module |
 | 7 | 4, 4b | Phase 2 done (parallel: headless + SRP refactor) |
 | 8 | 5 | Phase 4 + 4b done |
-| 9 | 6 | Phases 3 + 4 + 4b + 5 done |
+| 9 | 6 | Phases 3 + 4 + 4b + 5 done (complete) |
 | 10 | 7 | everything above done, user invokes `>audit`/`>release` |
 
 ## Track log

@@ -24,11 +24,10 @@ jobs:
       - name: Checkout (native git)
         run: |
           set -euo pipefail
-          git clone --no-checkout "https://github.com/${{ github.repository }}.git" repo
+          git clone --no-checkout "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" repo
           cd repo
           git checkout main
-          echo "GITHUB_WORKSPACE=$GITHUB_WORKSPACE"
-          echo "PWD=$(pwd)"
+          echo "Checked out main"
 
       - name: Verify merge commit
         id: verify
@@ -110,7 +109,9 @@ jobs:
           git tag -a "${TAG}" -m "Release ${TAG}" "${SHA}"
 
           if [ -n "${{ secrets.TAGGING_TOKEN }}" ]; then
-            git remote set-url origin "https://x-access-token:${TAGGING_TOKEN}@github.com/${{ github.repository }}.git"
+            TOKEN="${{ secrets.TAGGING_TOKEN }}"
+          else
+            TOKEN="${{ github.token }}"
           fi
-          git push origin "${TAG}"
+          git push "https://x-access-token:${TOKEN}@github.com/${{ github.repository }}.git" "${TAG}:refs/tags/${TAG}"
           echo "Created and pushed tag ${TAG} → ${SHA}"

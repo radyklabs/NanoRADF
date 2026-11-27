@@ -178,6 +178,79 @@ Definition of done (v1): all PRD acceptance criteria pass; smoke checks recorded
 - **Release (2026-11-27):** `v0.0.1` — first release. Tag created via `release-tag.yml` workflow (annotated, `github-actions[bot]`).
 - Verification: audit ledger complete; release workflow rules satisfied.
 
+### Phase 8 — Design system from curated requirement list ⚠️
+- **Depends on:** Phases 0–7. **Owner:** main thread. **Baseline:** `195fdf5` (pre-Phase-8). **Research:** `docs/DESIGN-SYSTEM.md`.
+- **Folder rule (owner fact):** all design-system CSS → `src/Views/Tokens/` only. `src/Views/Styles/` is for CSS **outside** the design system (existing `Styles/Errors/core.css` stays there). No new role folder without a recorded decision.
+- **Source rule:** the collection at `D:\Www\miniradf\app\system\Templates` is a **requirement file list** (124 files). Read each file's needs first; write NanoRADF implementations independently from verified repos. Claim provenance only after reading source before writing.
+- **Naming rule:** collection `.drip` → NanoRADF `.html`; lowercase filenames; `variant` → `tone` (`bad`/`ok`/`warn`); no random IDs (caller supplies `$id`); `{{ }}` escapes, `{{! !}}` raw only for vetted content; conditional attributes via `@if`, never quoted strings inside `{{ }}`.
+
+#### Files to create — complete list (no omissions)
+
+**A. Design-system CSS → `src/Views/Tokens/` (21 files, from `Assets/css/ds/`)**
+
+| # | File | Role |
+|---|------|------|
+| 1 | `tokens.css` | primitive → semantic → component variables |
+| 2 | `base.css` | reset & base element rules |
+| 3 | `typography.css` | type scale |
+| 4 | `layout.css` | flex, grid, display, position, sizing |
+| 5 | `spacing.css` | margin & padding utilities |
+| 6 | `forms.css` | form controls & validation states |
+| 7 | `buttons.css` | button variants & sizes |
+| 8 | `cards.css` | cards & surfaces |
+| 9 | `tables.css` | table variants |
+| 10 | `badges.css` | badges & tags |
+| 11 | `navigation.css` | nav, breadcrumb, side-nav |
+| 12 | `modals.css` | modals & dialogs |
+| 13 | `tooltips.css` | tooltips & popovers |
+| 14 | `toggle.css` | switch/toggle |
+| 15 | `notifications.css` | toasts & inline alerts |
+| 16 | `loading.css` | spinners, dots, skeleton |
+| 17 | `animations.css` | keyframes & animation utilities |
+| 18 | `utilities.css` | radius, shadows, cursor, opacity |
+| 19 | `a11y.css` | sr-only, focus ring, reduced motion, high contrast |
+| 20 | `responsive.css` | breakpoints sm–2xl |
+| 21 | `design-system.css` | entry point; `@import` at top with `layer()` syntax |
+
+Existing `Tokens/System.css`, `color.css`, `space.css`, `typography.css`, `elevation.css`, `form.css`, `nav.css`, `motion.css`, `media.css` are reconciled with this set (no duplicate rule ownership). `System.css` must be enqueued in `apps/Config/AssetsConfig.php` or imported by an enqueued stylesheet.
+
+**B. CSS outside design system → `src/Views/Styles/` (0 new files)**
+
+`Styles/Errors/core.css` already exists and stays. The 5 collection files `components.css`, `default.css`, `errors.css`, `tools.css`, `wiki.css` are app-level CSS — **not** created in Phase 8 unless a real app page needs them (deferred, not part of this phase).
+
+**C. Elements → `src/Views/Elements/` (23 files, from `Elements/`)**
+
+`aspect-ratio`, `avatar`, `badge`, `button`, `checkbox`, `chip`, `gravatar`, `icon`, `image`, `input`, `kbd`, `label`, `progress`, `radio`, `search-box`, `select`, `skeleton`, `skip-link`, `spinner`, `sr-only`, `textarea`, `theme-toggle`, `truncate` — each `.html`.
+
+**D. Components → `src/Views/Components/` (70 files, from `Components/`)**
+
+`accordion`, `ads`, `alert`, `announce`, `back-to-top`, `breadcrumb`, `button-group`, `calendar`, `callout`, `card`, `carousel`, `chart`, `code-block`, `collapsible`, `color-picker`, `color-swatch`, `command-palette`, `confirm-dialog`, `container`, `context-menu`, `cookie-consent`, `copy-button`, `data-table`, `date-picker`, `drawer`, `dropdown`, `empty-state`, `empty`, `fieldset`, `file-input`, `file-upload`, `flex`, `form-group`, `grid`, `hover-card`, `iframe`, `input-group`, `item`, `kanban`, `list-group`, `map`, `markdown`, `modal`, `nav-menu`, `offline-indicator`, `otp-input`, `pagination`, `password-input`, `popover`, `qrcode`, `range-slider`, `rating`, `rich-editor`, `scroll-area`, `separator`, `signature-pad`, `social-links`, `stat-card`, `stepper`, `switch`, `table`, `tabs`, `tag-input`, `timeline`, `toast`, `tooltip`, `tree-view-item`, `tree-view`, `user-menu`, `video` — each `.html`.
+
+**E. Patterns → `src/Views/Patterns/` (3 files, from `Patterns/`)**
+
+`footer.html`, `header.html`, `sidebar.html`.
+
+**F. Scripts → `src/Views/Scripts/` (2 files, from `Assets/js/`)**
+
+`components.js`, `scaffolding.js` — vanilla, progressive enhancement only. Every `data-*` selector must match a fragment attribute; guard `event.target instanceof Element`.
+
+**G. Service & tests (2 files)**
+
+- `src/Services/ViewsService.php` — add `System.<role>.<name>` resolution to `src/Views/<Role>/<name>.html` via path constants.
+- `tests/components_check.php` — render every fragment with empty + sample data; assert no `&quot;` in attributes, no duplicate static IDs, every `class` resolves to CSS, every JS hook exists in HTML, and the CSS enqueue chain produces a `<link>`.
+
+**Phase 8 file total: 21 CSS + 23 elements + 70 components + 3 patterns + 2 scripts + 1 service + 1 test = 121 files.** No file outside this list is created without a recorded decision.
+
+#### Verification gate (before any commit)
+1. Requirement matrix written and confirmed before coding (`docs/DESIGN-SYSTEM.md` §10).
+2. CSS chain: `@import` top-level → enqueue → rendered `<link>` → browser.
+3. Render all 96 fragments; read output; no `&quot;` in attributes.
+4. Class coverage: every fragment class has a rule in `Tokens/`.
+5. JS↔HTML hook cross-check; no dead selectors.
+6. No duplicate static IDs; caller-supplied `$id` for reusable fragments.
+7. All existing suites + `components_check` green; browser probe `http://nanoradfw.local` 200.
+8. Docs sync: PLAN, PRD, REPORT, CHANGELOG, README, DESIGN-SYSTEM.
+
 ## Parallelism map
 
 | Wave | Phases | Can be started when |

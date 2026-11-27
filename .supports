@@ -384,11 +384,15 @@ function error_css ()
 {
 	$uri = parse_url(gserver('request.uri'), PHP_URL_PATH);
 
-	// $path = '/error/';
 	if (strpos($uri, '/exception/') === 0) {
-		$file = pathinfo($uri, PATHINFO_BASENAME);
-		// $file = substr ($uri, strlen ($path));
-		// $file = 'core.css';
+		// Whitelist: only known error-page CSS files are served.
+		// Prevents path-traversal probing of the directory tree.
+		$allowed = ['core.css', 'style.css'];
+		$file = basename (pathinfo ($uri, PATHINFO_BASENAME));
+		if (!in_array ($file, $allowed, true)) {
+			http_response_code (404);
+			exit;
+		}
 		$abspath = interlace (__DIR__, '/src/Views/Styles/Errors', $file);
 		$secpath = interlace (getcwd(), 'error.css');
 		$size = filesize($abspath) + (is_readable ($secpath) ? filesize ($secpath)+1:0);

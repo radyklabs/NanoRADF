@@ -205,7 +205,14 @@ final class AssetsService
                 $diskPath = self::anchor ($cfg['disk_prefix'].$value);
                 $real = realpath ($diskPath);
 
-                if ($real !== false && is_file ($real))
+                // Root-containment guard: reject any path that resolves
+                // outside the project root (basepath).
+                if ($real === false || !str_starts_with ($real, (string) basepath))
+                {
+                    continue;
+                }
+
+                if (is_file ($real))
                 {
                     return ['file' => $real, 'mime' => self::mime ($real)];
                 }

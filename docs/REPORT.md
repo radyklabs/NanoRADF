@@ -2,6 +2,31 @@
 
 Dated findings, scans, and audit entries. Evidence only — nothing is claimed fixed until the fix plus verification is recorded here.
 
+## 2026-11-27 — Phase 7 security audit
+
+- **Branch:** `feat/phase-7-audit`.
+- **Status:** ✅ 5 of 7 findings fixed; #1 & #2 kept as dev-only with comments.
+
+### Findings
+
+| # | Severity | File | Fix |
+|---|----------|------|-----|
+| 1 | HIGH | `.starter:143` | `var_dump($th)` leaks exception in prod — **kept** with dev-only comment (user decision: remove when prod) |
+| 2 | MEDIUM | `public/test.php` | Exposes framework paths — **kept** with dev-only comment (user decision: remove when prod) |
+| 3 | MEDIUM | `src/Services/AssetsService.php:168` | Added `realpath` root-containment check: `str_starts_with($real, basepath)` after `realpath()` |
+| 4 | MEDIUM | `src/Services/CSRFService.php` | `validateRequest()` now wired into `Router::run()` — state-changing methods without valid CSRF token → 419 |
+| 5 | MEDIUM | `.supports:383` | `error_css()` filename whitelisted (`core.css`, `style.css`); `basename()` applied; unknown → 404 |
+| 6 | LOW | `src/Kernel/Session.php:44` | `session.cookie_secure` default flipped `false` → `true` (prod-safe) |
+| 7 | LOW | `public/.htaccess` | Documented that `HTTP_AUTHORIZATION` rewrite is Apache-only; Nginx/FPM need equivalent config |
+
+### Verification
+
+- `tests/auth_check.php`: **PASS 18/0** (new CSRF gate check added)
+- 7-suite: all **exit 0**
+- `php -l` on all changed files: clean
+
+---
+
 ## 2026-11-27 — Phase 5 implementation (session, auth storage, CSRF, guards)
 
 - **Branch:** `feat/auth-session` (from `dev`).

@@ -19,7 +19,7 @@ Senior PHP & Headless-Frontend Engineer. Tim frontend PHP elit dan kelas dunia y
 ### Dev URL (wajib)
 
 - **App:** `http://nanoradfw.local` — docroot = `public/` (front controller `public/index.php` via `public/.htaccess`).
-- **PHP:** 8.3.36 (LocalWP): `C:\Users\Rahen\AppData\Roaming\Local\lightning-services\php-8.3.36+0\bin\win64\php.exe`.
+- **PHP:** 8.3.x (LocalWP). Baca file `.envrc` untuk selalu mendapatkan path yang aktual.
 - **MySQL:** `127.0.0.1:10019` (LocalWP). `sql/local.sql` is a leftover local dump — gitignored, not a project asset.
 - CLI smoke checks: bootstrap from any CWD with `require 'public/index.php'` (see `docs/RULES.md`).
 

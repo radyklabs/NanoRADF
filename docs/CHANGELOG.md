@@ -10,6 +10,7 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning: [S
 - `docs/PLAN.md`: Phase 8 section with the complete 121-file creation list (21 CSS in `Tokens/`, 23 elements, 70 components, 3 patterns, 2 scripts, 1 service edit, 1 test), folder rule, naming rule, and verification gate.
 
 ### Changed
+- `CLAUDE.md`: PHP version/path replaced with `8.3.x` and a pointer to `.envrc` for the actual path (LocalWP auto-generates it; the hardcoded `8.3.36+0` was stale).
 - `.claude/learnings.json`: corrected `lesson-062` to the owner fact (`Styles/` = CSS outside design system; all design-system CSS in `Tokens/`), added `lesson-063` (correct numbers from full data only), chronological timestamps.
 
 ## [0.0.1] - 2026-11-27

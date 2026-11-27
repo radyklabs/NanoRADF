@@ -84,12 +84,20 @@ jobs:
         if: github.event_name == 'workflow_dispatch'
         run: |
           SHA="${{ steps.verify.outputs.sha }}"
-          MSG="$(git log -1 --format='%s' "$SHA")"
+          # Get the second parent (the release commit) of the merge commit
+          PARENT="$(git rev-parse --verify "$SHA^2" 2>/dev/null || git rev-parse --verify "$SHA^" )"
+          MSG="$(git log -1 --format='%s' "$PARENT")"
           if [[ "$MSG" =~ chore\(release\):\ v?([0-9]+\.[0-9]+\.[0-9]+) ]]; then
             VERSION="${BASH_REMATCH[1]}"
           else
-            echo "Cannot extract version from commit message: $MSG"
-            exit 1
+            # Fallback: try the merge commit itself
+            MSG="$(git log -1 --format='%s' "$SHA")"
+            if [[ "$MSG" =~ chore\(release\):\ v?([0-9]+\.[0-9]+\.[0-9]+) ]]; then
+              VERSION="${BASH_REMATCH[1]}"
+            else
+              echo "Cannot extract version from commit messages. Parent=$MSG SHA=${MSG}"
+              exit 1
+            fi
           fi
           echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
           echo "Tagging as v${VERSION}"

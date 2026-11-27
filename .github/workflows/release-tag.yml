@@ -16,6 +16,10 @@ on:
         description: "Verified release merge commit SHA on main"
         required: false
         default: ""
+      version:
+        description: "Release version (e.g. 0.0.1). Overrides extraction from commit message."
+        required: false
+        default: ""
 
 permissions:
   contents: write
@@ -75,19 +79,24 @@ jobs:
             exit 0
           fi
 
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            PARENT="$(git rev-parse --verify "$SHA^2" 2>/dev/null || git rev-parse --verify "$SHA^")"
-            MSG="$(git log -1 --format='%s' "$PARENT")"
+          EXPLICIT="${{ github.event.inputs.version }}"
+          if [ -n "$EXPLICIT" ]; then
+            VERSION="${EXPLICIT#v}"
           else
-            TITLE="${{ github.event.pull_request.title }}"
-            MSG="chore(release): ${TITLE#chore(release):}"
-          fi
+            if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+              PARENT="$(git rev-parse --verify "$SHA^2" 2>/dev/null || git rev-parse --verify "$SHA^")"
+              MSG="$(git log -1 --format='%s' "$PARENT")"
+            else
+              TITLE="${{ github.event.pull_request.title }}"
+              MSG="chore(release): ${TITLE#chore(release):}"
+            fi
 
-          if [[ "$MSG" =~ chore\(release\):\ v?([0-9]+\.[0-9]+\.[0-9]+) ]]; then
-            VERSION="${BASH_REMATCH[1]}"
-          else
-            echo "::error::Cannot extract version from: $MSG"
-            exit 1
+            if [[ "$MSG" =~ chore\(release\):\ v?([0-9]+\.[0-9]+\.[0-9]+) ]]; then
+              VERSION="${BASH_REMATCH[1]}"
+            else
+              echo "::error::Cannot extract version from: $MSG"
+              exit 1
+            fi
           fi
           echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
 

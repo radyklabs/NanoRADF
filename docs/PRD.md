@@ -26,20 +26,22 @@ Design mandate: minimal, small, light, fast. Zero runtime dependencies.
 | ID | Requirement | Status |
 |----|-------------|--------|
 | FR-1 | Boot chain: entry → gateway → helpers → structures → kernel autoloader, working on PHP 8.1+. | ✅ done |
-| FR-2 | PSR-4 autoload for `System\...` → `src/` and `App\Modules\<Name>\...` → `apps/Modules/<Name>/`. | ✅ done |
-| FR-3 | Central route table (`apps/Config/Routes.php`) dispatched by a router to controllers. | ⚠️ planned (Phase 1) |
-| FR-4 | Base controllers for the three surfaces: `PublicController`, `PrivateController`, `ApiController`. | ⚠️ planned (Phase 1) |
-| FR-5 | Blade-shaped server-side view composition from the role taxonomy + module view classes. | ⚠️ planned (Phase 2) |
-| FR-6 | Modular layout — only when `app.modules=true`: `Manifest.json` + Config/Controllers/Model/Services/Views under `apps/Modules/<Name>/`, wired into routing. | ⚠️ planned (Phase 3) |
+| FR-2 | PSR-4 autoload for `System\...` → `src/`, `App\...` → `apps/`, and `Modules\...` → `modules/` (two app roots, always active). | ✅ done |
+| FR-3 | Central route table (`apps/Config/RoutesConfig.php`) dispatched by a router to controllers. | 🔵 in progress (Phase 1: Router + Controller + base controllers + gateway wiring done; app routes/controllers come with Phase 3) |
+| FR-4 | Base controllers for the three surfaces: `PublicController`, `PrivateController`, `ApiController`. | ✅ done — auth guard (`authorize()`) landed in Phase 5 |
+| FR-5 | Blade-shaped server-side view composition from the role taxonomy + module view classes. | ⚠️ planned (Phase 2) || FR-6 | Modular HMVC — only when `app.modules=true`: `Manifest.json` + Config/Controllers/Model/Services/Views under `modules/<Name>/` (project root), wired into routing. | ⚠️ planned (Phase 3) |
 | FR-7 | Server-to-server HTTP client frontend → headless backend with status + schema validation. | ⚠️ planned (Phase 4) |
-| FR-8 | Session-based auth token storage (`$_SESSION` only) with hardened cookie flags. | ⚠️ planned (Phase 5) |
-| FR-9 | Environment config via `.env` with dot-notation typed access (`__env()`), cached per process. | ✅ done |
+| FR-7a | HTTP client service (`System\Services\HttpService`) with cURL primary, stream fallback, retry, JSON validation. | ⚠️ planned (Phase 4) |
+| FR-8 | Session-based auth token storage (`$_SESSION` only) with hardened cookie flags. | ✅ done — `src/Kernel/Session.php`, `src/Services/AuthService.php`, `src/Services/CSRFService.php` (Phase 5) |
+| FR-9 | Environment config via `.env` loaded into the process env by `.starter` (`putenv` + `$_ENV`), dot-notation typed access via `genv()` (getenv-backed). | ✅ done |
 | FR-10 | Error handling: generic 500 in prod, gated detail in local/dev, always `error_log`. | ✅ done (entry gateway) |
-| FR-11 | **Layout mode toggle** via env `app.modules`: `false` **or key absent (default)** → flat layout — no `apps/Modules/`, no `Manifest.json`; `Config/`, `Services/`, `Controllers/`, `Model/`, `Views/` live directly under `apps/`. `true` → current modular layout. Namespace: single PSR-4 root `App\` → `apps/` mirroring folders in **both** modes (`App\Controllers\...` flat; `App\Modules\<Name>\...` modular). | ⚠️ planned (Phase 0b) |
+| FR-11 | **Layout mode toggle** via env `app.modules`: both roots (`App\...` → `apps/`, `Modules\...` → `modules/`) are always autoloaded. `app.modules=true` registers the per-module folder/namespace templates (`modules/<Name>/{Config,Controllers,Model,Services,Views}`, `Manifest.json`); `false`/absent leaves them unregistered (both roots still resolve). Namespace: single PSR-4 roots `App\` → `apps/` and `Modules\` → `modules/` (decision D6/D9). | ✅ done (Phase 0b) |
+| FR-12 | **Runtime mode toggle** via env `app.mode`: `bone` (headless backend only — API surfaces, no SSR frontend), `face` (SSR frontend talking to a headless backend over HTTP server-to-server), `full` (both surfaces in one codebase; default). Chosen by the developer before building the app; gates which surfaces the framework wires. Values documented in `.env`; key stays gitignored. | ⚠️ planned (Phase 4) |
+| FR-13 | **Autoload roots** (D6/D9, Phase 0b): `apps/` (main MVC) and `modules/` (optional HMVC) are both registered as PSR-4 roots (`App\` / `Modules\`). `app.modules` gates only the per-module folder/namespace templates (`configfmod`, `controllersfmod`, `modelfmod`, `servicesfmod`, `viewsfmod`). `modulesf` always registered in `.config` from `$modules_folder`. | ✅ done (Phase 0b) |
 
 ## 4. Non-functional requirements
 
-- **NFR-1 Zero runtime dependencies** — no Composer packages at runtime.
+- **NFR-1 Zero dependencies / self-contained** — the framework is a standalone PHP library: it never loads Composer packages, plugins, or any third-party runtime dependency. There is no `composer.json`/`composer.lock`, no `vendor/`, and no npm/Packagist/GitHub Packages requirement for **runtime or build**; the PSR-4 autoloader is `System\Kernel\Boot::autoloader`. A tooling manifest (if the team adds one later) is dev-time convenience only and MUST NOT be required to run, route, dispatch, or render. This also means no WordPress-style plugin loading: pages come from the app/module layer, not from dropping files under `plugins/`.
 - **NFR-2 PHP 8.1+**, `strict_types` everywhere; developed against PHP 8.3.36 (LocalWP).
 - **NFR-3 SSR first** — core navigation works without JavaScript; JS is progressive enhancement only.
 - **NFR-4 Security** — escape all output, prepared statements for any DB write, no `eval`/shell family on input, secrets only in `.env`, tokens only in `$_SESSION`.
@@ -60,4 +62,5 @@ Design mandate: minimal, small, light, fast. Zero runtime dependencies.
 4. Boot smoke check passes after any bootstrap edit (see `docs/RULES.md` §3).
 5. `grep -r` finds no `eval(`/`exec(`/`shell_exec(`/`system(`/`unserialize(` on input paths.
 6. Tokens exist only in `$_SESSION` — no `localStorage` token access anywhere.
-7. `app.modules=false` (or absent): boots on the flat `apps/` layout — `App\Controllers\...` / `App\Config\...` / `App\Services\...` autoload, no `apps/Modules/` needed. `app.modules=true`: current modular mapping (`App\Modules\Welcome\...`) still resolves unchanged.
+7. Both roots autoload: `App\...` → `apps/`, `Modules\...` → `modules/`. `app.modules=false` (or absent): per-module folder/namespace templates are not registered (`controllersfmod` UNDEF) but both roots still resolve. `app.modules=true`: templates registered (`controllersfmod` set).
+8. **Phase 2 view system (Drip Template Engine)**: `View::render('folder.file'|'file', $data, $layout)` renders `.html` files with dot-notation; `.html` is always appended by the engine as a rule and never written manually (a parameter ending in another/`.html` extension is rejected). Missing view raises a clear error stating the resolved path plus "pastikan file ada" and "pastikan menggunakan file html". In a **module**, its own view is plain `file` (and when `app.modules=false` a missing module view throws file-not-found), while **cross-module** uses `Module.file`/`Module.folder.layout`; layout is the third argument; directives `@extends/@yield/@section/@endsection/@include`; `{{ }}` auto-escapes with a `|raw` opt-out; assets registered via explicit `register_styles` / `register_scripts` arrays in `apps/Config/AssetsConfig.php` (each entry: `{id, path}` with path including extension; optional `scope` key defaults to both faces); rendered `<link>` / `<script>` tags carry the registry `id` as their attribute; mask_url config in same file maps masked paths to disk; `Tokens/System.css` imports modular token files; escaped output stays inert for malformed input.

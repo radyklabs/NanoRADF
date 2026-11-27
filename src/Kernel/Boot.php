@@ -1,107 +1,125 @@
 <?php declare (strict_types=1);
 
+/**
+ * Kernel bootstrap — PSR-4 autoloader and helper initializer.
+ * --
+ * The framework's bootstrapping anchor. Registers the single shared autoloader.
+ * Also loads application helpers from config before the autoloader
+ * accepts any class. Safe to call repeatedly.
+ *
+ * @package     NanoRADF
+ * @author      RADLabs Development Team
+ * @copyright   Radlabs Studio (c) 1986 - 2026
+ * @since       0.0.1
+ */
+
 namespace System\Kernel;
 
-use Exception;
+use function System\interlace;
+use function System\fl;
+use function System\require_file;
+use function System\get_required_file;
+
+if (!defined ('basepath'))
+{
+    try {exit (@require dirname (__DIR__, 2).DIRECTORY_SEPARATOR.'.errors');}
+    catch (Throwable $e){$file = basename (__FILE__); exit("404 Forbidden {$file}");}
+}
 
 final class Boot
 {
+    /**
+     * Register the PSR-4 autoloader if not yet done.
+     *
+     * Calling multiple times is safe — the autoloader runs exactly once per process.
+     * Helper files are loaded first so they are available to classes that follow.
+     *
+     * @package   NanoRADF
+     * @author    RADLabs Development Team
+     * @copyright Radlabs Studio (c) 1986 - 2026
+     * @since     0.0.1
+     * @return    void
+     */
     public static function initiate ()
     {
         static $registered = false;
         if ($registered) {return;}
-
-        if (!defined ('sep'))
-        {
-            define ('basepath', dirname (__DIR__, 2));
-            define ('publicpath', basepath."/public");
-            define ('sep', DIRECTORY_SEPARATOR);
-        }
-
-        // if (self::$basepath === '') {self::$basepath = basepath;}
-        // if (self::$publicpath === '') {self::$publicpath = publicpath;}
-
-        $supports_file = interlace (basepath, '.supports');
-        if (!is_readable ($supports_file))
-        {
-            throw new Exception ('No supports');
-        }
-
-        require_once $supports_file;
-
-        $structures_file = interlace (basepath, '.structures');
-        if (!is_readable ($structures_file))
-        {
-            throw new Exception ('No structures');
-        }
-
-        require_once $structures_file;
-
-        // Directories are declared by the web entry point. For CLI
-        // consumers (bin/face, tests) that never include public/index.php
-        // the system directory is resolved from this file's own location.
-        // $map = [];
-
-        // $index_file = interlace (publicpath, 'index.php');
-        // if (!is_readable ($index_file)) {die('No index');}
-
-        // foreach (read_directories ($index_file) as $type => $dir)
-        // {
-        //     if (!defined ($type))
-        //     {
-        //         define ($type, interlace (basepath, $dir));
-        //     }
-        // }
-        // $map += ['system' => 'system', 'modules' => 'modules', 'views' => 'views'];
-
-        // foreach ($map as $type => $dir) {
-        //     if (!defined($type)) {
-        //         define($type, interlace(basepath, $dir));
-        //     }
-        // }
-
-
         $registered = true;
+
+        self::autoloadHelper ();
 
         spl_autoload_register ([self::class, 'autoloader']);
     }
 
     /**
-     * PSR-4 autoloader registration.
+     * PSR-4 autoloader — resolves classes from their namespace to disk paths.
      *
-     *   System\X\Y            → <root>/src/X/Y.php
-     *   App\Modules\Name\X    → <root>/apps/Modules/Name/X.php
+     * Three autoload roots are always active:
+     *   `System\…`  → src/
+     *   `App\…`     → apps/
+     *   `Modules\…` → modules/
      *
-     * Prefixes come from the global namespace constants defined while
-     * registering the structure map: `nssys` (e.g. "System") and
-     * `nsappmod` (e.g. "App\Modules").
+     * Only `app.modules=true` in the environment activates module sub-folders.
+     * A missing file simply falls through — no error is thrown, allowing lazy
+     * discovery of optional classes.
+     *
+     * @package   NanoRADF
+     * @author    RADLabs Development Team
+     * @copyright Radlabs Studio (c) 1986 - 2026
+     * @since     0.0.1
+     * @param     string $class Fully qualified class name.
+     * @return    void
      */
     public static function autoloader (string $class): void
     {
         $class = ltrim ($class, '\\');
-        // $nssys = defined ('nssys') ? (string) constant ('nssys') : '';
-        // $nsmod = defined ('nsappmod') ? (string) constant ('nsappmod') : '';
 
         if (str_starts_with ($class, nssys))
         {
-            $system_file = interlace (systemf, substr ($class, strlen (nssys)) . '.php');
-            if (is_readable ($system_file))
-            {
-                require_once $system_file;
-            }
-
+            require_file (interlace (systemf, fl (substr ($class, strlen (nssys)))));
             return;
         }
 
-        if (str_starts_with ($class, nsappmod))
+        if (str_starts_with ($class, nsapp))
         {
-            $module_file = interlace (modulesfapp, substr ($class, strlen (nsappmod)) . '.php');
-            if (is_readable ($module_file))
-            {
-                require_once $module_file;
-            }
-
+            require_file (interlace (appf, fl (substr ($class, strlen (nsapp)))));
             return;
+        }
+
+        if (str_starts_with ($class, nsmod))
+        {
+            require_file (interlace (modulesf, fl (substr ($class, strlen (nsmod)))));
+            return;
+        }
+    }
+
+    /**
+     * Load helper files declared by the application config.
+     *
+     * Reads helpers from both src/Config (system level) and apps/Config (app level),
+     * requiring each file so utility functions are available before any class loads.
+     * Missing helpers throw a sentinel error caught by the gateway's blackwall handler.
+     *
+     * @package   NanoRADF
+     * @author    RADLabs Development Team
+     * @copyright Radlabs Studio (c) 1986 - 2026
+     * @since     0.0.1
+     * @return    void
+     */
+    private static function autoloadHelper (): void
+    {
+        $stems       = [];
+        $stems = (array) get_required_file (interlace (configf, fl ('HelperConfig')), 'helper', []);
+        foreach ($stems as $stem)
+        {
+            require_file (interlace (helperf, fl ("{$stem}Helper")));
+        }
+
+        $stemsapp       = [];
+        $stemsapp = (array) get_required_file (interlace (configfapp, fl ('HelperConfig')), 'helperapp', []);
+        foreach ($stemsapp as $stemapp)
+        {
+            require_file (interlace (helperfapp, fl ("{$stemapp}Helper")));
         }
     }
 }

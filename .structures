@@ -1,19 +1,37 @@
 <?php declare (strict_types=1);
 
+/**
+ * Namespace Registry
+ * --
+ * Maps directories to autoloadable namespaces and discovered during bootstrap. For every source
+ * folder that exists on disk, this file declares a path constant and its matching namespace prefix.
+ * Modules are registered conditionally based on the modules environment flag.
+ *
+ * @package     NanoRADF
+ * @author      RADLabs Development Team
+ * @copyright   Radlabs Studio (c) 1986 - 2026
+ * @since       0.0.1
+ */
+
+namespace System;
+
+use Throwable;
+
 if (!defined ('basepath'))
 {
-    $heading = 'Internal System Error';
-    $message = 'An unexpected error occurred. Please contact the Administrator.';
-    http_response_code (500);
-    header ('Content-Type: text/html; charset=utf-8');
-    exit ("<h1>{$heading}</h1><p>{$message}</p>");
+    try {exit (@require realpath (__DIR__).DIRECTORY_SEPARATOR.'.errors');}
+    catch (Throwable $e) {$file = basename (__FILE__); exit ("404 Forbidden {$file}");}
 }
 
+// Application layer map (apps/): folder path + namespace per MVC role.
 $appfs = [
-    'configfapp' => false, 
-    'modulesfapp' => 'nsappmod', 
-    'servicesfapp' => 'nsappserv',
-    ];
+    'configfapp'        => false,
+    'controllersfapp'   => 'nsctrlapp',
+    'modelfapp'         => 'nsmodelapp',
+    'servicesfapp'      => 'nsservapp',
+    'viewsfapp'         => false,
+    'themesfapp'        => false,
+];
 foreach ($appfs as $f => $d)
 {
     $dir = ucfirst (substr ($f, 0, -4));
@@ -22,26 +40,55 @@ foreach ($appfs as $f => $d)
     if (is_dir ($path))
     {
         define ($f, $path);
-        
+
         if ($d !== false)
         {
             define ($d, namespacify (interlace (nsapp, $dir)));
         }
     }
-    // echo "{$f} : {$path} : ".($d?constant($d):'')."<br/>";
+
+    else {continue;}
 }
 
-$modulesfs = ['config', 'controllers', 'model', 'services', 'views'];
+// D6/D9: app.modules=true registers the per-module folder/namespace templates
+// (modules/<Name>/…). Autoload roots are always App\… → apps/, Modules\… →
+// modules/; the flag gates only the template map below.
+if (genv ('app.modules') === true && defined ('nsmod') && is_dir (modulesf))
+{
+    $modulesfs = [
+        'configfmod'       => false,
+        'controllersfmod'  => 'nsctrlmod',
+        'modelfmod'        => 'nsmodelmod',
+        'servicesfmod'     => 'nsservmod',
+        'viewsfmod'        => false,
+        ];
 
+    foreach ($modulesfs as $f => $d)
+    {
+        $dir = ucfirst (substr ($f, 0, -4));
+        $path = interlace (modulesf, '%s', $dir);
+
+        define ($f, $path);
+        if ($d !== false)
+        {
+            $find = 'XNsX';
+            $format = str_replace ($find, '%s', namespacify (interlace (nsmod, $find, $dir)));
+            define ($d, $format);
+        }
+    }
+}
+
+// Framework core map (src/): folder path + System\ namespace per role.
 $systemfs = [
-    'contractsf'    => 'nscont', 
-    'controllersf'  => 'nsctrl', 
-    'helperf'       => false, 
-    'kernelf'       => 'nskernel', 
-    'servicesf'     => 'nsserv', 
-    'themesf'       => false, 
+    'configf'       => false,
+    'contractsf'    => 'nscont',
+    'controllersf'  => 'nsctrl',
+    'helperf'       => false,
+    'kernelf'       => 'nskernel',
+    'servicesf'     => 'nsserv',
     'viewsf'        => false,
     ];
+
 foreach ($systemfs as $f => $d)
 {
     $dir = ucfirst (substr ($f, 0, -1));
@@ -56,10 +103,13 @@ foreach ($systemfs as $f => $d)
             define ($d, namespacify (interlace (nssys, $dir)));
         }
     }
+
+    else {continue;}
     // echo "{$f} : {$path} : ".($d?constant($d):'')."<br/>";
 }
 
-$viewfs = ['components', 'elements', 'errors', 'layouts', 'patterns', 'scripts', 'tokens'];
+// View taxonomy roles (src/Views/<role>): path constants only, no namespace.
+$viewfs = ['components', 'elements', 'errors', 'layouts', 'patterns', 'scripts', 'styles', 'tokens'];
 foreach ($viewfs as $f)
 {
     $dir = ucfirst ($f);
@@ -69,5 +119,6 @@ foreach ($viewfs as $f)
         define ($f, $path);
     }
 
+    else {continue;}
     // echo "{$f} : {$path}<br/>";
 }

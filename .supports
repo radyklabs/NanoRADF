@@ -1,38 +1,49 @@
 <?php declare (strict_types=1);
 
+/**
+ * Shared Utility Functions
+ * --
+ * The framework's basic toolbox. A self-contained collection of pure helpers used throughout
+ * bootstrap and beyond: path joining and normalization, PSR-4 namespace conversion, environment
+ * variable access with dot-notation grouping, HTTP status lookup, and URL construction.
+ * No classes, no state, no dependencies.
+ *
+ * @package     NanoRADF
+ * @author      RADLabs Development Team
+ * @copyright   Radlabs Studio (c) 1986 - 2026
+ * @since       0.0.1
+ */
+
+namespace System;
+
+use Throwable;
+use Exception;
+
 if (!defined ('basepath'))
 {
-    $heading = 'Internal System Error';
-    $message = 'An unexpected error occurred. Please contact the Administrator.';
-    http_response_code (500);
-    header ('Content-Type: text/html; charset=utf-8');
-    exit ("<h1>{$heading}</h1><p>{$message}</p>");
+	try {exit (@require realpath (__DIR__).DIRECTORY_SEPARATOR.'.errors');}
+    catch (Throwable $e) {$file = basename (__FILE__); exit ("404 Forbidden {$file}");}
 }
 
 /**
- * Strict equality check.
+ * Strict equality check (`$value === $expecting`).
  *
- * Shorthand helper for `$value === $expecting`.
- *
- * @since  1.0.0
+ * @since  0.0.1
  * @param  mixed $value     The value to test.
  * @param  mixed $expecting The reference value.
- * @return bool True if strictly equal.
+ * @return bool True when strictly equal.
  */
 function is (mixed $value, mixed $expecting): bool { return $value === $expecting; }
 
-
 /**
- * Normalise path separators for URL usage.
+ * Normalise a path or URL for web usage.
  *
- * Converts all backslashes to forward slashes and removes
- * any duplicate slashes, ensuring a clean, web-friendly path.
- * It intelligently preserves the double slash in protocol schemes
- * like 'http://' or 'ftp://'.
+ * Backslashes become forward slashes and duplicate slashes collapse;
+ * the `//` in protocol schemes (http://, ftp://) is preserved.
  *
- * @since  1.0.0
- * @param  string $path The raw path or URL string.
- * @return string A clean, URL-friendly path string.
+ * @since  0.0.1
+ * @param  string $path Raw path or URL.
+ * @return string URL-friendly path.
  */
 function urlify (string $path): string
 {
@@ -44,17 +55,14 @@ function urlify (string $path): string
 }
 
 /**
- * Converts a string into a valid, PSR-4 compliant namespace.
+ * Convert a path or identifier into a PSR-4 namespace.
  *
- * This function takes a string, such as a file path or a simple
- * identifier, and transforms it into a clean, well-formed PHP namespace.
- * It handles various separators, sanitizes segment names, and formats
- * them in PascalCase, ensuring the output is ready for use in
- * class definitions and dynamic lookups.
+ * Splits on separators, strips characters invalid in a namespace
+ * part, and formats each segment as PascalCase.
  *
- * @since  1.0.0
- * @param  string $string The input string to convert.
- * @return string The formatted, namespace-friendly string.
+ * @since  0.0.1
+ * @param  string $string Input path or identifier.
+ * @return string Namespace-formatted string.
  */
 function namespacify (string $string): string
 {
@@ -77,16 +85,14 @@ function namespacify (string $string): string
 }
 
 /**
- * Normalise path separators to the current OS.
+ * Normalise separators to the current OS convention.
  *
- * Converts both '/' and '\' into the OS-native DIRECTORY_SEPARATOR,
- * collapses consecutive separators, and correctly handles UNC paths
- * (e.g., '\\server\share'). This creates a canonical, reliable
- * filesystem path.
+ * Collapses `/` and `\` runs into DIRECTORY_SEPARATOR; UNC prefixes
+ * (\\server\share) are preserved.
  *
- * @since  1.0.0
- * @param  string $path Raw path string to clean.
- * @return string A clean path using the correct OS separator.
+ * @since  0.0.1
+ * @param  string $path Raw path.
+ * @return string Canonical OS-native path.
  */
 function pathify (string $path): string
 {
@@ -103,17 +109,16 @@ function pathify (string $path): string
 }
 
 /**
- * Join path segments into a single normalised path.
+ * Join path segments into one normalised path.
  *
- * Glues multiple folder/file parts together with '/' separator,
- * safe for both filesystem (Windows accepts '/') and URLs.
- * Trims extra slashes and skips empty segments.
+ * Trims stray slashes, skips empty segments, then converts to the
+ * OS separator — safe for filesystem and URLs.
  *
  * Example: interlace('system', 'Core', 'Boot.core') → 'system/Core/Boot.core'
  *
- * @since  1.0.0
- * @param  string ...$segments One or more path parts to concatenate.
- * @return string The resulting combined path.
+ * @since  0.0.1
+ * @param  string ...$segments Path parts to concatenate.
+ * @return string Combined path.
  */
 function interlace (...$segments)
 {
@@ -138,73 +143,16 @@ function interlace (...$segments)
 }
 
 /**
- * Extract the `$directories` map from the web entry file (index.php).
+ * Read a value from the $_SERVER superglobal.
  *
- * Tokenizes the source, locates the `$directories = [ ... ]` assignment
- * and returns its top-level `key => value` string pairs. Returns an empty
- * array when the file is missing or holds no such array literal.
+ * Entry point for request path/uri reads (Router::tryAliases).
  *
- * @since  1.0.0
- * @param  string $file Absolute path to the entry file (index.php).
- * @return array<string, string>  name => directory (relative to project root).
+ * @since  0.0.1
+ * @param  string|null $args    Key; dots become underscores ("request.uri" → REQUEST_URI). Null returns the whole array.
+ * @param  string|null $default Fallback when the key is missing.
+ * @return mixed
  */
-function read_directories (string $file): array
-{
-	if (!is_file ($file)) { return []; }
-
-	$tokens = token_get_all ((string) file_get_contents ($file));
-	$count  = count ($tokens);
-
-	for ($i = 0; $i < $count; $i++)
-	{
-		$token = $tokens[$i];
-		if (!is_array ($token) || $token[0] !== T_VARIABLE || $token[1] !== '$directories')
-		{
-			continue;
-		}
-
-		// Skip trivia: expect '=' then the opening '['.
-		$i++;
-		while ($i < $count && is_array ($tokens[$i]) && in_array ($tokens[$i][0], [T_WHITESPACE, T_COMMENT, T_DOC_COMMENT], true)) { $i++; }
-		if ($i >= $count || $tokens[$i] !== '=') { continue; }
-
-		$i++;
-		while ($i < $count && is_array ($tokens[$i]) && in_array ($tokens[$i][0], [T_WHITESPACE, T_COMMENT, T_DOC_COMMENT], true)) { $i++; }
-		if ($i >= $count || $tokens[$i] !== '[') { continue; }
-
-		// Collect the literal body up to the matching ']' (nested-safe).
-		$depth = 0;
-		$body  = '';
-		for (; $i < $count; $i++)
-		{
-			$chunk = is_array ($tokens[$i]) ? $tokens[$i][1] : $tokens[$i];
-
-			if ($chunk === '[') { $depth++; }
-			elseif ($chunk === ']') { $depth--; if ($depth === 0) { break; } }
-
-			if ($depth > 0) { $body .= $chunk; }
-		}
-
-		// Flat string pairs only: 'system' => 'src'.
-		preg_match_all ("/['\"]?([A-Za-z_][A-Za-z0-9_]*)['\"]?\s*=>\s*['\"]([^'\"]*)['\"]/", $body, $pairs, PREG_SET_ORDER);
-
-		$map = [];
-		foreach ($pairs as $pair) { $map[$pair[1]] = $pair[2]; }
-
-		return $map;
-	}
-
-	return [];
-}
-
-/**
- * Access $_SERVER superglobal safely.
- *
- * NOTE: `System\Support\WordPress::server()` does not exist in the repo;
- * this remains the entry point for request-path/uri reads
- * (Router::tryAliases). Do not deprecate without a real replacement.
- */
-function __server (?string $args = null, ?string $default = null): mixed
+function gserver (?string $args = null, ?string $default = null): mixed
 {
     if (is_null ($args)) {return $_SERVER;}
     $args = strtoupper (str_replace ('.', '_', $args));
@@ -212,18 +160,16 @@ function __server (?string $args = null, ?string $default = null): mixed
 }
 
 /**
- * Cast a raw .env string value to its native PHP type.
+ * Cast a raw .env value to its native PHP type.
  *
- * "true" / "(true)"   → bool true
- * "false" / "(false)" → bool false
- * "null" / "(null)"   → null
- * Numeric strings     → int or float
- * Everything else     → string as-is
+ * true/false/null literals → typed value; numeric strings → int|float;
+ * everything else → string as-is.
  *
- * @param  string $value Raw value from the .env file.
+ * @since  0.0.1
+ * @param  string $value Raw .env value.
  * @return mixed
  */
-function cast_value (string $value): mixed
+function enval (string $value): mixed
 {
 	return match (strtolower ($value))
 	{
@@ -237,127 +183,240 @@ function cast_value (string $value): mixed
 }
 
 /**
- * Retrieve environment values with dot-notation grouping.
+ * Read a typed environment value registered by `.starter`.
  *
- * CACHING: Parsed .env values are cached in a static variable for
- * performance. The cache is populated on the first call and reused
- * for all subsequent calls within the same process. To force a
- * re-read (e.g., after .env changes at runtime), call env_clear_cache().
+ * Wraps getenv() with dot-notation keys, typed casting, and a
+ * fallback default. Group lookup ("app") scans process env plus
+ * $_ENV (registered by `.starter`) by prefix. Requires the gateway
+ * to have run `.starter` first.
  *
- * @since  1.0.0
- * @see    env_clear_cache() — clear the static cache
- * @param  string $key     Dot-notation key: "app.port" for a single
- *                         value, "app" for the whole group.
- * @param  mixed  $default Fallback when key/group is missing.
- *                         Defaults to false.
- * @return mixed Typed scalar for a leaf key, associative array for
- *               a group prefix, or $default.
+ * @since  0.0.1
+ * @param  string $key     "app.port" for a leaf, "app" for the whole group.
+ * @param  mixed  $default Fallback when the key/group is missing.
+ * @return mixed Typed leaf value, group array, or $default.
  */
-function __env (string $key, mixed $default = false): mixed
+function genv (string $key, mixed $default = false): mixed
 {
-	static $cache = null;
-	global $_env_cache_cleared;
-
-	// env_clear_cache() sets this flag to force a re-read of .env.
-	if (isset ($_env_cache_cleared) && is ($_env_cache_cleared, true))
-	{
-		$cache = null;
-		$_env_cache_cleared = false;
-	}
-
 	$key = trim ($key);
 	// Key must be a valid env-var name or prefix.
 	if (is ($key, '') || !preg_match ('/^[a-zA-Z_][a-zA-Z0-9_.]*$/', $key)) {return $default;}
-	// --- Load & cache the .env file on first invocation. ---
-	if (is_null ($cache))
-	{
-		// Path-traversal guard.
-		$file_resolved = realpath (interlace (basepath, '.env'));
-		if (is ($file_resolved, false) || !str_starts_with ($file_resolved, basepath)) {return $default;}
-		// Readability & size guard.
-		if (!is_file ($file_resolved) || !is_readable ($file_resolved)) {return $default;}
 
-		$max_bytes = 102400;
-		if (filesize ($file_resolved) > $max_bytes) {return $default;}
+	// Leaf lookup: exact key registered by .starter via putenv().
+	$value = getenv ($key);
+	if (!is ($value, false)) {return enval ($value);}
 
-		$lines = file ($file_resolved, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
-		if (is ($lines, false)) {return $default;}
-
-		$tmp = [];
-
-		foreach ($lines as $line)
-		{
-			$line = trim ($line);
-			if (is ($line, '') || str_starts_with ($line, '#')) {continue;}
-
-			$pos = strpos ($line, '=');
-			if (is ($pos, false)) {continue;}
-
-			$k = trim (substr ($line, 0, $pos));
-			$v = trim (substr ($line, $pos + 1));
-			if (is ($k, '') || !preg_match ('/^[a-zA-Z_][a-zA-Z0-9_.]*$/', $k)) {continue;}
-			
-			// Strip inline comments (# …) except inside quotes.
-			if (!str_starts_with ($v, '"') && !str_starts_with ($v, "'"))
-			{
-				$hash = strpos ($v, '#');
-				if ($hash !== false) $v = trim (substr ($v, 0, $hash));
-			}
-
-			// Strip surrounding quotes and unescape.
-			if (str_starts_with ($v, '"') && str_ends_with ($v, '"'))
-			{
-				$v = substr ($v, 1, -1);
-				$v = str_replace (['\\n', '\\"'], ["\n", '"'], $v);
-			}
-			elseif (str_starts_with ($v, "'") && str_ends_with ($v, "'")) {$v = substr ($v, 1, -1);}
-			// Leftmost-wins — keep first occurrence.
-			if (!array_key_exists ($k, $tmp)) {$tmp[$k] = $v;}
-			
-		}
-
-		// Cache the raw strings; typed casting is applied per-request.
-		$cache = $tmp;
-	}
-
-	// --- Single-key lookup (exact match). ---
-	if (array_key_exists ($key, $cache)) {return cast_value ($cache[$key]);}
-	// --- Group lookup (prefix match). ---
-	// Catches keys like "app.cdn" → collects app.cdn.enabled, app.cdn.url.
-	// If no keys match the prefix, $result stays empty → $default returned.
+	// Group lookup: prefix match (e.g. "app" → app.cdn.enabled, app.cdn.url).
+	// getenv() no-arg omits putenv() vars, so overlay $_ENV (written by .starter).
 	$prefix = $key . '.';
+	$all = array_merge (getenv () ?: [], $_ENV);
 	$result = [];
 
-	foreach ($cache as $k => $v)
+	foreach ($all as $k => $v)
 	{
-		if (str_starts_with ($k, $prefix))
+		if (str_starts_with ((string) $k, $prefix))
 		{
-			$leaf = substr ($k, strlen ($prefix));
-			$result[$leaf] = cast_value ($v);
+			$result[substr ((string) $k, strlen ($prefix))] = enval ((string) $v);
 		}
 	}
 
 	// Empty group = key genuinely missing → return $default.
-	if (is ($result, [])) {return $default;}
-	return $result;
+	return is ($result, []) ? $default : $result;
 }
 
 /**
- * Clear the env() static cache, forcing a re-read of the .env file.
+ * Look up the HTTP reason phrase for a status code.
  *
- * The env() function caches parsed .env values in a static variable
- * for performance. Call this helper when you need env() to pick up
- * changes made to the .env file at runtime (e.g., after a deploy
- * or during tests that modify environment variables).
- *
- * This is NOT safe across parallel requests — the flag is process-global.
- * In CLI long-running processes, call after each request cycle if the
- * .env file may have changed.
- *
- * @return void
+ * @since  0.0.1
+ * @param  int $code HTTP status code.
+ * @return string Reason phrase, or a generic message when unknown.
  */
-function env_clear_cache (): void
+function statc (int $code = 200): string
 {
-	global $_env_cache_cleared;
-	$_env_cache_cleared = true;
+	return [
+		100	=> 'Continue',
+		101	=> 'Switching Protocols',
+
+		200	=> 'OK',
+		201	=> 'Created',
+		202	=> 'Accepted',
+		203	=> 'Non-Authoritative Information',
+		204	=> 'No Content',
+		205	=> 'Reset Content',
+		206	=> 'Partial Content',
+
+		300	=> 'Multiple Choices',
+		301	=> 'Moved Permanently',
+		302	=> 'Found',
+		303	=> 'See Other',
+		304	=> 'Not Modified',
+		305	=> 'Use Proxy',
+		307	=> 'Temporary Redirect',
+
+		400	=> 'Bad Request',
+		401	=> 'Unauthorized',
+		402	=> 'Payment Required',
+		403	=> 'Forbidden',
+		404	=> 'Not Found',
+		405	=> 'Method Not Allowed',
+		406	=> 'Not Acceptable',
+		407	=> 'Proxy Authentication Required',
+		408	=> 'Request Timeout',
+		409	=> 'Conflict',
+		410	=> 'Gone',
+		411	=> 'Length Required',
+		412	=> 'Precondition Failed',
+		413	=> 'Request Entity Too Large',
+		414	=> 'Request-URI Too Long',
+		415	=> 'Unsupported Media Type',
+		416	=> 'Requested Range Not Satisfiable',
+		417	=> 'Expectation Failed',
+		422	=> 'Unprocessable Entity',
+		426	=> 'Upgrade Required',
+		428	=> 'Precondition Required',
+		429	=> 'Too Many Requests',
+		431	=> 'Request Header Fields Too Large',
+
+		500	=> 'Internal Server Error',
+		501	=> 'Not Implemented',
+		502	=> 'Bad Gateway',
+		503	=> 'Service Unavailable',
+		504	=> 'Gateway Timeout',
+		505	=> 'HTTP Version Not Supported',
+		511	=> 'Network Authentication Required',
+	][$code] ?? 'An unexpected error occurred. Please contact the Administrator.';
+}
+
+/**
+ * Build a file name in the requested extension form.
+ *
+ * @since  0.0.1
+ * @param  string      $filename Base name without extension.
+ * @param  string|bool $ext      'php' → "name.php" (default), false → ".name", other → "name.ext".
+ * @return string File name.
+ */
+function fl (string $filename, string|bool $ext = 'php'): string
+{
+	return [
+		'php' => "{$filename}.php",
+		false => ".{$filename}",
+	][$ext] ?? "{$filename}.{$ext}";
+}
+
+/**
+ * Build a full URL from a path using configured or auto-detected base URL.
+ *
+ * Normalises the path with urlify(), then prepends the base URL from
+ * genv('app.url') or auto-detects from $_SERVER (scheme + host).
+ *
+ * @since  0.0.1
+ * @param  string $path Path relative to app root (e.g. '/cendol').
+ * @return string Absolute URL (e.g. 'http://localhost/cendol').
+ */
+function urlprettify (string $path): string
+{
+	$base = (string) genv ('app.url');
+	if ($base === '')
+	{
+		$scheme = (!empty ($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+		$host   = $_SERVER['HTTP_HOST'] ?? 'localhost';
+		$base   = $scheme . '://' . $host;
+	}
+	// Ensure proper URL structure before interlacing
+	$base = trim ($base, '/') . '/' . ltrim ($path, '/');
+	return urlify ($base);
+}
+
+/**
+ * Check if a URL is reachable via HTTP HEAD request.
+ *
+ * Uses cURL when available (preferred), falls back to get_headers()
+ * with stream context timeout. Best for remote/CDN assets.
+ * For local files, prefer is_file() + is_readable() on the
+ * filesystem path instead.
+ *
+ * @since  0.0.1
+ * @param  string $url     Absolute URL to check.
+ * @param  int    $timeout Max seconds to wait (default 2).
+ * @return bool True when HTTP 2xx/3xx.
+ */
+function url_exists (string $url, int $timeout = 2): bool
+{
+	// Prefer cURL for proper HEAD request and timeout control
+	if (function_exists ('curl_init'))
+	{
+		$ch = curl_init ($url);
+		curl_setopt_array ($ch, [
+			CURLOPT_NOBODY        => true,
+			CURLOPT_RETURNTRANSFER => true,
+			CURLOPT_TIMEOUT       => $timeout,
+			CURLOPT_CONNECTTIMEOUT => 1,
+			CURLOPT_FOLLOWLOCATION => true,
+			CURLOPT_SSL_VERIFYPEER => false,
+			CURLOPT_SSL_VERIFYHOST => false,
+		]);
+		curl_exec ($ch);
+		$code = curl_getinfo ($ch, CURLINFO_RESPONSE_CODE);
+		curl_close ($ch);
+		return $code >= 200 && $code < 400;
+	}
+
+	// Fallback: get_headers with stream context timeout
+	$ctx = stream_context_create ([
+		'http' => [
+			'method'      => 'HEAD',
+			'timeout'     => $timeout,
+			'follow_location' => 1,
+			'max_redirects'   => 5,
+			'ignore_errors'   => true,
+		],
+		'ssl' => [
+			'verify_peer'      => false,
+			'verify_peer_name' => false,
+		],
+	]);
+		$headers = @get_headers ($url, true, $ctx);
+	if ($headers === false) {return false;}
+	$status = $headers[0] ?? '';
+	return preg_match ('/^HTTP\/\d\.\d\s+(2\d\d|3\d\d)/', $status) === 1;
+}
+
+function error_css ()
+{
+	$uri = parse_url(gserver('request.uri'), PHP_URL_PATH);
+
+	if (strpos($uri, '/exception/') === 0) {
+		// Whitelist: only known error-page CSS files are served.
+		// Prevents path-traversal probing of the directory tree.
+		$allowed = ['core.css', 'style.css'];
+		$file = basename (pathinfo ($uri, PATHINFO_BASENAME));
+		if (!in_array ($file, $allowed, true)) {
+			http_response_code (404);
+			exit;
+		}
+		$abspath = interlace (__DIR__, '/src/Views/Styles/Errors', $file);
+		$secpath = interlace (getcwd(), 'error.css');
+		$size = filesize($abspath) + (is_readable ($secpath) ? filesize ($secpath)+1:0);
+		if (is_readable ($abspath))
+		{
+			header('Content-Type: text/css; charset=utf-8');
+			header('Content-Length: ' . $size);
+			readfile($abspath);
+		}
+		if (is_readable ($secpath)) {echo "\n"; readfile($secpath);}
+		exit;
+	}
+
+	return false; // Biarkan file lain dilayani secara normal
+}
+
+function require_file (string $required_file, string $error = ''): void
+{
+	if (!is_readable ($required_file)) {throw new Exception ($error, 500);}
+	require_once $required_file;
+}
+
+function get_required_file (string $required_file, string $error = '', mixed $default = ''): mixed
+{
+	if (!is_readable ($required_file)) {throw new Exception ($error, 500);}
+	return require $required_file ?? $default;
 }

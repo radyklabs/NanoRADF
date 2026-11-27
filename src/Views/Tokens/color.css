@@ -1,0 +1,93 @@
+/* ============================================================================
+ * 1. Color — primitives (raw palette) then semantics (meaning).
+ *
+ * Primitives are never used directly in components; semantics are derived
+ * from them so a palette swap propagates everywhere.
+ * ========================================================================== */
+
+:root {
+    /* --- Neutral scale ----------------------------------------------- */
+    --n-0:   #ffffff;
+    --n-50:  #f8fafc;
+    --n-100: #f1f5f9;
+    --n-200: #e2e8f0;
+    --n-300: #cbd5e1;
+    --n-400: #94a3b8;
+    --n-500: #64748b;
+    --n-600: #475569;
+    --n-700: #334155;
+    --n-800: #1e293b;
+    --n-900: #0f172a;
+    --n-950: #020617;
+
+    /* --- Signal scale (single hue family for brand + feedback) ----- */
+    --signal-50:  #eff6ff;
+    --signal-100: #dbeafe;
+    --signal-200: #bfdbfe;
+    --signal-300: #93c5fd;
+    --signal-400: #60a5fa;
+    --signal-500: #3b82f6;
+    --signal-600: #2563eb;
+    --signal-700: #1d4ed8;
+    --signal-800: #1e40af;
+    --signal-900: #1e3a8a;
+
+    --ok-500:  #22c55e;
+    --ok-700:  #15803d;
+    --warn-500: #f59e0b;
+    --warn-700: #b45309;
+    --bad-500:  #ef4444;
+    --bad-700:  #b91c1c;
+
+    /* --- Semantic: page --------------------------------------------- */
+    --bg-base:       var(--n-50);
+    --bg-surface:    var(--n-0);
+    --bg-sunken:     var(--n-100);
+    --bg-raised:     var(--n-0);
+    --bg-hover:      var(--n-100);
+    --bg-active:     var(--n-200);
+
+    --text-primary:  var(--n-900);
+    --text-muted:    var(--n-500);
+    --text-inverse:  var(--n-50);
+
+    --line-soft:     var(--n-200);
+    --line-strong:   var(--n-300);
+
+    /* --- Semantic: interactive -------------------------------------- */
+    --action:        var(--signal-600);
+    --action-hover:  var(--signal-700);
+    --action-ink:    var(--n-0);
+    --focus-ring:    var(--signal-500);
+
+    /* --- Semantic: feedback ----------------------------------------- */
+    --ok-ink:     var(--ok-700);
+    --ok-bg:      var(--ok-500);
+    --warn-ink:   var(--warn-700);
+    --warn-bg:    var(--warn-500);
+    --bad-ink:    var(--bad-700);
+    --bad-bg:     var(--bad-500);
+}
+
+/* Dark scheme: remap semantics only, primitives stay put. */
+@media (prefers-color-scheme: dark) {
+    :root {
+        --bg-base:      var(--n-950);
+        --bg-surface:   var(--n-900);
+        --bg-sunken:    var(--n-900);
+        --bg-raised:    var(--n-800);
+        --bg-hover:     var(--n-800);
+        --bg-active:    var(--n-700);
+
+        --text-primary: var(--n-50);
+        --text-muted:   var(--n-400);
+        --text-inverse: var(--n-900);
+
+        --line-soft:    var(--n-800);
+        --line-strong:  var(--n-700);
+
+        --action:       var(--signal-400);
+        --action-hover: var(--signal-300);
+        --action-ink:   var(--n-900);
+    }
+}

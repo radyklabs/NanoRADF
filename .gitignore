@@ -1,16 +1,26 @@
 # Secrets / local environment
-.env
-.envrc
+/.env
+/.envrc
 
 # Local machine paths
-.vscode/
+/.vscode/
 
 # Leftover local DB dumps (not part of the source)
-sql/local.sql
+/sql/
+/sql/local.sql
 
 # Never commit platform-local config (see RULES.md)
-docs/CONFIG.md
+/docs/CONFIG.md
 
-# Dev-time only
+# Dev-time only — NEVER required to run the framework (see PRD NFR-1). If a
+# manifest is added later it must stay optional, not a runtime/build dependency.
+#/tests
 /vendor/
-composer.lock
+/composer.lock
+/composer.json
+
+# Runtime-generated framework logs
+/storage/
+
+# PHP's own error log (relative to docroot)
+/public/php_errors.log

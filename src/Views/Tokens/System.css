@@ -1,0 +1,15 @@
+/* ============================================================================
+ * NanoRADF Design Tokens — System
+ * Single entry point; imports partials in cascade order.
+ *
+ * Order matters: primitives → semantic → components → motion → media.
+ * ========================================================================== */
+
+@import url("color.css");
+@import url("space.css");
+@import url("typography.css");
+@import url("elevation.css");
+@import url("form.css");
+@import url("nav.css");
+@import url("motion.css");
+@import url("media.css");

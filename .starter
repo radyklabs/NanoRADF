@@ -1,0 +1,254 @@
+<?php declare (strict_types=1);
+
+/**
+ * Environment Bootstrap
+ * --
+ * Loads configuration, sets up error handling, and initializes the helper chain. The foundation
+ * layer that runs before any application logic. It reads environment data, configures error
+ * display based on the environment profile, and triggers the dependency chain so every subsequent
+ * stage has its tools ready.
+ *
+ * @package     NanoRADF
+ * @author      RADLabs Development Team
+ * @copyright   Radlabs Studio (c) 1986 - 2026
+ * @since       0.0.1
+ */
+
+namespace System;
+
+use Throwable;
+use Exception;
+
+if (!defined ('basepath'))
+{
+    try {exit (@require realpath (__DIR__).DIRECTORY_SEPARATOR.'.errors');}
+    catch (Throwable $e) {$file = basename (__FILE__); exit ("404 Forbidden {$file}");}
+}
+
+// Framework version + path constants.
+define ('appversion', '0.0.1');
+define ('sep', $sep ?? DIRECTORY_SEPARATOR);
+
+/**
+ * Load `.env` into the process environment.
+ * --
+ * Parses `KEY=VALUE` lines (skips blanks and `#` comments, strips
+ * surrounding quotes and inline `#` comments) and registers each
+ * entry via putenv() and $_ENV, so getenv() and genv() can read it.
+ * Keys allow dots (`app.modules`); an already-set environment
+ * variable wins; invalid keys are ignored. Missing `.env` is
+ * skipped silently.
+ *
+ * @since  0.0.1
+ * @return void
+ */
+$env_file = $env_key ?? implode ('.', [basepath, 'env']);
+
+if (is_file ($env_file) && is_readable ($env_file))
+{
+    foreach (file ($env_file, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) ?: [] as $line)
+    {
+        $line = trim ($line);
+        if ($line === '' || str_starts_with ($line, '#')) {continue;}
+
+        $pos = strpos ($line, '=');
+        if ($pos === false) {continue;}
+
+        $key = trim (substr ($line, 0, $pos));
+        if (!preg_match ('/^[A-Za-z_][A-Za-z0-9_.]*$/', $key)) {continue;}
+
+        // First wins: never override an existing environment variable.
+        if (getenv ($key) !== false) {continue;}
+
+        $value = trim (substr ($line, $pos + 1));
+        if (strlen ($value) >= 2 && ($value[0] === '"' || $value[0] === "'") && str_ends_with ($value, $value[0]))
+        {
+            $value = substr ($value, 1, -1);
+        }
+
+        // Strip inline comments (# …) outside quotes.
+        elseif (($hash = strpos ($value, '#')) !== false)
+        {
+            $value = trim (substr ($value, 0, $hash));
+        }
+
+        putenv ("{$key}={$value}");
+        $_ENV[$key] = $value;   // group lookup in genv() scans $_ENV
+    }
+}
+
+unset ($env_file, $sep, $basepath, $publicpath, $env_key);
+
+/** 
+ * Error reporting profile.
+ * --
+ * With `app.debug=true`, maps `app.env` to a reporting level
+ * (dev/local → full display; testing → reduced notices; else
+ * silent). Without it, errors are silenced.
+ *
+ * @since  0.0.1
+ * @return bool
+ */
+function is_debug (): bool {return (getenv('app.debug')==='true');}
+
+if (is_debug ())
+{
+    switch (getenv('app.env'))
+    {
+        case 'dev':
+        case 'development':
+        case 'local':
+            error_reporting (E_ALL);
+            @ini_set ('display_errors', 1);
+            break;
+        
+        case 'testing':
+        case 'staging':
+            error_reporting(E_ALL & ~E_NOTICE & ~E_STRICT & ~E_USER_NOTICE);
+            ini_set('display_errors', 0);
+            break;
+
+        default:
+            error_reporting (0);
+            @ini_set ('display_errors', 0);
+            break;
+    }
+}
+
+else
+{
+    error_reporting (0);
+    @ini_set ('display_errors', 0);
+}
+
+// Minimum PHP version required by the gateway's runtime gate.
+define ('PHP_MIN_VERSION', '8.1.34');
+
+// Runtime version gate; failure → $error='phpmin'.
+if (version_compare (PHP_VERSION, PHP_MIN_VERSION, "<")) {$error = 'phpmin';}
+
+/**
+ * Terminate with an error page and a log line.
+ *
+ * Safe to call from the gateway catch-all: never throws, and disclosure must
+ * already be settled by the caller.
+ *
+ * @since  0.0.1
+ * @param  string $message Public body message.
+ * @param  int    $status  HTTP status.
+ * @return void
+ */
+function blackwall (Throwable $th)
+{
+    // NOTE: var_dump is for development testing only.
+    // Remove this line before production deployment — it leaks exception
+    // details (file paths, stack trace, internal state) to the client.
+    var_dump($th);
+    $trace_section = '';
+    $sentinel = [
+        'starter', 'phpmin', 'common', 'config',
+        'structure', 'boot', 'kernel', 'init', 'helper',
+        'helperapp', 'theme', 'layout_name', 'view_empty',
+        'view_extension', 'view_segment', 'view_missing',
+        'drip_read', 'drip_escape', 'drip_write',
+        'route_config', 'route_target', 'module_name_mismatch', 
+        'module_manifest_missing',
+        ];
+    $known    = in_array ($th->getMessage (), $sentinel, true);
+    $code     = $th->getCode () !== 0 ? $th->getCode () : 500;
+    $status   = ($code >= 400 && $code <= 599) ? $code : 500;
+
+    $heading = [
+        403 => 'Forbidden',
+        404	=> 'Not Found',
+        500	=> 'Internal Server Error',
+    ][$status] ?? 'Internal System Error';
+
+    if (is_debug()) {$message = $th->getMessage ().' in '.$th->getFile ().':'.$th->getLine ();}
+
+    elseif ($known)
+    {
+        $message = [
+            'starter'                => 'The starter file could not be found. Please reinstall the framework.',
+            'phpmin'                 => 'This version of PHP is not supported. Please upgrade to a newer release.',
+            'common'                 => 'The common library could not be loaded. Please check the installation.',
+            'config'                 => 'The configuration file could not be found. Please check the installation.',
+            'structure'              => 'The framework directories could not be registered. Please check the installation.',
+            'boot'                   => 'The kernel could not be started. Please check the installation.',
+            'kernel'                 => 'The application could not be started. Please try again later.',
+            'init'                   => 'The initiation could not be started. Please try again later.',
+            'helper'                 => 'The registered helper file could not be loaded. Please check the installation.',
+            'helperapp'              => 'Yours registered helper file could not be loaded. Please check the installation.',
+            'theme'                  => 'Theme not found.',
+            'layout_name'            => 'The named layout was not found in the active theme.',
+            'view_empty'             => 'View name must not be empty.',
+            'view_extension'         => 'View name must not include the extension.',
+            'view_segment'           => 'View name contains an invalid segment.',
+            'view_missing'           => 'View not found. Pastikan file ada dan pastikan menggunakan file html.',
+            'drip_read'              => 'The template could not be read.',
+            'drip_escape'            => 'Escape function inside {{ }} — {{ }} already escapes.',
+            'drip_write'             => 'The compiled template could not be written.',
+            'route_config'           => 'Route configuration is invalid.',
+            'route_target'           => 'Route target class or method does not exist.',
+            'module_name_mismatch'   => 'Module name mismatch: ModulesConfig.php key does not match Manifest.json name (case-sensitive).',
+            'module_manifest_missing' => 'Module enabled in ModulesConfig.php but Manifest.json not found.',
+        ][$th->getMessage ()];
+    }
+
+    else {$message = 'An unexpected error occurred. Please contact the Administrator.';}
+
+    if (is_debug())
+    {
+        $trace_section .= '<trace><ol reversed>';
+        $trace_list_format = '<li><num>#%d</num><err><file>%s</file><code>%s</code></err></li>';
+
+        $trace = explode ('#', $th->getTraceAsString());
+        array_shift ($trace);
+
+        $num = count($trace);
+
+        foreach ($trace as $tr)
+        {
+            $t = explode (' ', $tr);
+            array_shift ($t);
+            $t[0] ??= '';
+            $t[1] ??= '';
+            // $tr = implode (' ', $t);
+            $trace_section .= sprintf ($trace_list_format, $num--, rtrim($t[0],':'), $t[1]);
+        }
+
+        $trace_section .= '</ol></trace>';
+    }
+
+    $footer = '<nanoradf_footer>NanoRADF &copy; 1986 - 2026</nanoradf_footer>';
+
+    $log_file = 'system.log';
+    $log_dir = realpath (basepath . 'storage/logs');
+    if (!is_dir ($log_dir)) {@mkdir ($log_dir, 0775, true);}
+
+    if (is_dir ($log_dir) && is_writable ($log_dir))
+    {
+        error_log ("[{$status}] {$message}", 3, "{$log_dir}/{$log_file}");
+    }
+    else {error_log ("[{$status}] {$message}");}
+    
+    if (!function_exists ('error_css'))
+    {
+        $common = realpath (__DIR__).sep.'.supports';
+        if (is_readable ($common)) {require_once ($common);}
+    }
+
+    error_css();
+    header ('Content-Type: text/html; charset=utf-8', true, $status);
+    
+    echo "<link rel=\"stylesheet\" href=\"/exception/core.css\"/>";
+    exit ("<notice><h1>{$status} {$heading}</h1><p>{$message}</p></notice>{$trace_section}{$footer}");
+}
+
+// Helper library (interlace, genv, …); failure → $error='common'.
+$common_key = implode ('.', [basepath, 'supports']);
+if (!is_readable ($common_key)) {throw new Exception ('common', 500);}
+require_once $common_key;
+
+// Bootstrap config (roots, structures, kernel); failure → $error='config'.
+require_file (interlace (basepath, fl ('config', false)), 'config');

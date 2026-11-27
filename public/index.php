@@ -1,12 +1,46 @@
-<?php  declare (strict_types=1);
+<?php declare (strict_types=1);
 
-// Modules folder name
+/**
+ * Web entry point — folder configuration and gateway hand-off.
+ * --
+ * Defines the application roots (apps, src, modules), then delegates
+ * bootstrapping to the `nanoradf` gateway. This file stays minimal:
+ * no business logic, only paths.
+ *
+ * @package     NanoRADF
+ * @author      RADLabs Development Team
+ * @copyright   Radlabs Studio (c) 1986 - 2026
+ * @since       0.0.1
+ */
+
+/**
+ * Application MVC root folder name.
+ * --
+ * Point this at a different folder name or location to relocate
+ * the application layer.
+ */
 $application_folder = 'apps';
 
-// System folder name, don't change except you know what're you doing
+/**
+ * Framework core folder name.
+ * --
+ * Holds the system brain — treat every change here as fragile.
+ */
 $system_folder = 'src';
 
-// Calling nanoradf gateway
-require realpath ('nanoradf.php');
+/**
+ * Optional HMVC root folder name.
+ * --
+ * Used only when `app.modules` is true in the environment config.
+ */
+$modules_folder = 'modules';
 
-// Says who only silence is golden
+/** 
+ * End of configuration. 
+ * --
+ * Open `.env` file to see the others configuration settings
+*/
+
+require realpath ( dirname (__DIR__).DIRECTORY_SEPARATOR.'nanoradf');
+
+// Says who only silence is golden?!

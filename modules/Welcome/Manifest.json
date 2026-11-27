@@ -1,0 +1,8 @@
+{
+    "name": "Welcome",
+    "version": "0.0.1",
+    "description": "Default welcome module — SSR demo with Drip templates.",
+    "author": "RADLabs Development Team",
+    "namespace_prefix": "Modules\\Welcome\\",
+    "dependencies": []
+}

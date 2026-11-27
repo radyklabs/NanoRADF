@@ -1,0 +1,34 @@
+@section('content')
+    <div class="welcome-container">
+        <h1>{{$title}}</h1>
+        <p class="lead">Rendered by the Drip Template Engine.</p>
+
+        @if($show_mode_badge)
+            @include('welcome.meta', ['label' => 'Mode'])
+        @endif
+
+        @if($show_features_list && $features !== [])
+            <ul class="features-list">
+                @foreach($features as $feature)
+                    <li>{{$feature}}</li>
+                @endforeach
+            </ul>
+        @elseif(!$show_features_list)
+            <p class="note">Features list hidden by config.</p>
+        @else
+            <p class="note">No features listed.</p>
+        @endif
+
+        @if($show_raw_demo)
+            <p @class(['note', 'note--loud' => $loud])>Escaping works: {{$unsafe}}</p>
+            <p>Raw output: {{!$unsafe!}}</p>
+        @endif
+
+        @if($seo_description)
+            <meta name="description" content="{{$seo_description}}">
+        @endif
+        @if($seo_og_image)
+            <meta property="og:image" content="{{$seo_og_image}}">
+        @endif
+    </div>
+@endsection

@@ -8,7 +8,7 @@
 
 name: release-tag
 
-'on':
+on:
   pull_request:
     branches: [main]
     types: [closed]

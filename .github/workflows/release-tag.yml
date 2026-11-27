@@ -1,0 +1,137 @@
+# release-tag.yml — validate a merged release PR and create the annotated tag.
+#
+# Triggered on PR merge to main with title "chore(release): X.Y.Z".
+# Manually triggerable (workflow_dispatch) with a verified release merge SHA
+# as fallback (e.g. if the auto-run failed or was skipped).
+#
+# Requires: contents: write on GITHUB_TOKEN (Actions settings > Workflow permissions).
+
+name: release-tag
+
+on:
+  pull_request:
+    branches: [main]
+    types: [closed]
+  workflow_dispatch:
+    inputs:
+      merge_sha:
+        description: "Verified release merge commit SHA on main (fallback path)"
+        required: false
+        default: ""
+
+permissions:
+  contents: write
+
+jobs:
+  tag:
+    runs-on: ubuntu-latest
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.pull_request.merged && github.event.pull_request.title ==~ '^chore\(release\): v?[0-9]+\.[0-9]+\.[0-9]+$')
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Verify merge commit
+        id: verify
+        run: |
+          set -uo pipefail
+
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            SHA="${{ github.event.inputs.merge_sha }}"
+            if [ -z "$SHA" ]; then
+              echo "::error::No merge_sha provided — cannot tag."
+              exit 1
+            fi
+            echo "Verifying fallback SHA $SHA…"
+          else
+            # Resolve the merge commit from the PR number
+            PR_NUMBER="${{ github.event.pull_request.number }}"
+            SHA="$(git log --merges --grep="Merge pull request #${PR_NUMBER}" --format='%H' -1)"
+            if [ -z "$SHA" ]; then
+              echo "Could not find merge commit for PR #${PR_NUMBER}."
+              exit 1
+            fi
+            echo "Resolved merge commit: $SHA"
+          fi
+
+          # Verify SHA exists on main
+          if ! git cat-file -e "${SHA}^{commit}" 2>/dev/null; then
+            echo "SHA $SHA is not a valid commit."
+            exit 1
+          fi
+
+          echo "sha=${SHA}" >> "$GITHUB_OUTPUT"
+
+      - name: Extract version from PR title
+        id: version
+        if: github.event_name != 'workflow_dispatch'
+        run: |
+          TITLE="${{ github.event.pull_request.title }}"
+          # Strip "chore(release): " prefix
+          VERSION="${TITLE#chore(release):}"
+          VERSION="${VERSION#v}"
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+          echo "Tagging as v${VERSION}"
+
+      - name: Extract version from commit message (fallback)
+        id: version-fb
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          SHA="${{ steps.verify.outputs.sha }}"
+          MSG="$(git log -1 --format='%s' "$SHA")"
+          if [[ "$MSG" =~ chore\(release\):\ v?([0-9]+\.[0-9]+\.[0-9]+) ]]; then
+            VERSION="${BASH_REMATCH[1]}"
+          else
+            echo "Cannot extract version from commit message: $MSG"
+            exit 1
+          fi
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+          echo "Tagging as v${VERSION}"
+
+      - name: Check tag does not already exist
+        id: check
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            VERSION="${{ steps.version-fb.outputs.version }}"
+          else
+            VERSION="${{ steps.version.outputs.version }}"
+          fi
+          if [ -z "$VERSION" ]; then
+            echo "VERSION is empty — cannot proceed."
+            exit 1
+          fi
+          TAG="v${VERSION}"
+          if git rev-parse "refs/tags/${TAG}" >/dev/null 2>&1; then
+            echo "::error::Tag ${TAG} already exists. Aborting."
+            exit 1
+          fi
+          echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
+
+      - name: Create annotated tag
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            VERSION="${{ steps.version-fb.outputs.version }}"
+          else
+            VERSION="${{ steps.version.outputs.version }}"
+          fi
+          if [ -z "$VERSION" ]; then
+            echo "VERSION is empty — cannot proceed."
+            exit 1
+          fi
+          TAG="v${VERSION}"
+          SHA="${{ steps.verify.outputs.sha }}"
+          if [ -z "$SHA" ]; then
+            echo "SHA is empty — cannot proceed."
+            exit 1
+          fi
+
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          git tag -a "${TAG}" -m "Release ${TAG}" "${SHA}"
+          git push origin "${TAG}"
+          echo "Created and pushed tag ${TAG} → ${SHA}"

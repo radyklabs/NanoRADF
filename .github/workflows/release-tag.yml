@@ -2,6 +2,7 @@
 #
 # Triggered manually with a verified release merge SHA on main.
 # Also triggered on PR merge to main with title "chore(release): X.Y.Z".
+# Uses native git only — no external actions (org policy: allowed_actions=local_only).
 
 name: release-tag
 
@@ -20,14 +21,18 @@ jobs:
   tag:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          ref: main
-          fetch-depth: 0
+      - name: Checkout (native git)
+        run: |
+          set -euo pipefail
+          git clone --no-checkout "https://github.com/${{ github.repository }}.git" repo
+          cd repo
+          git checkout main
+          echo "GITHUB_WORKSPACE=$GITHUB_WORKSPACE"
+          echo "PWD=$(pwd)"
 
       - name: Verify merge commit
         id: verify
+        working-directory: repo
         run: |
           set -uo pipefail
 
@@ -60,6 +65,7 @@ jobs:
 
       - name: Extract version
         id: version
+        working-directory: repo
         run: |
           SHA="${{ steps.verify.outputs.sha }}"
           if [ -z "$SHA" ]; then
@@ -84,6 +90,7 @@ jobs:
           echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
 
       - name: Create annotated tag
+        working-directory: repo
         run: |
           VERSION="${{ steps.version.outputs.version }}"
           SHA="${{ steps.verify.outputs.sha }}"

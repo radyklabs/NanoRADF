@@ -26,6 +26,11 @@ Definition of done (v1): all PRD acceptance criteria pass; smoke checks recorded
 | D14 | 2026-11-23 | Security hardening phase added: CSRF, Rate Limiting, Security Headers (CSP, HSTS, X-Frame-Options) as Phase 2b before Phase 3. | Review findings: critical security gaps. |
 | D15 | 2026-11-23 | Code quality phase added: dead code cleanup, ThemeHelper implementation, orphan file removal as Phase 2c. | Review findings: dead code, empty ThemeHelper, orphan Theme.php. |
 | D16 | 2026-11-23 | AssetsService simplification as Phase 4b after headless client. | Review finding: over-complex url() method. |
+| D17 | 2026-11-27 | Session lifecycle: **writer starts session, reader never starts**. `Session::get()` reads `$_SESSION` only when active; `Session::set()`/`forget()` call `start()`. | Best practice for lazy session + no CLI "headers already sent" warning + no side-effect on private-route guard hot path. |
+| D18 | 2026-11-27 | Auth scope: core = **storage only**. No `refresh()` in `AuthService`; login/logout/refresh are app/module responsibility. `CSRFService::regenerate()` is the only auth hook exposed for module login. | User decision: login/logout are app features, not core. |
+| D19 | 2026-11-27 | API guard: `ApiController::authorize()` reads Bearer token from `gserver('http.authorization')`, delegates validation to `gconfig('auth')['api_validator']` (callable). Default `null` → fail-closed 401. | User decision: session is core, login/logout are app features; validator must be app-supplied. |
+| D20 | 2026-11-27 | Private guard: `PrivateController::authorize()` returns `bool` only. Router handles 403; module login handles redirect. No `exit()`/`header()` in controller. | User decision: Router must stay in control of response. |
+| D21 | 2026-11-27 | Theme resolver: interface only (`ThemeResolverInterface` already exists). `ThemeConfig['resolver']` stays `null`. `DatabaseThemeResolver` deferred to Phase 6. | User decision: no new class this phase. |
 
 ## Status legend
 
@@ -159,11 +164,12 @@ Definition of done (v1): all PRD acceptance criteria pass; smoke checks recorded
 - Remove legacy `ds/` fast-path in `url()`.
 - Verification: All asset tests pass; each class < 150 lines; single responsibility clear; no circular deps.
 
-### Phase 5 — Session & auth token storage ⚠️
+### Phase 5 — Session & auth token storage ✅
 - **Depends on:** Phase 4. **Owner:** main thread.
 - `$_SESSION`-only access/refresh token storage; cookie flags `HttpOnly`/`SameSite=Strict`/`secure` (prod); CSRF nonce for state-changing routes; auth guards on `PrivateController`/`ApiController`.
-- **Theme resolver implementation:** `DatabaseThemeResolver` implementing `ThemeResolverInterface` — reads active theme per surface from DB (user preference, tenant config). Register class name in `ThemeConfig['resolver']`. `theme()` helper calls resolver first, falls back to config `default` map.
-- Verification: token never appears in client storage (grep); unauthenticated private route rejected; nonce check blocks forged POST; theme resolver overrides config when registered.
+- **Done (2026-11-27):** `src/Kernel/Session.php` (lazy writer-starts-session), `src/Services/AuthService.php` (storage-only, no refresh logic), `src/Services/CSRFService.php` (per-session token, `regenerate()` for module login), `src/Config/AuthConfig.php` (fail-closed default `api_validator: null`). Auth guards: `PrivateController::authorize()` → `AuthService::isAuthenticated()`; `ApiController::authorize()` → Bearer header + configurable validator. Tests: `tests/auth_check.php` (17 checks).
+- **Deferred:** `DatabaseThemeResolver` — interface registered in `ThemeResolverInterface`; implementation tracked in Phase 6 as `theme-resolver` task.
+- Verification: token never appears in client storage (grep); unauthenticated private route rejected (auth_check §6); nonce check blocks forged POST (auth_check §5); theme resolver overrides config when registered (deferred).
 
 ### Phase 6 — Errors, polish, docs sync ⚠️
 - **Depends on:** Phase 3, 4. **Owner:** main thread.
@@ -197,6 +203,7 @@ Definition of done (v1): all PRD acceptance criteria pass; smoke checks recorded
 
 | Date | Result | Evidence |
 |------|--------|----------|
+| 2026-11-27 09:20 | **Phase 5 complete — session, auth storage, CSRF, guards.** `src/Kernel/Session.php` (final class, lazy writer-starts-session design per user decision; reader `get()` never starts, writer `set()`/`forget()` start session), `src/Services/AuthService.php` (storage-only, no `refresh()` — login/refresh is module responsibility per user decision), `src/Services/CSRFService.php` (per-session token, `regenerate()` for module login hook, `hash_equals` constant-time compare), `src/Config/AuthConfig.php` (fail-closed default `api_validator: null`). Auth guards: `PrivateController::authorize()` → `AuthService::isAuthenticated()` (no exit/header — Router handles 403); `ApiController::authorize()` → Bearer header + configurable validator via `gconfig('auth')['api_validator']` (no validator → 401). `.env.sample` documents `session.cookie_*` and `auth.token_*` keys. Tests: `tests/auth_check.php` (17 checks, all PASS). 5-suite + bootstrap_probe all green. | `tests/auth_check.php` PASS 17/0; `smoke_check`/`assets_check`/`view_check`/`route_check`/`layout_check`/`bootstrap_probe` all exit 0; lint all 7 PHP files clean |
 | 2026-11-26 09:05 | **Phase 3 complete — Welcome module end-to-end.** All `modules/Welcome/` files populated (Manifest.json, Config/WelcomeConfig.php, Controllers/WelcomeController.php, Model/WelcomeModel.php, Services/WelcomeService.php, Views/welcome/index.html, Views/welcome/meta.html). Route registered in `apps/Config/RoutesConfig.php`. Fix: added missing `use function System\genv;` in `src/Services/ViewsService.php` for module-view resolution. Fix: `@include('meta')` → `@include('welcome.meta')` in welcome template. All tests PASS (smoke, route 15/15, view 14/14, assets 24/24, layout). `/welcome` renders 200 OK with theme layout via Drip engine. | `tests/smoke_check.php`, `route_check.php`, `view_check.php`, `assets_check.php`, `layout_check.php` all PASS; render_probe confirmed 200 + full HTML body |
 | 2026-11-26 01:36 | **Phase 2 complete + sentinelization.** All Phase 2 sub-phases (2, 2b, 2c, 2d) complete. 19 descriptive throws converted to sentinel keys with reordered `blackwall()` branch (debug first). All test suites PASS (smoke, assets 24, view 14, route 15, layout). Working tree clean at `38ad1c8`. | `tests/*.php` all PASS; `git status` clean |
 | 2026-11-25 22:40 | **Phase 2c advanced: surface resolution + theme layouts.** `SurfaceAwareInterface` + `SurfaceResolverTrait` determine surface from class hierarchy (no mutable `$surface`). Layouts moved to active theme only (`<theme>/index.html`), no fallback. Error pages standalone. Theme resolver hook prep for Phase 5 (`ThemeResolverInterface`, `resolver` key in config). Bug fix: restored `apps/Config/ThemeConfig.php` `'private' => 'admin'` mapping accidentally changed during resolver work. | 8/8 tests PASS; commit `e8a9990` + `3cf5eb4` + `6e25ed7` |

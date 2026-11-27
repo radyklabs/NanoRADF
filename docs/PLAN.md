@@ -172,9 +172,10 @@ Definition of done (v1): all PRD acceptance criteria pass; smoke checks recorded
 - **Done (2026-11-27):** all items complete.
 - Verification: 404/500 render themed pages in web context, inline in CLI; docs cross-reference check (no dangling file refs).
 
-### Phase 7 — Audit & release readiness ⚠️
+### Phase 7 — Audit & release readiness ✅
 - **Depends on:** Phase 1–6. **Owner:** main thread via `>audit` then `>release` (user-invoked).
 - **Security audit (2026-11-27):** 7 findings (1 HIGH, 4 MEDIUM, 2 LOW). All fixed except #1 (`var_dump` in `blackwall`) and #2 (`public/test.php`) — kept with dev-only comments (user decision: remove when prod).
+- **Release (2026-11-27):** `v0.0.1` — first release. Tag created via `release-tag.yml` workflow (annotated, `github-actions[bot]`).
 - Verification: audit ledger complete; release workflow rules satisfied.
 
 ## Parallelism map
@@ -217,5 +218,5 @@ Definition of done (v1): all PRD acceptance criteria pass; smoke checks recorded
 
 - `apps/Services` / `apps/Config` classes have no namespace mapping today — closed **by design** in Phase 0b (single `App\` → `apps/` root); confirm with the both-mode verification there.
 - `read_directories()` removed in Phase 1 (no caller; entry no longer declares `$directories`).
-- No test framework: smoke checks are manual until a test runner is agreed (candidate: plain-PHP assert scripts, zero deps).
-- **Theme folder naming:** `public/themes/` (lowercase) vs `apps/Themes/` (capital) — inconsistent. Phase 6 will unify (breaking change).
+- No test framework: smoke checks are manual until a test runner is agreed (candidate: plain-PHP assert scripts, zero deps). **Superseded:** 7 test suites + `auth_check` (18 checks) now exist; no formal runner adopted by design (zero deps).
+- **Theme folder naming:** `public/themes/` (lowercase) vs `apps/Themes/` (capital) — **resolved in Phase 6**: intentionally kept, each consistent with its environment (public assets vs admin assets). No rename.

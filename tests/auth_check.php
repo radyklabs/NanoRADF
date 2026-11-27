@@ -93,6 +93,12 @@ echo "API guard fails closed\n";
 $response = Router::dispatch ('GET', '/api/v1/health', false);
 check ('an unauthenticated API call is rejected with 401', static fn (): bool => $response['status'] === 401);
 
+echo "CSRF gate on Router::run\n";
+// CSRF only fires on state-changing methods; GET/HEAD bypass it.
+$_POST['_csrf'] = 'invalid';
+$response = Router::dispatch ('GET', '/api/v1/health', false);
+check ('GET bypasses CSRF gate (stateless)', static fn (): bool => $response['status'] === 401);
+
 echo "\n";
 echo ($fail === 0) ? "PASS — {$pass} passed, 0 failed\n" : "FAIL — {$fail} failed\n";
 ob_end_flush ();

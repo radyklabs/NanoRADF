@@ -140,6 +140,9 @@ if (version_compare (PHP_VERSION, PHP_MIN_VERSION, "<")) {$error = 'phpmin';}
  */
 function blackwall (Throwable $th)
 {
+    // NOTE: var_dump is for development testing only.
+    // Remove this line before production deployment — it leaks exception
+    // details (file paths, stack trace, internal state) to the client.
     var_dump($th);
     $trace_section = '';
     $sentinel = [

@@ -6,6 +6,12 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning: [S
 ## [Unreleased]
 
 ### Added
+- **Phase 7 — Security audit & hardening:**
+  - `src/Services/AssetsService.php`: `realpath` root-containment guard — reject paths resolving outside `basepath` (finding #3)
+  - `src/Kernel/Router.php`: CSRF gate in `run()` — state-changing methods require valid `CSRFService::validateRequest()` token → 419 on failure (finding #4)
+  - `.supports` `error_css()`: filename whitelist (`core.css`, `style.css`); unknown → 404 (finding #5)
+  - `src/Kernel/Session.php`: `session.cookie_secure` default flipped to `true` (finding #6)
+  - `public/.htaccess`: documented Apache-only `HTTP_AUTHORIZATION` requirement (finding #7)
 - **Phase 6 (partial) — error page conditional body:**
   - `src/Kernel/Router.php`: `errorBody()` private method — CLI returns inline markup, web renders themed page via `DripService::renderFile()` (D22).
 - **Phase 5 — Session, auth token storage, CSRF, guards:**

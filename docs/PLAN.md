@@ -174,7 +174,7 @@ Definition of done (v1): all PRD acceptance criteria pass; smoke checks recorded
 
 ### Phase 7 — Audit & release readiness ⚠️
 - **Depends on:** Phase 1–6. **Owner:** main thread via `>audit` then `>release` (user-invoked).
-- Line-by-line audit, tooling evidence, `docs/REPORT.md` entry, changelog promotion only when release is agreed.
+- **Security audit (2026-11-27):** 7 findings (1 HIGH, 4 MEDIUM, 2 LOW). All fixed except #1 (`var_dump` in `blackwall`) and #2 (`public/test.php`) — kept with dev-only comments (user decision: remove when prod).
 - Verification: audit ledger complete; release workflow rules satisfied.
 
 ## Parallelism map

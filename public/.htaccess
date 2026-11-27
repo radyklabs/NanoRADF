@@ -2,6 +2,8 @@
 DirectoryIndex index.php index.html
 <IfModule mod_rewrite.c>
     RewriteEngine On
+    # Apache-only: expose Authorization header to PHP for Bearer auth.
+    # Nginx/php -S/FPM need equivalent config (e.g. fastcgi_param HTTP_AUTHORIZATION $http_authorization).
     RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
     RewriteBase /
     RewriteRule ^index\.php$ - [L]

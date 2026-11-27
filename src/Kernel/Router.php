@@ -19,6 +19,7 @@ namespace System\Kernel;
 
 use RuntimeException;
 use InvalidArgumentException;
+use System\Services\CSRFService;
 use System\Services\DripService;
 use function System\interlace;
 use function System\fl;
@@ -497,6 +498,16 @@ final class Router
      */
     private static function run (string $target, ?array $params = null): array
     {
+        // CSRF gate: state-changing methods require a valid session-bound token.
+        if (CSRFService::requiresValidation () && !CSRFService::validateRequest ())
+        {
+            return [
+                'status'  => 419,
+                'body'    => '<h1>419 CSRF token mismatch</h1><p>The form has expired. Please try again.</p>',
+                'headers' => [],
+            ];
+        }
+
         [$class, $action] = self::resolve ($target);
             $controller = new $class ();
 

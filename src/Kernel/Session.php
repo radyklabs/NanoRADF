@@ -31,7 +31,9 @@ final class Session
      * Start the session if not already active.
      *
      * Cookie parameters come from env so deployments can harden for
-     * production (e.g. `session.cookie_secure=true`) without code changes.
+     * production without code changes. `session.cookie_secure` defaults
+     * to `true` (production-safe); set to `false` in `.env` for local
+     * HTTP development.
      *
      * @since  0.0.1
      * @return void
@@ -40,7 +42,7 @@ final class Session
     {
         if (session_status () === PHP_SESSION_ACTIVE) {return;}
 
-        $secure   = genv ('session.cookie_secure', false);
+        $secure   = genv ('session.cookie_secure', true);
         $httponly = genv ('session.cookie_httponly', true);
         $samesite = (string) genv ('session.cookie_samesite', 'Strict');
         $name     = (string) genv ('session.name', 'NANORADF_SESSID');

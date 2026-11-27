@@ -6,7 +6,10 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning: [S
 ## [Unreleased]
 
 ### Added
+- **Phase 6 (partial) — error page conditional body:**
+  - `src/Kernel/Router.php`: `errorBody()` private method — CLI returns inline markup, web renders themed page via `DripService::renderFile()` (D22).
 - **Phase 5 — Session, auth token storage, CSRF, guards:**
+  - `src/Kernel/Session.php` (new): final class, lazy writer-starts-session design (D17). Methods: `start()`, `isActive()`, `get()`, `set()`, `has()`, `forget()`, `regenerate()`, `destroy()`, `id()`.
   - `src/Kernel/Session.php` (new): final class, lazy writer-starts-session design (D17). Methods: `start()`, `isActive()`, `get()`, `set()`, `has()`, `forget()`, `regenerate()`, `destroy()`, `id()`.
   - `src/Services/AuthService.php` (new): storage-only — `setTokens()`, `getAccessToken()`, `getRefreshToken()`, `getUser()`, `isAuthenticated()`, `canRefresh()`, `getExpiresAt()`, `clear()`. No `refresh()` — login/refresh is module responsibility (D18).
   - `src/Services/CSRFService.php` (new): per-session token — `token()`, `validate()`, `validateRequest()`, `requiresValidation()`, `regenerate()`, `fieldName()`. `hash_equals` for constant-time compare.

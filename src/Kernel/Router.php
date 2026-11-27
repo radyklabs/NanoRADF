@@ -19,6 +19,7 @@ namespace System\Kernel;
 
 use RuntimeException;
 use InvalidArgumentException;
+use System\Services\DripService;
 use function System\interlace;
 use function System\fl;
 use function System\statc;
@@ -85,11 +86,43 @@ final class Router
         {
             if (!headers_sent ()) {header ('Allow: '.implode (', ', $allowed));}
             if ($throw) {throw new RuntimeException ("{$method} {$path} → 405");}
-            return ['status' => 405, 'body' => '<h1>405 '.statc (405).'</h1><p>The request method is not allowed for this route.</p>'];
+            return ['status' => 405, 'body' => self::errorBody (405), 'headers' => []];
         }
 
         if ($throw) {throw new RuntimeException ("{$method} {$path} → 404");}
-        return ['status' => 404, 'body' => '<h1>404 '.statc (404).'</h1><p>The requested page could not be found.</p>'];
+        return ['status' => 404, 'body' => self::errorBody (404), 'headers' => []];
+    }
+
+    /**
+     * Build the error body for a 404/405 response.
+     *
+     * CLI: inline markup (no output buffering needed).
+     * Web: themed error page via DripService (same as Dispatcher::errorPage).
+     *
+     * @since  0.0.2
+     * @param  int $code HTTP status code (404 or 405).
+     * @return string
+     */
+    private static function errorBody (int $code): string
+    {
+        if (php_sapi_name () === 'cli')
+        {
+            return '<h1>'.$code.' '.statc ($code).'</h1><p>The request could not be processed.</p>';
+        }
+
+        $view = interlace (basepath, 'src', 'Views', 'Errors', (string) $code.'.html');
+        if (!is_file ($view))
+        {
+            return '<h1>'.$code.' '.statc ($code).'</h1><p>Error page not available.</p>';
+        }
+
+        $data = [
+            'code'    => $code,
+            'title'   => statc ($code),
+            'message' => null,
+        ];
+
+        return DripService::renderFile ($view, $data, null, null);
     }
 
     /**

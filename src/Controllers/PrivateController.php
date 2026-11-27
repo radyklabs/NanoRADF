@@ -20,6 +20,7 @@ namespace System\Controllers;
 
 use Throwable;
 use System\Kernel\Controller as BaseController;
+use System\Services\AuthService;
 
 if (!defined ('basepath'))
 {
@@ -27,4 +28,21 @@ if (!defined ('basepath'))
     catch (Throwable $e){$file = basename (__FILE__); exit("404 Forbidden {$file}");}
 }
 
-class PrivateController extends BaseController {}
+class PrivateController extends BaseController
+{
+    /**
+     * Allow the action only when a valid session token is stored.
+     * --
+     * Returning false lets the router emit the standard 403 response, so the
+     * framework always signals denial even before a login module exists. An
+     * application that wants a redirect overrides this method in its own
+     * controller; the core never redirects or exits.
+     *
+     * @since  0.0.1
+     * @return bool
+     */
+    public function authorize (): bool
+    {
+        return AuthService::isAuthenticated ();
+    }
+}

@@ -2,7 +2,7 @@
 
 ![PHP Version](https://img.shields.io/badge/PHP-8.1%2B-8892BF?logo=php&logoColor=white)
 ![Version](https://img.shields.io/badge/Version-0.0.1-blue)
-![Phase](https://img.shields.io/badge/Phase-4b%20Complete-brightgreen)
+![Phase](https://img.shields.io/badge/Phase-5%20Complete-brightgreen)
 ![License](https://img.shields.io/badge/License-MIT-blue)
 ![Tests](https://img.shields.io/badge/Tests-Passing-brightgreen)
 ![Dependencies](https://img.shields.io/badge/Dependencies-Zero-orange)
@@ -15,10 +15,10 @@ Minimal PHP framework with **two selectable modes**: a server-side rendered **fr
 
 ## Status
 
-**Phase 4b Complete.** Bootstrap, routing, view system (Drip), assets, security headers, sentinelized error handling, headless API mode, server-to-server HTTP client, and AssetsService internal refactor all functional. All test suites PASS (smoke, assets 24/24, view 14/14, route 15/15, layout).
+**Phase 5 Complete.** Bootstrap, routing, view system (Drip), assets, security headers, sentinelized error handling, headless API mode, server-to-server HTTP client, AssetsService internal refactor, session/auth token storage, CSRF protection, and auth guards all functional. All test suites PASS (smoke, assets 24/24, view 14/14, route 15/15, layout, auth 17/17).
 
 - **Completed Phases:** 0, 1, 2, 2b, 2c, 2d, 3 (Welcome module), 4 (Headless mode), 4b (AssetsService internal refactor)
-- **Pending Phases:** 5 (Auth/session), 6 (Polish/docs), 7 (Audit/release)
+- **Pending Phases:** 6 (Polish/docs/theme-resolver), 7 (Audit/release)
 - **Deferred:** Blade-shaped composer (`Layouts` ← `Patterns` ← `Components`/`Elements`), registry `scope` key for per-surface filtering
 
 ## Requirements
@@ -27,7 +27,7 @@ Minimal PHP framework with **two selectable modes**: a server-side rendered **fr
 - Apache/nginx with URL rewriting, **docroot = `public/`**
 - Dev URL: **http://localhost** (or your configured vhost)
 
-## Implemented Features (Phases 0–4b Complete)
+## Implemented Features (Phases 0–5 Complete)
 
 - **Router** — PSR-4 autoloaded, module registry via `ModulesConfig.php`, API routes gated by `app.mode` (face/bone/full)
 - **Drip template engine** — `src/Services/DripService.php`, file-based rendering with data injection
@@ -38,6 +38,9 @@ Minimal PHP framework with **two selectable modes**: a server-side rendered **fr
 - **Headless API mode** — `app.mode=bone|full` enables `/api` prefix group; `ApiController` with `json()`, `ok()`, `error()`, `notFound()`, `unauthorized()`, `forbidden()`, `validationError()`, `serverError()` helpers
 - **Server-to-server HTTP client** — `HttpService` (cURL primary, stream fallback); exponential backoff retry; JSON validation; configurable via `gconfig('http')`
 - **AssetsService internal refactor** — `serveAsset()` with conditional GET (ETag + If-Modified-Since → 304); `Dispatcher::dispatchAssets()` delegates to `AssetsService::serveAsset()`
+- **Session & auth storage** — `Session` (lazy writer-starts-session), `AuthService` (token storage only, no refresh logic), `AuthConfig` (fail-closed API validator)
+- **CSRF protection** — `CSRFService` per-session token, `hash_equals` validation, `regenerate()` hook for module login
+- **Auth guards** — `PrivateController::authorize()` (session-based), `ApiController::authorize()` (Bearer + configurable validator); Router handles 403/401
 
 ## Layout
 

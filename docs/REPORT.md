@@ -2,6 +2,38 @@
 
 Dated findings, scans, and audit entries. Evidence only — nothing is claimed fixed until the fix plus verification is recorded here.
 
+## 2026-11-27 — Phase 5 implementation (session, auth storage, CSRF, guards)
+
+- **Branch:** `feat/auth-session` (from `dev`).
+- **Status:** ✅ implemented, all tests PASS.
+
+### Files
+
+| File | Action | Notes |
+|------|--------|-------|
+| `src/Kernel/Session.php` | new | Class `Session`, final. Writer starts session, reader never starts (D17). |
+| `src/Services/AuthService.php` | new | Storage-only: `setTokens`/`getAccessToken`/`getRefreshToken`/`getUser`/`isAuthenticated`/`canRefresh`/`getExpiresAt`/`clear`. No `refresh()` (D18). |
+| `src/Services/CSRFService.php` | new | Per-session token. `validate()` uses `hash_equals`. `regenerate()` for module login hook. `regenerate()` for module login. |
+| `src/Config/AuthConfig.php` | new | Fail-closed: `api_validator => null`. App overrides in `apps/Config/AuthConfig.php`. |
+| `src/Controllers/PrivateController.php` | modified | Added `authorize(): bool` → `AuthService::isAuthenticated()`. No `exit()`/`header()` (D20). |
+| `src/Controllers/ApiController.php` | modified | Added `authorize(): bool` → Bearer header + `gconfig('auth')['api_validator']` (D19). Added `use Throwable;` import. |
+| `tests/auth_check.php` | new | 17 checks: session lifecycle, token storage/expiry, corrupt safety, CSRF round-trip, API guard 401. All PASS. |
+| `.env.sample` | modified | Docblock for `session.cookie_*` (secure default false, httponly true, samesite Strict) and `auth.token_*` (transport bearer, header X-Auth-Token). |
+
+### Verification
+
+- `tests/auth_check.php`: **PASS — 17 passed, 0 failed** (exit 0).
+- 5-suite + `bootstrap_probe`: all **exit 0**.
+- `php -l` on all 7 changed PHP files: **no syntax errors**.
+- **Fail-before:** `gconfig` namespace bug (imported as `System\gconfig` but global) caused fatal error → fixed by removing import (plan option A, user confirmed). CLI `ob_start()` added to test for session start after `echo`.
+- **Pass-after:** all 17 checks green; 5-suite green.
+
+### Deferred to Phase 6
+
+- `DatabaseThemeResolver` — `ThemeResolverInterface` exists; `ThemeConfig['resolver']` stays `null`. Tracked as Phase 6 task `theme-resolver`.
+
+---
+
 ## 2026-11-27 — Phase 5 implementation failure review (all code reverted)
 
 - **Branch:** `feat/auth-session`.

@@ -6,6 +6,17 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning: [S
 ## [Unreleased]
 
 ### Added
+- **Phase 5 — Session, auth token storage, CSRF, guards:**
+  - `src/Kernel/Session.php` (new): final class, lazy writer-starts-session design (D17). Methods: `start()`, `isActive()`, `get()`, `set()`, `has()`, `forget()`, `regenerate()`, `destroy()`, `id()`.
+  - `src/Services/AuthService.php` (new): storage-only — `setTokens()`, `getAccessToken()`, `getRefreshToken()`, `getUser()`, `isAuthenticated()`, `canRefresh()`, `getExpiresAt()`, `clear()`. No `refresh()` — login/refresh is module responsibility (D18).
+  - `src/Services/CSRFService.php` (new): per-session token — `token()`, `validate()`, `validateRequest()`, `requiresValidation()`, `regenerate()`, `fieldName()`. `hash_equals` for constant-time compare.
+  - `src/Config/AuthConfig.php` (new): fail-closed default — `api_validator => null`. App overrides in `apps/Config/AuthConfig.php`.
+  - `tests/auth_check.php` (new): 17 checks — session lifecycle, token storage/expiry, corrupt session safety, CSRF round-trip, API guard 401.
+  - `.env.sample`: docblock for `session.cookie_*` (secure=false default, httponly=true, samesite=Strict) and `auth.token_*` (transport=bearer, header=X-Auth-Token).
+- `src/Controllers/PrivateController.php`: `authorize(): bool` → `AuthService::isAuthenticated()` (D20). No `exit()`/`header()` — Router handles 403.
+- `src/Controllers/ApiController.php`: `authorize(): bool` → Bearer header + `gconfig('auth')['api_validator']` (D19). Added `use Throwable;` import.
+
+### Changed
 - **Phase 3 — Welcome module end-to-end:** Complete HMVC module implementation at `modules/Welcome/` with Manifest.json, Config/WelcomeConfig.php, Controllers/WelcomeController.php, Model/WelcomeModel.php, Services/WelcomeService.php, Views/welcome/index.html, Views/welcome/meta.html. Route registered in `apps/Config/RoutesConfig.php` as `GET /welcome => Modules\Welcome\Controllers\WelcomeController::index`.
 - `src/Services/ViewsService.php`: added `use function System\genv;` import to fix undefined-function error when resolving module views.
 

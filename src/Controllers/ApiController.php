@@ -20,6 +20,8 @@ namespace System\Controllers;
 
 use System\Kernel\Controller as BaseController;
 use System\Services\HttpService;
+use Throwable;
+use function System\gserver;
 
 if (!defined ('basepath'))
 {
@@ -29,6 +31,28 @@ if (!defined ('basepath'))
 
 class ApiController extends BaseController
 {
+    /**
+     * Allow the action only when the request token passes the app validator.
+     * --
+     * API calls are server-to-server and do not share a browser session, so
+     * this guard reads the token from the request header. The core does not
+     * decide what a valid token is: an application registers a callable in
+     * `AuthConfig['api_validator']`. With no validator, access fails closed.
+     *
+     * @since  0.0.1
+     * @return bool
+     */
+    public function authorize (): bool
+    {
+        $validator = gconfig ('auth') ['api_validator'] ?? null;
+        if (!is_callable ($validator)) {return false;}
+
+        $header = gserver ('http.authorization');
+        $token  = is_string ($header) && str_starts_with ($header, 'Bearer ') ? substr ($header, 7) : '';
+
+        return $token !== '' && $validator ($token) === true;
+    }
+
     /**
      * HTTP client for server-to-server calls (frontend → backend).
      * Lazy-loaded on first use.

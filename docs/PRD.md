@@ -28,11 +28,11 @@ Design mandate: minimal, small, light, fast. Zero runtime dependencies.
 | FR-1 | Boot chain: entry → gateway → helpers → structures → kernel autoloader, working on PHP 8.1+. | ✅ done |
 | FR-2 | PSR-4 autoload for `System\...` → `src/`, `App\...` → `apps/`, and `Modules\...` → `modules/` (two app roots, always active). | ✅ done |
 | FR-3 | Central route table (`apps/Config/RoutesConfig.php`) dispatched by a router to controllers. | 🔵 in progress (Phase 1: Router + Controller + base controllers + gateway wiring done; app routes/controllers come with Phase 3) |
-| FR-4 | Base controllers for the three surfaces: `PublicController`, `PrivateController`, `ApiController`. | ✅ done (Phase 1 scaffolding; auth rules land in Phase 5) |
+| FR-4 | Base controllers for the three surfaces: `PublicController`, `PrivateController`, `ApiController`. | ✅ done — auth guard (`authorize()`) landed in Phase 5 |
 | FR-5 | Blade-shaped server-side view composition from the role taxonomy + module view classes. | ⚠️ planned (Phase 2) || FR-6 | Modular HMVC — only when `app.modules=true`: `Manifest.json` + Config/Controllers/Model/Services/Views under `modules/<Name>/` (project root), wired into routing. | ⚠️ planned (Phase 3) |
 | FR-7 | Server-to-server HTTP client frontend → headless backend with status + schema validation. | ⚠️ planned (Phase 4) |
 | FR-7a | HTTP client service (`System\Services\HttpService`) with cURL primary, stream fallback, retry, JSON validation. | ⚠️ planned (Phase 4) |
-| FR-8 | Session-based auth token storage (`$_SESSION` only) with hardened cookie flags. | ⚠️ planned (Phase 5) |
+| FR-8 | Session-based auth token storage (`$_SESSION` only) with hardened cookie flags. | ✅ done — `src/Kernel/Session.php`, `src/Services/AuthService.php`, `src/Services/CSRFService.php` (Phase 5) |
 | FR-9 | Environment config via `.env` loaded into the process env by `.starter` (`putenv` + `$_ENV`), dot-notation typed access via `genv()` (getenv-backed). | ✅ done |
 | FR-10 | Error handling: generic 500 in prod, gated detail in local/dev, always `error_log`. | ✅ done (entry gateway) |
 | FR-11 | **Layout mode toggle** via env `app.modules`: both roots (`App\...` → `apps/`, `Modules\...` → `modules/`) are always autoloaded. `app.modules=true` registers the per-module folder/namespace templates (`modules/<Name>/{Config,Controllers,Model,Services,Views}`, `Manifest.json`); `false`/absent leaves them unregistered (both roots still resolve). Namespace: single PSR-4 roots `App\` → `apps/` and `Modules\` → `modules/` (decision D6/D9). | ✅ done (Phase 0b) |
